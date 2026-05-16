@@ -266,13 +266,13 @@
 <body style="background-color:#f6f6f6;">
 
     <!-- ADMIN HEADER -->
-    <div class="admin-header-bar">
-        <h1>⚙️ Daily News — Admin Panel</h1>
+<div class="admin-header-bar">
+    <h1>⚙️ Daily News — Admin Panel</h1>
+    <div style="display:flex; align-items:center; gap:16px;">
         <a href="index.html">← Back to Website</a>
+        <button onclick="signOutAdmin()" style="background:#c70000; color:#fff; border:none; padding:7px 14px; font-weight:700; cursor:pointer; border-radius:2px; font-size:13px;">Sign Out</button>
     </div>
-
-    <div class="admin-wrap">
-        <div class="admin-layout">
+</div>
 
             <!-- WRITE ARTICLE FORM -->
             <div id="articleForm">
@@ -338,9 +338,10 @@
         </div>
     </div>
 
-    <script type="module">
+ <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, orderBy, query } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyC4U6MWTPKDQZ_oICtSLdfnFP3a-HFILb4",
@@ -353,6 +354,34 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // ================================
+    // AUTH GUARD — redirect if not logged in
+    // ================================
+    onAuthStateChanged(auth, (user) => {
+        if (!user) {
+            window.location.href = 'login.html';
+        } else {
+            // Show logged in user email
+            const headerBar = document.querySelector('.admin-header-bar');
+            if (headerBar) {
+                const userInfo = document.createElement('span');
+                userInfo.style.cssText = 'font-size:12px; color:rgba(255,255,255,0.7); margin-right:16px;';
+                userInfo.textContent = `Logged in as ${user.email}`;
+                headerBar.insertBefore(userInfo, headerBar.querySelector('a'));
+            }
+            loadAdminArticles();
+        }
+    });
+
+    // ================================
+    // SIGN OUT
+    // ================================
+    window.signOutAdmin = async function() {
+        await signOut(auth);
+        window.location.href = 'login.html';
+    }
 
     // ================================
     // LOAD ARTICLES
@@ -425,7 +454,7 @@
                 author,
                 standfirst,
                 body,
-                imageUrl: '',
+                imageUrl: document.getElementById('currentImage').value || '',
                 date: new Date().toLocaleDateString('en-GB', {
                     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
                 }),
@@ -480,6 +509,7 @@
                     document.getElementById('artStandfirst').value = a.standfirst;
                     document.getElementById('artBody').value = a.body;
                     document.getElementById('editId').value = id;
+                    document.getElementById('currentImage').value = a.imageUrl || '';
                     document.getElementById('formTitle').textContent = 'Edit Article';
                     document.getElementById('publishBtn').textContent = 'Update Article';
                     document.getElementById('articleForm').scrollIntoView({ behavior: 'smooth' });
@@ -500,6 +530,7 @@
         document.getElementById('artStandfirst').value = '';
         document.getElementById('artBody').value = '';
         document.getElementById('editId').value = '';
+        document.getElementById('currentImage').value = '';
         document.getElementById('formTitle').textContent = 'Write New Article';
         document.getElementById('publishBtn').textContent = 'Publish Article';
     }
@@ -522,7 +553,6 @@
     // ================================
     document.getElementById('publishBtn').addEventListener('click', publishArticle);
     document.getElementById('resetBtn').addEventListener('click', resetForm);
-    loadAdminArticles();
 
 </script>
 
