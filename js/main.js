@@ -107,23 +107,6 @@ function setupNewsletter() {
 setupNewsletter();
 
 
-// ================================
-// 5. SEARCH BUTTON INTERACTION
-// ================================
-function setupSearch() {
-    const searchBtn = document.querySelector('.search-btn');
-
-    if (searchBtn) {
-        searchBtn.addEventListener('click', () => {
-            const query = prompt('Search Daily News:');
-            if (query && query.trim() !== '') {
-                alert(`Searching for: "${query}"\n\nSearch results page coming soon!`);
-            }
-        });
-    }
-}
-
-setupSearch();
 
 
 // ================================
