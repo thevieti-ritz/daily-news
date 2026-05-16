@@ -284,33 +284,35 @@ function setupCategoryFilter() {
 }
 
 // ================================
+// ================================
 // CATEGORY FILTERING
 // ================================
 function setupCategoryFilter() {
     const sectionLinks = document.querySelectorAll('.section-nav a');
-    const sectionTitle = document.querySelector('.section-heading span');
 
     if (!sectionLinks) return;
 
     sectionLinks.forEach(link => {
-        link.addEventListener('click', async (e) => {
+        link.addEventListener('click', (e) => {
+            const href = link.getAttribute('href');
+
+            // If link goes to a real page, let it navigate normally
+            if (href && href !== '#' && href.includes('.html')) {
+                return;
+            }
+
+            // Otherwise filter
             e.preventDefault();
 
-            // Update active link
             sectionLinks.forEach(l => l.classList.remove('active'));
             link.classList.add('active');
 
             const category = link.textContent.trim();
 
-            // Update section title
-            if (sectionTitle) sectionTitle.textContent = category === 'Top Stories' ? 'Latest News' : category;
-
-            // Reload articles with filter
             if (typeof window.filterArticles === 'function') {
-                await window.filterArticles(category);
+                window.filterArticles(category);
             }
 
-            // Smooth scroll to news section
             const newsSection = document.querySelector('.news-section');
             if (newsSection) newsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
@@ -332,18 +334,12 @@ function setupTopNavFilter() {
     };
 
     topNavLinks.forEach(link => {
-        link.addEventListener('click', async (e) => {
+        link.addEventListener('click', (e) => {
             e.preventDefault();
-
-            const navName = link.textContent.trim();
-            const category = categoryMap[navName] || 'Top Stories';
-
-            // Update section nav active state
-            const sectionLinks = document.querySelectorAll('.section-nav a');
-            sectionLinks.forEach(l => l.classList.remove('active'));
+            const category = categoryMap[link.textContent.trim()] || 'Top Stories';
 
             if (typeof window.filterArticles === 'function') {
-                await window.filterArticles(category);
+                window.filterArticles(category);
             }
 
             const newsSection = document.querySelector('.news-section');
