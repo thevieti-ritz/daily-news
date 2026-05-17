@@ -15,7 +15,6 @@ async function main() {
     console.log('🚀 Daily News Auto-Publisher starting...');
     console.log(`⏰ ${new Date().toISOString()}`);
 
-    // Check environment variable
     if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
         console.error('❌ FIREBASE_SERVICE_ACCOUNT environment variable not found!');
         process.exit(1);
@@ -45,58 +44,115 @@ async function main() {
     });
 
     // ================================
-    // NEWS SOURCES
+    // NEWS SOURCES — FULL ARTICLES
+    // (Creative Commons / Open License)
     // ================================
     const FULL_SOURCES = [
+
+        // POLITICS
         {
             url: 'https://news.un.org/feed/subscribe/en/news/topic/international-peace-and-security/feed/rss.xml',
             category: 'Politics',
             source: 'UN News'
         },
         {
+            url: 'https://news.un.org/feed/subscribe/en/news/region/africa/feed/rss.xml',
+            category: 'Politics',
+            source: 'UN News Africa'
+        },
+        {
+            url: 'https://www.urn.or.ug/feed/',
+            category: 'Politics',
+            source: 'Uganda Radio Network'
+        },
+        {
+            url: 'https://reliefweb.int/country/uga/rss.xml',
+            category: 'Politics',
+            source: 'ReliefWeb Uganda'
+        },
+
+        // BUSINESS
+        {
             url: 'https://news.un.org/feed/subscribe/en/news/topic/economic-development/feed/rss.xml',
             category: 'Business',
             source: 'UN News'
         },
+        {
+            url: 'https://reliefweb.int/updates/rss.xml?theme=EC&region=267',
+            category: 'Business',
+            source: 'ReliefWeb East Africa'
+        },
+
+        // HEALTH
         {
             url: 'https://www.who.int/rss-feeds/news-english.xml',
             category: 'Health',
             source: 'WHO'
         },
         {
+            url: 'https://www.afro.who.int/rss.xml',
+            category: 'Health',
+            source: 'WHO Africa'
+        },
+        {
+            url: 'https://reliefweb.int/updates/rss.xml?theme=HE&primary_country=UGA',
+            category: 'Health',
+            source: 'ReliefWeb Uganda Health'
+        },
+
+        // ENVIRONMENT
+        {
             url: 'https://news.un.org/feed/subscribe/en/news/topic/climate-change/feed/rss.xml',
             category: 'Environment',
-            source: 'UN News'
+            source: 'UN News Climate'
         },
+        {
+            url: 'https://reliefweb.int/updates/rss.xml?theme=EN&region=267',
+            category: 'Environment',
+            source: 'ReliefWeb East Africa Environment'
+        },
+
+        // TECHNOLOGY
         {
             url: 'https://globalvoices.org/category/topics/technology/feed/',
             category: 'Technology',
-            source: 'Global Voices'
+            source: 'Global Voices Technology'
         },
+        {
+            url: 'https://globalvoices.org/category/regions/sub-saharan-africa/feed/',
+            category: 'Technology',
+            source: 'Global Voices Africa'
+        },
+
+        // SPORTS
         {
             url: 'https://en.wikinews.org/w/index.php?title=Category:Sports&feed=atom',
             category: 'Sports',
-            source: 'Wikinews'
+            source: 'Wikinews Sports'
         },
+        {
+            url: 'https://www.cafonline.com/rss/news',
+            category: 'Sports',
+            source: 'CAF Online'
+        },
+
+        // EDUCATION
         {
             url: 'https://theconversation.com/africa/education/articles.atom',
             category: 'Education',
             source: 'The Conversation Africa'
         },
         {
+            url: 'https://reliefweb.int/updates/rss.xml?theme=ED&primary_country=UGA',
+            category: 'Education',
+            source: 'ReliefWeb Uganda Education'
+        },
+
+        // OPINION
+        {
             url: 'https://globalvoices.org/feed/',
             category: 'Opinion',
             source: 'Global Voices'
-        },
-        {
-            url: 'https://reliefweb.int/updates/rss.xml?primary_country=UGA',
-            category: 'Politics',
-            source: 'ReliefWeb Uganda'
-        },
-        {
-            url: 'https://africacheck.org/feed/',
-            category: 'Politics',
-            source: 'Africa Check'
         },
         {
             url: 'https://theconversation.com/africa/articles.atom',
@@ -105,13 +161,11 @@ async function main() {
         }
     ];
 
+    // ================================
+    // NEWS SOURCES — AGGREGATOR
+    // (Headlines + summaries + source link)
+    // ================================
     const AGGREGATOR_SOURCES = [
-        {
-            url: 'https://nilepost.co.ug/feed/',
-            category: 'Politics',
-            source: 'Nile Post',
-            aggregator: true
-        },
         {
             url: 'https://www.aljazeera.com/xml/rss/all.xml',
             category: 'Politics',
@@ -119,9 +173,45 @@ async function main() {
             aggregator: true
         },
         {
-            url: 'https://feeds.bbci.co.uk/news/africa/rss.xml',
+            url: 'https://feeds.bbci.co.uk/news/world/africa/rss.xml',
             category: 'Politics',
             source: 'BBC Africa',
+            aggregator: true
+        },
+        {
+            url: 'https://chimp.net/feed/',
+            category: 'Politics',
+            source: 'Chimp Reports',
+            aggregator: true
+        },
+        {
+            url: 'https://www.theeastafrican.co.ke/rss/1000',
+            category: 'Business',
+            source: 'The East African',
+            aggregator: true
+        },
+        {
+            url: 'https://www.monitor.co.ug/rss',
+            category: 'Politics',
+            source: 'Daily Monitor',
+            aggregator: true
+        },
+        {
+            url: 'https://www.newvision.co.ug/rss',
+            category: 'Politics',
+            source: 'New Vision',
+            aggregator: true
+        },
+        {
+            url: 'https://allafrica.com/tools/headlines/rdf/africa/headlines.rdf',
+            category: 'Politics',
+            source: 'AllAfrica',
+            aggregator: true
+        },
+        {
+            url: 'https://www.africanews.com/feed/rss',
+            category: 'Politics',
+            source: 'Africa News',
             aggregator: true
         }
     ];
@@ -152,10 +242,21 @@ async function main() {
             });
 
             const $ = cheerio.load(response.data);
-            $('script, style, nav, header, footer, .ad, .advertisement').remove();
+            $('script, style, nav, header, footer, .ad, .advertisement, .social-share, .comments, .sidebar').remove();
 
             let content = '';
-            const selectors = ['article', '.article-body', '.article-content', '.post-content', '.entry-content', 'main'];
+            const selectors = [
+                'article .content',
+                'article .body',
+                '.article-body',
+                '.article-content',
+                '.post-content',
+                '.entry-content',
+                '.content-body',
+                'article p',
+                'main p'
+            ];
+
             for (const selector of selectors) {
                 const el = $(selector);
                 if (el.length > 0) {
@@ -164,14 +265,26 @@ async function main() {
                 }
             }
 
+            // Fallback — get all paragraphs
+            if (content.length < 200) {
+                const paragraphs = [];
+                $('p').each((i, el) => {
+                    const text = $(el).text().trim();
+                    if (text.length > 50) paragraphs.push(text);
+                });
+                content = paragraphs.join('\n\n');
+            }
+
+            // Get image
             let imageUrl = '';
-            const imgEl = $('meta[property="og:image"]');
-            if (imgEl.length > 0) {
-                imageUrl = imgEl.attr('content') || '';
+            const ogImage = $('meta[property="og:image"]');
+            if (ogImage.length > 0) {
+                imageUrl = ogImage.attr('content') || '';
             }
             if (!imageUrl) {
-                const img = $('article img, .featured-image img').first();
+                const img = $('article img, .featured-image img, .post-thumbnail img').first();
                 imageUrl = img.attr('src') || '';
+                if (imageUrl && !imageUrl.startsWith('http')) imageUrl = '';
             }
 
             return { content, imageUrl };
@@ -223,7 +336,11 @@ async function main() {
                 }
 
                 const { content, imageUrl } = await fetchFullContent(item.link);
-                const body = content || item.contentEncoded || item.content || item.summary || item.description || '';
+                const body = content ||
+                    item.contentEncoded ||
+                    item.content ||
+                    item.summary ||
+                    item.description || '';
 
                 if (body.length < 50) {
                     console.log(`   ⚠ Skipping - content too short`);
