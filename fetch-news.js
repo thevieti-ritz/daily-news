@@ -1,0 +1,323 @@
+// ================================
+//   DAILY NEWS - AUTO PUBLISHER
+// ================================
+
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
+const Parser = require('rss-parser');
+const axios = require('axios');
+const cheerio = require('cheerio');
+
+// ================================
+// FIREBASE SETUP
+// ================================
+async function main() {
+    console.log('🚀 Daily News Auto-Publisher starting...');
+    console.log(`⏰ ${new Date().toISOString()}`);
+
+    // Check environment variable
+    if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
+        console.error('❌ FIREBASE_SERVICE_ACCOUNT environment variable not found!');
+        process.exit(1);
+    }
+
+    let serviceAccount;
+    try {
+        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        console.log('✅ Firebase credentials loaded successfully');
+    } catch (error) {
+        console.error('❌ Failed to parse Firebase credentials:', error.message);
+        process.exit(1);
+    }
+
+    try {
+        initializeApp({ credential: cert(serviceAccount) });
+        console.log('✅ Firebase initialized successfully');
+    } catch (error) {
+        console.error('❌ Firebase initialization failed:', error.message);
+        process.exit(1);
+    }
+
+    const db = getFirestore();
+    const parser = new Parser({
+        timeout: 10000,
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DailyNewsBot/1.0)' }
+    });
+
+    // ================================
+    // NEWS SOURCES
+    // ================================
+    const FULL_SOURCES = [
+        {
+            url: 'https://news.un.org/feed/subscribe/en/news/topic/international-peace-and-security/feed/rss.xml',
+            category: 'Politics',
+            source: 'UN News'
+        },
+        {
+            url: 'https://news.un.org/feed/subscribe/en/news/topic/economic-development/feed/rss.xml',
+            category: 'Business',
+            source: 'UN News'
+        },
+        {
+            url: 'https://www.who.int/rss-feeds/news-english.xml',
+            category: 'Health',
+            source: 'WHO'
+        },
+        {
+            url: 'https://news.un.org/feed/subscribe/en/news/topic/climate-change/feed/rss.xml',
+            category: 'Environment',
+            source: 'UN News'
+        },
+        {
+            url: 'https://globalvoices.org/category/topics/technology/feed/',
+            category: 'Technology',
+            source: 'Global Voices'
+        },
+        {
+            url: 'https://en.wikinews.org/w/index.php?title=Category:Sports&feed=atom',
+            category: 'Sports',
+            source: 'Wikinews'
+        },
+        {
+            url: 'https://theconversation.com/africa/education/articles.atom',
+            category: 'Education',
+            source: 'The Conversation Africa'
+        },
+        {
+            url: 'https://globalvoices.org/feed/',
+            category: 'Opinion',
+            source: 'Global Voices'
+        },
+        {
+            url: 'https://reliefweb.int/updates/rss.xml?primary_country=UGA',
+            category: 'Politics',
+            source: 'ReliefWeb Uganda'
+        },
+        {
+            url: 'https://africacheck.org/feed/',
+            category: 'Politics',
+            source: 'Africa Check'
+        },
+        {
+            url: 'https://theconversation.com/africa/articles.atom',
+            category: 'Opinion',
+            source: 'The Conversation Africa'
+        }
+    ];
+
+    const AGGREGATOR_SOURCES = [
+        {
+            url: 'https://nilepost.co.ug/feed/',
+            category: 'Politics',
+            source: 'Nile Post',
+            aggregator: true
+        },
+        {
+            url: 'https://www.aljazeera.com/xml/rss/all.xml',
+            category: 'Politics',
+            source: 'Al Jazeera',
+            aggregator: true
+        },
+        {
+            url: 'https://feeds.bbci.co.uk/news/africa/rss.xml',
+            category: 'Politics',
+            source: 'BBC Africa',
+            aggregator: true
+        }
+    ];
+
+    // ================================
+    // CHECK IF ARTICLE EXISTS
+    // ================================
+    async function articleExists(title) {
+        try {
+            const snapshot = await db.collection('articles')
+                .where('title', '==', title)
+                .limit(1)
+                .get();
+            return !snapshot.empty;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    // ================================
+    // FETCH FULL CONTENT
+    // ================================
+    async function fetchFullContent(url) {
+        try {
+            const response = await axios.get(url, {
+                timeout: 10000,
+                headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DailyNewsBot/1.0)' }
+            });
+
+            const $ = cheerio.load(response.data);
+            $('script, style, nav, header, footer, .ad, .advertisement').remove();
+
+            let content = '';
+            const selectors = ['article', '.article-body', '.article-content', '.post-content', '.entry-content', 'main'];
+            for (const selector of selectors) {
+                const el = $(selector);
+                if (el.length > 0) {
+                    content = el.text().trim();
+                    if (content.length > 200) break;
+                }
+            }
+
+            let imageUrl = '';
+            const imgEl = $('meta[property="og:image"]');
+            if (imgEl.length > 0) {
+                imageUrl = imgEl.attr('content') || '';
+            }
+            if (!imageUrl) {
+                const img = $('article img, .featured-image img').first();
+                imageUrl = img.attr('src') || '';
+            }
+
+            return { content, imageUrl };
+        } catch (error) {
+            return { content: '', imageUrl: '' };
+        }
+    }
+
+    // ================================
+    // PUBLISH ARTICLE
+    // ================================
+    async function publishArticle(articleData) {
+        try {
+            await db.collection('articles').add({
+                ...articleData,
+                createdAt: new Date().toISOString(),
+                date: new Date().toLocaleDateString('en-GB', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                })
+            });
+            console.log(`✅ Published: ${articleData.title.substring(0, 60)}...`);
+            return true;
+        } catch (error) {
+            console.error(`❌ Failed to publish: ${error.message}`);
+            return false;
+        }
+    }
+
+    // ================================
+    // PROCESS FULL SOURCE
+    // ================================
+    async function processFullSource(source) {
+        try {
+            console.log(`📰 Fetching from ${source.source}...`);
+            const feed = await parser.parseURL(source.url);
+            console.log(`   Found ${feed.items.length} items`);
+
+            let published = 0;
+            for (const item of feed.items.slice(0, 3)) {
+                if (!item.title || !item.link) continue;
+
+                const exists = await articleExists(item.title);
+                if (exists) {
+                    console.log(`   ⏭ Already exists: ${item.title.substring(0, 40)}`);
+                    continue;
+                }
+
+                const { content, imageUrl } = await fetchFullContent(item.link);
+                const body = content || item.contentEncoded || item.content || item.summary || item.description || '';
+
+                if (body.length < 50) {
+                    console.log(`   ⚠ Skipping - content too short`);
+                    continue;
+                }
+
+                const standfirst = item.summary || item.description || body.substring(0, 200);
+                const cleanStandfirst = standfirst.replace(/<[^>]*>/g, '').trim().substring(0, 300);
+                const cleanBody = body.replace(/<[^>]*>/g, '').trim();
+
+                await publishArticle({
+                    title: item.title,
+                    category: source.category,
+                    author: source.source,
+                    standfirst: cleanStandfirst,
+                    body: cleanBody,
+                    imageUrl: imageUrl || '',
+                    sourceUrl: item.link,
+                    sourceName: source.source,
+                    aggregator: false
+                });
+
+                published++;
+                await new Promise(r => setTimeout(r, 1000));
+            }
+
+            console.log(`   ✅ ${source.source}: ${published} new articles published`);
+
+        } catch (error) {
+            console.error(`❌ Error processing ${source.source}: ${error.message}`);
+        }
+    }
+
+    // ================================
+    // PROCESS AGGREGATOR SOURCE
+    // ================================
+    async function processAggregatorSource(source) {
+        try {
+            console.log(`🔗 Aggregating from ${source.source}...`);
+            const feed = await parser.parseURL(source.url);
+            console.log(`   Found ${feed.items.length} items`);
+
+            let published = 0;
+            for (const item of feed.items.slice(0, 3)) {
+                if (!item.title || !item.link) continue;
+
+                const exists = await articleExists(item.title);
+                if (exists) continue;
+
+                const summary = item.summary || item.description || item.content || '';
+                const cleanSummary = summary.replace(/<[^>]*>/g, '').trim();
+
+                if (cleanSummary.length < 30) continue;
+
+                await publishArticle({
+                    title: item.title,
+                    category: source.category,
+                    author: source.source,
+                    standfirst: cleanSummary.substring(0, 300),
+                    body: `${cleanSummary}\n\nThis article was originally published by ${source.source}. Read the full story at the original source.`,
+                    imageUrl: '',
+                    sourceUrl: item.link,
+                    sourceName: source.source,
+                    aggregator: true
+                });
+
+                published++;
+                await new Promise(r => setTimeout(r, 500));
+            }
+
+            console.log(`   ✅ ${source.source}: ${published} new articles aggregated`);
+
+        } catch (error) {
+            console.error(`❌ Error aggregating ${source.source}: ${error.message}`);
+        }
+    }
+
+    // ================================
+    // RUN ALL SOURCES
+    // ================================
+    console.log('\n📰 Processing full article sources...');
+    for (const source of FULL_SOURCES) {
+        await processFullSource(source);
+    }
+
+    console.log('\n🔗 Processing aggregator sources...');
+    for (const source of AGGREGATOR_SOURCES) {
+        await processAggregatorSource(source);
+    }
+
+    console.log('\n✅ Auto-publisher completed successfully!');
+}
+
+main().catch(error => {
+    console.error('💥 Fatal error:', error.message);
+    process.exit(1);
+});
