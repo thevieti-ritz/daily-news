@@ -4,36 +4,30 @@
     <meta charset="UTF-8">
     <meta name="monetag" content="a7697520531dbf6c26debbd85afb3fc0">
     <!-- Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-G6SX3WSJRK"></script>
-<script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-G6SX3WSJRK');
-</script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-G6SX3WSJRK"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-G6SX3WSJRK');
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daily News | Latest News from Uganda, East Africa and the World</title>
-<meta name="description" content="Daily News brings you the latest breaking news, analysis and updates from Uganda, East Africa and around the world. Politics, Business, Sports, Health, Technology and more.">
-<meta name="keywords" content="Uganda news, East Africa news, Africa news, breaking news, politics, business, sports, health, technology, Daily News Uganda">
-<meta name="author" content="Daily News">
-<meta name="robots" content="index, follow">
-
-<!-- Open Graph (for Facebook & WhatsApp sharing) -->
-<meta property="og:title" content="Daily News | Latest News from Uganda and Africa">
-<meta property="og:description" content="Breaking news, analysis and updates from Uganda, East Africa and around the world.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://www.dailynewsug.online">
-<meta property="og:image" content="https://www.dailynewsug.online/images/og-image.jpg">
-<meta property="og:site_name" content="Daily News">
-
-<!-- Twitter Card -->
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Daily News | Latest News from Uganda and Africa">
-<meta name="twitter:description" content="Breaking news, analysis and updates from Uganda, East Africa and around the world.">
-<meta name="twitter:image" content="https://www.dailynewsug.online/images/og-image.jpg">
-
-<!-- Canonical URL -->
-<link rel="canonical" href="https://www.dailynewsug.online">
+    <meta name="description" content="Daily News brings you the latest breaking news, analysis and updates from Uganda, East Africa and around the world. Politics, Business, Sports, Health, Technology and more.">
+    <meta name="keywords" content="Uganda news, East Africa news, Africa news, breaking news, politics, business, sports, health, technology, Daily News Uganda">
+    <meta name="author" content="Daily News">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="Daily News | Latest News from Uganda and Africa">
+    <meta property="og:description" content="Breaking news, analysis and updates from Uganda, East Africa and around the world.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.dailynewsug.online">
+    <meta property="og:image" content="https://www.dailynewsug.online/images/og-image.jpg">
+    <meta property="og:site_name" content="Daily News">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Daily News | Latest News from Uganda and Africa">
+    <meta name="twitter:description" content="Breaking news, analysis and updates from Uganda, East Africa and around the world.">
+    <meta name="twitter:image" content="https://www.dailynewsug.online/images/og-image.jpg">
+    <link rel="canonical" href="https://www.dailynewsug.online">
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
@@ -256,24 +250,24 @@
             <div class="footer-links">
                 <div class="footer-col">
                     <h5>News</h5>
-                    <a href="#">Politics</a>
-                    <a href="#">Business</a>
-                    <a href="#">Technology</a>
-                    <a href="#">Health</a>
-                    <a href="#">Environment</a>
+                    <a href="index.html?category=Politics">Politics</a>
+                    <a href="index.html?category=Business">Business</a>
+                    <a href="index.html?category=Technology">Technology</a>
+                    <a href="index.html?category=Health">Health</a>
+                    <a href="index.html?category=Environment">Environment</a>
                 </div>
                 <div class="footer-col">
                     <h5>Sport</h5>
-                    <a href="#">Football</a>
-                    <a href="#">Athletics</a>
-                    <a href="#">Cricket</a>
-                    <a href="#">Rugby</a>
+                    <a href="index.html?category=Sports">Football</a>
+                    <a href="index.html?category=Sports">Athletics</a>
+                    <a href="index.html?category=Sports">Cricket</a>
+                    <a href="index.html?category=Sports">Rugby</a>
                 </div>
                 <div class="footer-col">
                     <h5>Company</h5>
                     <a href="about.html">About Us</a>
                     <a href="contact.html">Contact</a>
-                    <a href="advertise.html">Advertise</a>
+                    <a href="contact.html?subject=advertise">Advertise</a>
                     <a href="privacy.html">Privacy Policy</a>
                     <a href="terms.html">Terms of Use</a>
                 </div>
@@ -315,9 +309,6 @@
 
         let allArticles = [];
 
-        // ================================
-        // FETCH ALL ARTICLES ONCE
-        // ================================
         async function fetchAllArticles() {
             try {
                 const q = query(collection(db, 'articles'), orderBy('createdAt', 'desc'));
@@ -333,9 +324,6 @@
             }
         }
 
-        // ================================
-        // RENDER ARTICLES TO GRID
-        // ================================
         function renderArticles(articles) {
             const newsGrid = document.querySelector('.news-grid');
             if (!newsGrid) return;
@@ -375,9 +363,6 @@
             });
         }
 
-        // ================================
-        // RENDER FEATURED STORY
-        // ================================
         function renderFeatured(a) {
             const featured = document.querySelector('.featured-story');
             if (!featured || !a) return;
@@ -404,9 +389,6 @@
             };
         }
 
-        // ================================
-        // RENDER MOST VIEWED SIDEBAR
-        // ================================
         function renderMostViewed() {
             const list = document.getElementById('mostViewedList');
             if (!list) return;
@@ -434,9 +416,6 @@
             });
         }
 
-        // ================================
-        // FILTER BY CATEGORY
-        // ================================
         function filterByCategory(category) {
             let filtered;
             if (category === 'Top Stories' || category === 'News' || category === 'Culture' || category === 'Lifestyle') {
@@ -460,9 +439,6 @@
             if (newsSection) newsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
-        // ================================
-        // SEARCH
-        // ================================
         function setupSearch() {
             const searchToggle = document.getElementById('searchToggle');
             const searchBarWrap = document.getElementById('searchBarWrap');
@@ -527,9 +503,6 @@
             });
         }
 
-        // ================================
-        // SETUP NAV LINKS
-        // ================================
         function setupNavLinks() {
             const sectionLinks = document.querySelectorAll('.section-nav a');
             sectionLinks.forEach(link => {
@@ -557,11 +530,21 @@
                     filterByCategory(categoryMap[link.textContent.trim()] || 'Top Stories');
                 });
             });
+
+            // Footer category links
+            const footerLinks = document.querySelectorAll('.footer-col a[href^="index.html?category="]');
+            footerLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const category = new URLSearchParams(link.href.split('?')[1]).get('category');
+                    if (category) {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        setTimeout(() => filterByCategory(category), 300);
+                    }
+                });
+            });
         }
 
-        // ================================
-        // CHECK URL CATEGORY PARAMETER
-        // ================================
         function checkUrlCategory() {
             const params = new URLSearchParams(window.location.search);
             const category = params.get('category');
@@ -570,9 +553,6 @@
             }
         }
 
-        // ================================
-        // INIT
-        // ================================
         async function init() {
             await fetchAllArticles();
             if (allArticles.length > 0) {
@@ -587,31 +567,25 @@
 
         init();
     </script>
-<!-- Monetag Ads -->
-    <script src="https://quge5.com/88/tag.min.js" data-zone="240480" async data-cfasync="false"></script>
-<!-- Monetag Ads -->
+
+    <!-- Monetag Ads -->
     <script src="https://quge5.com/88/tag.min.js" data-zone="240480" async data-cfasync="false"></script>
     <!-- Monetag Push Notifications -->
     <script src="https://5gvci.com/act/files/tag.min.js?z=11022493" data-cfasync="false" async></script>
     <!-- Monetag In-Page Push (Mobile) -->
     <script>(function(s){s.dataset.zone='11022631',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
-<script src="https://5gvci.com/act/files/tag.min.js?z=11022493" data-cfasync="false" async></script>
-<script>
-    // Register service worker for push notifications
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
-        .then(function(registration) {
-            console.log('Service Worker registered:', registration);
-        })
-        .catch(function(error) {
-            console.log('Service Worker registration failed:', error);
-        });
-    }
-</script>
+    <!-- Service Worker for Push Notifications -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+                console.log('Service Worker registered:', registration);
+            })
+            .catch(function(error) {
+                console.log('Service Worker registration failed:', error);
+            });
+        }
+    </script>
 
-</body>
-</html>
-</body>
-</html>
 </body>
 </html>
