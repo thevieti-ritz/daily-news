@@ -235,6 +235,101 @@ async function main() {
     // FETCH FULL CONTENT
     // ================================
     async function fetchFullContent(url) {
+    try {
+        const response = await axios.get(url, {
+            timeout: 10000,
+            headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DailyNewsBot/1.0)' }
+        });
+
+        const $ = cheerio.load(response.data);
+        $('script, style, nav, header, footer, .ad, .advertisement, .social-share, .comments, .sidebar').remove();
+
+        let content = '';
+        const selectors = [
+            'article .content',
+            'article .body',
+            '.article-body',
+            '.article-content',
+            '.post-content',
+            '.entry-content',
+            '.content-body',
+            'article p',
+            'main p'
+        ];
+
+        for (const selector of selectors) {
+            const el = $(selector);
+            if (el.length > 0) {
+                content = el.text().trim();
+                if (content.length > 200) break;
+            }
+        }
+
+        if (content.length < 200) {
+            const paragraphs = [];
+            $('p').each((i, el) => {
+                const text = $(el).text().trim();
+                if (text.length > 50) paragraphs.push(text);
+            });
+            content = paragraphs.join('\n\n');
+        }
+
+        // ================================
+        // IMPROVED IMAGE FINDING
+        // ================================
+        let imageUrl = '';
+
+        // Try og:image first (most reliable)
+        const ogImage = $('meta[property="og:image"]');
+        if (ogImage.length > 0) {
+            imageUrl = ogImage.attr('content') || '';
+        }
+
+        // Try twitter:image
+        if (!imageUrl) {
+            const twImage = $('meta[name="twitter:image"]');
+            if (twImage.length > 0) {
+                imageUrl = twImage.attr('content') || '';
+            }
+        }
+
+        // Try featured image
+        if (!imageUrl) {
+            const selectors = [
+                '.featured-image img',
+                '.post-thumbnail img',
+                '.article-image img',
+                '.hero-image img',
+                'article img',
+                '.entry-content img',
+                'figure img',
+                'img[class*="featured"]',
+                'img[class*="hero"]',
+                'img[class*="main"]'
+            ];
+
+            for (const selector of selectors) {
+                const img = $(selector).first();
+                if (img.length > 0) {
+                    const src = img.attr('src') || img.attr('data-src') || img.attr('data-lazy-src') || '';
+                    if (src && src.startsWith('http') && !src.includes('logo') && !src.includes('icon') && !src.includes('avatar')) {
+                        imageUrl = src;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Make sure imageUrl is absolute
+        if (imageUrl && !imageUrl.startsWith('http')) {
+            imageUrl = '';
+        }
+
+        return { content, imageUrl };
+    } catch (error) {
+        return { content: '', imageUrl: '' };
+    }
+}
         try {
             const response = await axios.get(url, {
                 timeout: 10000,

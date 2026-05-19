@@ -236,12 +236,12 @@ a:hover {
 /* ================================
    COLORED BACKGROUNDS (placeholder images)
    ================================ */
-.politics-bg    { background: linear-gradient(135deg, #052962, #1a6eb5); }
-.sport-bg       { background: linear-gradient(135deg, #005689, #00a1c4); }
-.business-bg    { background: linear-gradient(135deg, #4a1942, #9c4e91); }
-.tech-bg        { background: linear-gradient(135deg, #1a5c38, #3ab078); }
-.health-bg      { background: linear-gradient(135deg, #a1845c, #d4b896); }
-.environment-bg { background: linear-gradient(135deg, #185a1a, #4caf50); }
+.politics-bg    { background: linear-gradient(135deg, #052962, #1a6eb5) center/cover; }
+.sport-bg       { background: linear-gradient(135deg, #005689, #00a1c4) center/cover; }
+.business-bg    { background: linear-gradient(135deg, #4a1942, #9c4e91) center/cover; }
+.tech-bg        { background: linear-gradient(135deg, #1a5c38, #3ab078) center/cover; }
+.health-bg      { background: linear-gradient(135deg, #a1845c, #d4b896) center/cover; }
+.environment-bg { background: linear-gradient(135deg, #185a1a, #4caf50) center/cover; }
 
 /* ================================
    TOP STORIES GRID
@@ -1596,4 +1596,39 @@ a:hover {
     .comment-form-row {
         grid-template-columns: 1fr;
     }
+}
+/* ================================
+   CATEGORY IMAGE PLACEHOLDERS
+   ================================ */
+.news-card-img.politics-bg,
+.news-card-img.sport-bg,
+.news-card-img.business-bg,
+.news-card-img.tech-bg,
+.news-card-img.health-bg,
+.news-card-img.environment-bg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.news-card-img.politics-bg::after    { content: '🏛️ Politics'; }
+.news-card-img.sport-bg::after       { content: '⚽ Sports'; }
+.news-card-img.business-bg::after    { content: '📈 Business'; }
+.news-card-img.tech-bg::after        { content: '💻 Technology'; }
+.news-card-img.health-bg::after      { content: '🏥 Health'; }
+.news-card-img.environment-bg::after { content: '🌿 Environment'; }
+
+.news-card-img.politics-bg::after,
+.news-card-img.sport-bg::after,
+.news-card-img.business-bg::after,
+.news-card-img.tech-bg::after,
+.news-card-img.health-bg::after,
+.news-card-img.environment-bg::after {
+    color: rgba(255,255,255,0.9);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
