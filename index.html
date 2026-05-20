@@ -985,7 +985,16 @@
                 renderMostViewed();
             }
 
-            render();
+            // Try today first, fall back to this week if no articles today
+const todayArticles = filterByDate(allArticles, 'today');
+if (todayArticles.length === 0) {
+    currentDateFilter = 'week';
+    document.querySelectorAll('.date-nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('btnThisWeek').classList.add('active');
+    const sectionTitle = document.getElementById('sectionTitle');
+    if (sectionTitle) sectionTitle.textContent = "This Week's News";
+}
+render();
             setupDateNav();
             setupOriginTabs();
             setupNavLinks();
