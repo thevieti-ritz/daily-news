@@ -281,10 +281,43 @@
         // ================================
         // LOAD ARTICLE FROM LOCALSTORAGE
         // ================================
-        function loadArticle() {
-            const stored = localStorage.getItem('currentArticle');
+    async function loadArticle() {
+    // Check if article ID is in URL
+    const params = new URLSearchParams(window.location.search);
+    const urlArticleId = params.get('id');
 
-            if (!stored) {
+    let a;
+
+    if (urlArticleId) {
+        // Load from Firebase using ID
+        try {
+            const snapshot = await getDocs(collection(db, 'articles'));
+            snapshot.forEach(docSnap => {
+                if (docSnap.id === urlArticleId) {
+                    a = { id: docSnap.id, ...docSnap.data() };
+                }
+            });
+        } catch (error) {
+            console.error('Error loading article:', error);
+        }
+    } else {
+        // Load from localStorage
+        const stored = localStorage.getItem('currentArticle');
+        if (stored) {
+            a = JSON.parse(stored);
+        }
+    }
+
+    if (!a) {
+        document.querySelector('.article-main').innerHTML = `
+            <div style="padding:40px; text-align:center;">
+                <h2 style="font-family:Georgia,serif; color:#052962;">No article selected</h2>
+                <p style="color:#767676; margin:10px 0 20px 0;">Please go back to the homepage and click an article to read it.</p>
+                <a href="index.html" style="background:#052962; color:#fff; padding:10px 20px; font-weight:700; border-radius:2px;">← Back to Homepage</a>
+            </div>
+        `;
+        return;
+    }
                 document.querySelector('.article-main').innerHTML = `
                     <div style="padding:40px; text-align:center;">
                         <h2 style="font-family:Georgia,serif; color:#052962;">No article selected</h2>
@@ -384,14 +417,62 @@
                 }
             }
 
-            setupShareButtons(a.title);
+            setupShareButtons(a.title, a.id);
         }
 
         // ================================
         // SHARE BUTTONS
         // ================================
-        function setupShareButtons(title) {
-            const url = window.location.href;
+       function setupShareButtons(title, articleId) {
+    // Create a proper shareable URL with article ID
+    const baseUrl = 'https://www.dailynewsug.online/article.html';
+    const shareUrl = articleId
+        ? `${baseUrl}?id=${articleId}`
+        : window.location.href;
+
+    const fbBtn = document.querySelector('.fb-share');
+    const twBtn = document.querySelector('.tw-share');
+    const waBtn = document.querySelector('.wa-share');
+    const emailBtn = document.querySelector('.email-share');
+    const copyBtn = document.querySelector('.copy-share');
+
+    if (fbBtn) {
+        fbBtn.addEventListener('click', () => {
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
+        });
+    }
+
+    if (twBtn) {
+        twBtn.addEventListener('click', () => {
+            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
+        });
+    }
+
+    if (waBtn) {
+        waBtn.addEventListener('click', () => {
+            window.open(`https://wa.me/?text=${encodeURIComponent(title + '\n\n' + shareUrl)}`, '_blank');
+        });
+    }
+
+    if (emailBtn) {
+        emailBtn.addEventListener('click', () => {
+            window.location.href = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent('I thought you might find this interesting:\n\n' + title + '\n\n' + shareUrl)}`;
+        });
+    }
+
+    if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                copyBtn.textContent = '✓ Copied!';
+                copyBtn.style.backgroundColor = '#1a5c38';
+                setTimeout(() => {
+                    copyBtn.textContent = '🔗 Copy Link';
+                    copyBtn.style.backgroundColor = '#767676';
+                }, 2000);
+            });
+        });
+    }
+}
 
             const fbBtn = document.querySelector('.fb-share');
             const twBtn = document.querySelector('.tw-share');

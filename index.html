@@ -564,12 +564,10 @@
                 </div>
             `;
             card.style.cursor = 'pointer';
-            card.addEventListener('click', () => {
-                localStorage.setItem('currentArticle', JSON.stringify(a));
-                window.location.href = 'article.html';
-            });
-            return card;
-        }
+card.addEventListener('click', () => {
+    localStorage.setItem('currentArticle', JSON.stringify(a));
+    window.location.href = `article.html?id=${a.id}`;
+});
 
         // ================================
         // RENDER BY CATEGORIES
@@ -713,11 +711,10 @@
                     </div>
                 `;
                 featured.style.cursor = 'pointer';
-                featured.onclick = () => {
-                    localStorage.setItem('currentArticle', JSON.stringify(a));
-                    window.location.href = 'article.html';
-                };
-            }
+featured.onclick = () => {
+    localStorage.setItem('currentArticle', JSON.stringify(a));
+    window.location.href = `article.html?id=${a.id}`;
+};
 
             // Right stories — next 3 today articles
             const rightStories = document.getElementById('rightStories');
