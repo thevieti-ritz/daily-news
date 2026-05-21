@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="monetag" content="a7697520531dbf6c26debbd85afb3fc0">
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-G6SX3WSJRK"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-G6SX3WSJRK');
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jobs in Uganda | Daily News Job Board</title>
+    <meta name="description" content="Find the latest job vacancies in Uganda and East Africa. Browse jobs by category, location and salary on Daily News Job Board.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://www.dailynewsug.online/jobs.html">
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* JOBS PAGE STYLES */
+        .jobs-hero {
+            background: linear-gradient(135deg, #052962, #1a6eb5);
+            padding: 40px 20px;
+            text-align: center;
+            color: #ffffff;
+            margin-bottom: 0;
+        }
+
+        .jobs-hero h1 {
+            font-family: 'Libre Baskerville', Georgia, serif;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .jobs-hero p {
+            font-size: 16px;
+            color: rgba(255,255,255,0.85);
+            margin-bottom: 24px;
+        }
+
+        .jobs-search-bar {
+            display: flex;
+            gap: 10px;
+            max-width: 700px;
+            margin: 0 auto;
+            flex-wrap: wrap;
+        }
+
+        .jobs-search-bar input,
+        .jobs-search-bar select {
+            flex: 1;
+            padding: 12px 16px;
+            font-size: 14px;
+            border: none;
+            border-radius: 2px;
+            outline: none;
+            font-family: 'Source Sans 3', Arial, sans-serif;
+            min-width: 150px;
+        }
+
+        .jobs-search-btn {
+            background-color: #c70000;
+            color: #ffffff;
+            border: none;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 2px;
+            font-family: 'Source Sans 3', Arial, sans-serif;
+            transition: background 0.2s;
+        }
+
+        .jobs-search-btn:hover { background-color: #a00000; }
+
+        /* JOBS STATS BAR */
+        .jobs-stats-bar {
+            background-color: #f6f6f6;
+            border-bottom: 1px solid #dcdcdc;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .jobs-stats-bar span {
+            font-size: 13px;
+            color: #767676;
+        }
+
+        .jobs-stats-bar strong {
+            color: #052962;
+        }
+
+        .post-job-btn {
+            background-color: #052962;
+            color: #ffffff;
+            border: none;
+            padding: 8px 20px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 2px;
+            font-family: 'Source Sans 3', Arial, sans-serif;
+            transition: background 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .post-job-btn:hover {
+            background-color: #c70000;
+            text-decoration: none;
+        }
+
+        /* JOBS LAYOUT */
+        .jobs-layout {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 24px;
+            padding: 24px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* FILTERS SIDEBAR */
+        .jobs-filters {
+            position: sticky;
+            top: 20px;
+            height: fit-content;
+        }
+
+        .filter-widget {
+            background: #ffffff;
+            border: 1px solid #dcdcdc;
+            border-top: 3px solid #052962;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .filter-widget h4 {
+            font-family: 'Libre Baskerville', Georgia, serif;
+            font-size: 14px;
+            font-weight: 700;
+            color: #052962;
+            margin-bottom: 12px;
+        }
+
+        .filter-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .filter-list li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #121212;
+            cursor: pointer;
+            padding: 4px 0;
+            border-radius: 2px;
+            transition: color 0.2s;
+        }
+
+        .filter-list li:hover { color: #052962; }
+
+        .filter-list li.active {
+            color: #052962;
+            font-weight: 700;
+        }
+
+        .filter-count {
+            margin-left: auto;
+            background-color: #f6f6f6;
+            color: #767676;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+
+        /* JOBS LIST */
+        .jobs-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .job-card {
+            background: #ffffff;
+            border: 1px solid #dcdcdc;
+            border-top: none;
+            padding: 20px;
+            transition: box-shadow 0.2s;
+            position: relative;
+        }
+
+        .job-card:first-child { border-top: 1px solid #dcdcdc; }
+
+        .job-card:hover {
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            z-index: 1;
+        }
+
+        .job-card.featured {
+            border-left: 4px solid #c70000;
+            background-color: #fffdf0;
+        }
+
+        .job-card.premium {
+            border-left: 4px solid #052962;
+        }
+
+        .job-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 10px;
+        }
+
+        .job-card-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 4px;
+            background: linear-gradient(135deg, #052962, #1a6eb5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .job-card-title-area { flex: 1; }
+
+        .job-title {
+            font-family: 'Libre Baskerville', Georgia, serif;
+            font-size: 17px;
+            font-weight: 700;
+            color: #052962;
+            margin-bottom: 4px;
+            cursor: pointer;
+        }
+
+        .job-title:hover { text-decoration: underline; }
+
+        .job-company {
+            font-size: 14px;
+            font-weight: 600;
+            color: #121212;
+            margin-bottom: 4px;
+        }
+
+        .job-meta {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            font-size: 12px;
+            color: #767676;
+        }
+
+        .job-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .job-badges {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: flex-end;
+            flex-shrink: 0;
+        }
+
+        .job-badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-featured { background-color: #c70000; color: #fff; }
+        .badge-premium  { background-color: #052962; color: #fff; }
+        .badge-new      { background-color: #1a5c38; color: #fff; }
+        .badge-fulltime { background-color: #f6f6f6; color: #121212; border: 1px solid #dcdcdc; }
+        .badge-parttime { background-color: #fff4e5; color: #a1845c; border: 1px solid #a1845c; }
+        .badge-contract { background-color: #e5f0ff; color: #052962; border: 1px solid #052962; }
+        .badge-remote   { background-color: #e5ffe5; color: #1a5c38; border: 1px solid #1a5c38; }
+
+        .job-description {
+            font-size: 13px;
+            color: #555555;
+            line-height: 1.5;
+            margin: 10px 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .job-card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #f6f6f6;
+        }
+
+        .job-deadline {
+            font-size: 12px;
+            color: #767676;
+        }
+
+        .job-deadline.urgent { color: #c70000; font-weight: 700; }
+
+        .apply-btn {
+            background-color: #052962;
+            color: #ffffff;
+            border: none;
+            padding: 8px 20px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 2px;
+            font-family: 'Source Sans 3', Arial, sans-serif;
+            transition: background 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .apply-btn:hover {
+            background-color: #c70000;
+            text-decoration: none;
+        }
+
+        /* NO JOBS */
+        .no-jobs-msg {
+            text-align: center;
+            padding: 60px 20px;
+            color: #767676;
+            background: #f6f6f6;
+        }
+
+        .no-jobs-msg h3 {
+            font-family: 'Libre Baskerville', Georgia, serif;
+            font-size: 20px;
+            color: #121212;
+            margin-bottom: 10px;
+        }
+
+        /* POST JOB MODAL */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 9999;
+            overflow-y: auto;
+        }
+
+        .modal-overlay.active { display: flex; align-items: flex-start; justify-content: center; padding: 40px 20px; }
+
+        .modal-box {
+            background: #ffffff;
+            width: 100%;
+            max-width: 650px;
+            border-top: 4px solid #052962;
+            padding: 32px;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px; right: 16px;
+            background: none; border: none;
+            font-size: 20px; cursor: pointer;
+            color: #767676;
+        }
+
+        .modal-close:hover { color: #c70000; }
+
+        .modal-box h2 {
+            font-family: 'Libre Baskerville', Georgia, serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: #052962;
+            margin-bottom: 8px;
+        }
+
+        .modal-box .modal-subtitle {
+            font-size: 13px;
+            color: #767676;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #dcdcdc;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #121212;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 10px 12px;
+            font-size: 14px;
+            border: 1px solid #dcdcdc;
+            outline: none;
+            font-family: 'Source Sans 3', Arial, sans-serif;
+            transition: border-color 0.2s;
+            border-radius: 2px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus { border-color: #052962; }
+
+        .form-group textarea { resize: vertical; min-height: 120px; }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        /* PRICING */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .pricing-card {
+            border: 2px solid #dcdcdc;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+
+        .pricing-card:hover { border-color: #052962; }
+        .pricing-card.selected { border-color: #052962; background-color: #f0f4ff; }
+
+        .pricing-card .price {
+            font-family: 'Libre Baskerville', Georgia, serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: #052962;
+            margin-bottom: 4px;
+        }
+
+        .pricing-card .plan-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: #121212;
+            margin-bottom: 8px;
+        }
+
+        .pricing-card .plan-features {
+            font-size: 11px;
+            color: #767676;
+            line-height: 1.6;
+        }
+
+        /* PAYMENT INFO */
+        .payment-info {
+            background-color: #f6f6f6;
+            border-left: 4px solid #052962;
+            padding: 16px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #555555;
+            line-height: 1.6;
+        }
+
+        .payment-info strong { color: #052962; display: block; margin-bottom: 6px; }
+
+        .submit-job-btn {
+            width: 100%;
+            background-color: #052962;
+            color: #ffffff;
+            border: none;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 2px;
+            font-family: 'Source Sans 3', Arial, sans-serif;
+            transition: background 0.2s;
+        }
+
+        .submit-job-btn:hover { background-color: #c70000; }
+        .submit-job-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+        .form-success {
+            display: none;
+            background-color: #1a5c38;
+            color: #ffffff;
+            padding: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 2px;
+            text-align: center;
+            margin-top: 16px;
+        }
+
+        /* MOBILE */
+        @media (max-width: 768px) {
+            .jobs-layout { grid-template-columns: 1fr; }
+            .jobs-filters { position: static; }
+            .pricing-grid { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .jobs-hero h1 { font-size: 22px; }
+            .job-card-header { flex-direction: column; }
+            .job-badges { flex-direction: row; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOP THIN BAR -->
+    <div class="top-bar">
+        <span id="currentDate"></span>
+        <span>Support Daily News — become a subscriber</span>
+    </div>
+
+    <!-- HEADER -->
+    <header class="header">
+        <div class="header-inner">
+            <div class="header-left">
+                <nav class="top-nav">
+                    <a href="index.html">News</a>
+                    <a href="index.html?category=Opinion">Opinion</a>
+                    <a href="index.html?category=Sports">Sport</a>
+                    <a href="jobs.html" style="color:#c70000;">Jobs</a>
+                    <a href="index.html?category=Top Stories">Lifestyle</a>
+                </nav>
+            </div>
+            <div class="header-logo">
+                <a href="index.html">Daily News</a>
+            </div>
+            <div class="header-right">
+                <button class="subscribe-top-btn">Subscribe</button>
+                <button class="search-btn">🔍</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- SECTION NAV -->
+    <nav class="section-nav">
+        <div class="section-nav-inner">
+            <a href="index.html">Top Stories</a>
+            <a href="index.html?category=Politics">Politics</a>
+            <a href="index.html?category=Business">Business</a>
+            <a href="index.html?category=Technology">Technology</a>
+            <a href="index.html?category=Sports">Sports</a>
+            <a href="index.html?category=Health">Health</a>
+            <a href="index.html?category=Environment">Environment</a>
+            <a href="jobs.html" class="active">Jobs</a>
+            <a href="about.html">About</a>
+            <a href="contact.html">Contact</a>
+        </div>
+    </nav>
+
+    <!-- JOBS HERO -->
+    <div class="jobs-hero">
+        <h1>🧳 Daily News Job Board</h1>
+        <p>Find your next opportunity in Uganda, East Africa and beyond</p>
+        <div class="jobs-search-bar">
+            <input type="text" id="jobSearchInput" placeholder="Job title, company or keyword...">
+            <select id="jobLocationFilter">
+                <option value="">All Locations</option>
+                <option value="Kampala">Kampala</option>
+                <option value="Entebbe">Entebbe</option>
+                <option value="Jinja">Jinja</option>
+                <option value="Gulu">Gulu</option>
+                <option value="Mbarara">Mbarara</option>
+                <option value="East Africa">East Africa</option>
+                <option value="Remote">Remote</option>
+            </select>
+            <button class="jobs-search-btn" onclick="searchJobs()">🔍 Search Jobs</button>
+        </div>
+    </div>
+
+    <!-- STATS BAR -->
+    <div class="jobs-stats-bar">
+        <span>Showing <strong id="jobsCount">0</strong> jobs</span>
+        <a href="#" class="post-job-btn" onclick="openPostJobModal(); return false;">+ Post a Job</a>
+    </div>
+
+    <!-- JOBS LAYOUT -->
+    <div class="jobs-layout">
+
+        <!-- FILTERS -->
+        <aside class="jobs-filters">
+
+            <div class="filter-widget">
+                <h4>Category</h4>
+                <ul class="filter-list" id="categoryFilter">
+                    <li class="active" data-cat="all" onclick="filterJobs('category', 'all')">
+                        All Categories <span class="filter-count" id="count-all">0</span>
+                    </li>
+                    <li data-cat="Media & Journalism" onclick="filterJobs('category', 'Media & Journalism')">
+                        📰 Media & Journalism <span class="filter-count">0</span>
+                    </li>
+                    <li data-cat="Government & NGO" onclick="filterJobs('category', 'Government & NGO')">
+                        🏛️ Government & NGO <span class="filter-count">0</span>
+                    </li>
+                    <li data-cat="Business & Finance" onclick="filterJobs('category', 'Business & Finance')">
+                        📈 Business & Finance <span class="filter-count">0</span>
+                    </li>
+                    <li data-cat="Technology & IT" onclick="filterJobs('category', 'Technology & IT')">
+                        💻 Technology & IT <span class="filter-count">0</span>
+                    </li>
+                    <li data-cat="Health & Medical" onclick="filterJobs('category', 'Health & Medical')">
+                        🏥 Health & Medical <span class="filter-count">0</span>
+                    </li>
+                    <li data-cat="Education & Teaching" onclick="filterJobs('category', 'Education & Teaching')">
+                        📚 Education <span class="filter-count">0</span>
+                    </li>
+                    <li data-cat="Engineering" onclick="filterJobs('category', 'Engineering')">
+                        ⚙️ Engineering <span class="filter-count">0</span>
+                    </li>
+                    <li data-cat="Sales & Marketing" onclick="filterJobs('category', 'Sales & Marketing')">
+                        📣 Sales & Marketing <span class="filter-count">0</span>
+                    </li>
+                    <li data-cat="Other" onclick="filterJobs('category', 'Other')">
+                        🔖 Other <span class="filter-count">0</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="filter-widget">
+                <h4>Job Type</h4>
+                <ul class="filter-list" id="typeFilter">
+                    <li class="active" data-type="all" onclick="filterJobs('type', 'all')">All Types</li>
+                    <li data-type="Full Time" onclick="filterJobs('type', 'Full Time')">Full Time</li>
+                    <li data-type="Part Time" onclick="filterJobs('type', 'Part Time')">Part Time</li>
+                    <li data-type="Contract" onclick="filterJobs('type', 'Contract')">Contract</li>
+                    <li data-type="Remote" onclick="filterJobs('type', 'Remote')">Remote</li>
+                    <li data-type="Internship" onclick="filterJobs('type', 'Internship')">Internship</li>
+                </ul>
+            </div>
+
+        </aside>
+
+        <!-- JOBS LIST -->
+        <div>
+            <div class="jobs-list" id="jobsList">
+                <div class="no-jobs-msg">
+                    <h3>Loading jobs...</h3>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- POST JOB MODAL -->
+    <div class="modal-overlay" id="postJobModal">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closePostJobModal()">✕</button>
+            <h2>Post a Job Advert</h2>
+            <p class="modal-subtitle">Reach thousands of qualified candidates across Uganda and East Africa. Your job will be reviewed and published within 24 hours after payment confirmation.</p>
+
+            <!-- PRICING -->
+            <div class="form-group">
+                <label>Select Package *</label>
+                <div class="pricing-grid">
+                    <div class="pricing-card selected" data-plan="Basic" data-price="$10" onclick="selectPlan(this)">
+                        <div class="price">$10</div>
+                        <div class="plan-name">Basic</div>
+                        <div class="plan-features">30 days listing<br>Standard placement<br>Apply button</div>
+                    </div>
+                    <div class="pricing-card" data-plan="Featured" data-price="$20" onclick="selectPlan(this)">
+                        <div class="price">$20</div>
+                        <div class="plan-name">Featured</div>
+                        <div class="plan-features">30 days listing<br>Highlighted in red<br>Featured badge</div>
+                    </div>
+                    <div class="pricing-card" data-plan="Premium" data-price="$35" onclick="selectPlan(this)">
+                        <div class="price">$35</div>
+                        <div class="plan-name">Premium</div>
+                        <div class="plan-features">60 days listing<br>Top of page<br>Premium badge</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- JOB DETAILS FORM -->
+            <div class="form-group">
+                <label for="jobTitle">Job Title *</label>
+                <input type="text" id="jobTitle" placeholder="e.g. Senior Software Engineer">
+            </div>
+
+            <div class="form-group">
+                <label for="jobCompany">Company / Organisation Name *</label>
+                <input type="text" id="jobCompany" placeholder="e.g. Uganda Telecom">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="jobCategory">Job Category *</label>
+                    <select id="jobCategory">
+                        <option value="">Select category</option>
+                        <option>Media & Journalism</option>
+                        <option>Government & NGO</option>
+                        <option>Business & Finance</option>
+                        <option>Technology & IT</option>
+                        <option>Health & Medical</option>
+                        <option>Education & Teaching</option>
+                        <option>Engineering</option>
+                        <option>Sales & Marketing</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="jobType">Job Type *</label>
+                    <select id="jobType">
+                        <option value="">Select type</option>
+                        <option>Full Time</option>
+                        <option>Part Time</option>
+                        <option>Contract</option>
+                        <option>Remote</option>
+                        <option>Internship</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="jobLocation">Location *</label>
+                    <input type="text" id="jobLocation" placeholder="e.g. Kampala, Uganda">
+                </div>
+                <div class="form-group">
+                    <label for="jobSalary">Salary (optional)</label>
+                    <input type="text" id="jobSalary" placeholder="e.g. UGX 2,000,000/month">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="jobDeadline">Application Deadline *</label>
+                <input type="date" id="jobDeadline">
+            </div>
+
+            <div class="form-group">
+                <label for="jobDescription">Job Description *</label>
+                <textarea id="jobDescription" placeholder="Describe the role, responsibilities, requirements and qualifications..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="jobApplyLink">How to Apply *</label>
+                <input type="text" id="jobApplyLink" placeholder="Website URL or email address e.g. jobs@company.com">
+            </div>
+
+            <div class="form-group">
+                <label for="jobContactName">Your Name *</label>
+                <input type="text" id="jobContactName" placeholder="Contact person name">
+            </div>
+
+            <div class="form-group">
+                <label for="jobContactEmail">Your Email *</label>
+                <input type="email" id="jobContactEmail" placeholder="your@email.com">
+            </div>
+
+            <!-- PAYMENT INFO -->
+            <div class="payment-info">
+                <strong>💳 Payment Instructions</strong>
+                After submitting your job, please send payment to confirm your listing:
+                <br><br>
+                📱 <strong>Mobile Money:</strong> MTN — 0700 000 000 (Daily News Uganda)<br>
+                🏦 <strong>Bank Transfer:</strong> Stanbic Bank — Account: 9030012345678<br>
+                📧 <strong>Send proof of payment to:</strong> ads@dailynews.ug<br>
+                <br>
+                Your job will go live within <strong>24 hours</strong> of payment confirmation.
+            </div>
+
+            <button class="submit-job-btn" id="submitJobBtn">Submit Job Advert</button>
+            <div class="form-success" id="jobSuccess">
+                ✅ Your job has been submitted successfully! We will review and publish it within 24 hours after payment confirmation. Check your email for details.
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-logo">Daily News</div>
+            <div class="footer-links">
+                <div class="footer-col">
+                    <h5>News</h5>
+                    <a href="index.html?category=Politics">Politics</a>
+                    <a href="index.html?category=Business">Business</a>
+                    <a href="index.html?category=Technology">Technology</a>
+                    <a href="index.html?category=Health">Health</a>
+                    <a href="index.html?category=Environment">Environment</a>
+                </div>
+                <div class="footer-col">
+                    <h5>Jobs</h5>
+                    <a href="jobs.html">All Jobs</a>
+                    <a href="#" onclick="openPostJobModal(); return false;">Post a Job</a>
+                    <a href="jobs.html?cat=Technology+%26+IT">Tech Jobs</a>
+                    <a href="jobs.html?cat=Health+%26+Medical">Health Jobs</a>
+                    <a href="jobs.html?cat=Government+%26+NGO">NGO Jobs</a>
+                </div>
+                <div class="footer-col">
+                    <h5>Company</h5>
+                    <a href="about.html">About Us</a>
+                    <a href="contact.html">Contact</a>
+                    <a href="contact.html?subject=advertise">Advertise</a>
+                    <a href="privacy.html">Privacy Policy</a>
+                    <a href="terms.html">Terms of Use</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 Daily News. All rights reserved. | Kampala, Uganda</p>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, orderBy, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC4U6MWTPKDQZ_oICtSLdfnFP3a-HFILb4",
+            authDomain: "daily-news-a8c64.firebaseapp.com",
+            projectId: "daily-news-a8c64",
+            storageBucket: "daily-news-a8c64.firebasestorage.app",
+            messagingSenderId: "75335342698",
+            appId: "1:75335342698:web:3e65f3d773eca7730b4813"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let allJobs = [];
+        let filteredJobs = [];
+        let activeCategoryFilter = 'all';
+        let activeTypeFilter = 'all';
+
+        // ================================
+        // FETCH APPROVED JOBS
+        // ================================
+        async function fetchJobs() {
+            try {
+                const q = query(
+                    collection(db, 'jobs'),
+                    where('approved', '==', true),
+                    orderBy('createdAt', 'desc')
+                );
+                const snapshot = await getDocs(q);
+                allJobs = [];
+                snapshot.forEach(docSnap => {
+                    allJobs.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                filteredJobs = allJobs;
+                renderJobs(allJobs);
+                updateCounts();
+            } catch (error) {
+                console.error('Error fetching jobs:', error);
+                document.getElementById('jobsList').innerHTML =
+                    '<div class="no-jobs-msg"><h3>No jobs available yet</h3><p>Be the first to post a job!</p></div>';
+            }
+        }
+
+        // ================================
+        // RENDER JOBS
+        // ================================
+        function renderJobs(jobs) {
+            const list = document.getElementById('jobsList');
+            const countEl = document.getElementById('jobsCount');
+            if (countEl) countEl.textContent = jobs.length;
+
+            if (jobs.length === 0) {
+                list.innerHTML = '<div class="no-jobs-msg"><h3>No jobs found</h3><p>Try adjusting your filters or check back soon.</p><br><a href="#" onclick="openPostJobModal(); return false;" class="post-job-btn">Post a Job</a></div>';
+                return;
+            }
+
+            list.innerHTML = '';
+
+            // Sort: premium first, then featured, then basic
+            const sorted = [...jobs].sort((a, b) => {
+                const order = { 'Premium': 0, 'Featured': 1, 'Basic': 2 };
+                return (order[a.plan] || 2) - (order[b.plan] || 2);
+            });
+
+            sorted.forEach(job => {
+                const card = document.createElement('div');
+                const isPremium = job.plan === 'Premium';
+                const isFeatured = job.plan === 'Featured';
+                card.className = 'job-card' + (isPremium ? ' premium' : '') + (isFeatured ? ' featured' : '');
+
+                const isNew = job.createdAt && (new Date() - new Date(job.createdAt)) < 3 * 24 * 60 * 60 * 1000;
+                const deadline = job.deadline ? new Date(job.deadline) : null;
+                const isUrgent = deadline && (deadline - new Date()) < 7 * 24 * 60 * 60 * 1000;
+                const isExpired = deadline && deadline < new Date();
+
+                if (isExpired) return;
+
+                const typeClass = {
+                    'Full Time': 'badge-fulltime',
+                    'Part Time': 'badge-parttime',
+                    'Contract': 'badge-contract',
+                    'Remote': 'badge-remote',
+                    'Internship': 'badge-contract'
+                }[job.type] || 'badge-fulltime';
+
+                card.innerHTML = `
+                    <div class="job-card-header">
+                        <div class="job-card-logo">${(job.company || 'C').charAt(0).toUpperCase()}</div>
+                        <div class="job-card-title-area">
+                            <div class="job-title">${job.title}</div>
+                            <div class="job-company">${job.company}</div>
+                            <div class="job-meta">
+                                <span>📍 ${job.location || 'Uganda'}</span>
+                                <span>📂 ${job.category || 'General'}</span>
+                                ${job.salary ? '<span>💰 ' + job.salary + '</span>' : ''}
+                                <span>🕐 Posted ${job.date || 'Recently'}</span>
+                            </div>
+                        </div>
+                        <div class="job-badges">
+                            ${isPremium ? '<span class="job-badge badge-premium">Premium</span>' : ''}
+                            ${isFeatured ? '<span class="job-badge badge-featured">Featured</span>' : ''}
+                            ${isNew ? '<span class="job-badge badge-new">New</span>' : ''}
+                            <span class="job-badge ${typeClass}">${job.type || 'Full Time'}</span>
+                        </div>
+                    </div>
+                    <div class="job-description">${job.description || ''}</div>
+                    <div class="job-card-footer">
+                        <span class="job-deadline ${isUrgent ? 'urgent' : ''}">
+                            ${deadline ? (isUrgent ? '⚠️ Deadline: ' : '📅 Deadline: ') + deadline.toLocaleDateString('en-GB') : ''}
+                        </span>
+                        <a href="${job.applyLink && job.applyLink.includes('@') ? 'mailto:' + job.applyLink : (job.applyLink || '#')}"
+                           target="${job.applyLink && job.applyLink.includes('@') ? '_self' : '_blank'}"
+                           class="apply-btn">Apply Now →</a>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        // ================================
+        // UPDATE FILTER COUNTS
+        // ================================
+        function updateCounts() {
+            const countAll = document.getElementById('count-all');
+            if (countAll) countAll.textContent = allJobs.length;
+
+            document.querySelectorAll('#categoryFilter li[data-cat]').forEach(li => {
+                const cat = li.getAttribute('data-cat');
+                if (cat === 'all') return;
+                const count = allJobs.filter(j => j.category === cat).length;
+                const countEl = li.querySelector('.filter-count');
+                if (countEl) countEl.textContent = count;
+            });
+        }
+
+        // ================================
+        // FILTER JOBS
+        // ================================
+        window.filterJobs = function(type, value) {
+            if (type === 'category') {
+                activeCategoryFilter = value;
+                document.querySelectorAll('#categoryFilter li').forEach(li => li.classList.remove('active'));
+                document.querySelector('#categoryFilter li[data-cat="' + value + '"]').classList.add('active');
+            } else if (type === 'type') {
+                activeTypeFilter = value;
+                document.querySelectorAll('#typeFilter li').forEach(li => li.classList.remove('active'));
+                document.querySelector('#typeFilter li[data-type="' + value + '"]').classList.add('active');
+            }
+
+            let filtered = allJobs;
+            if (activeCategoryFilter !== 'all') {
+                filtered = filtered.filter(j => j.category === activeCategoryFilter);
+            }
+            if (activeTypeFilter !== 'all') {
+                filtered = filtered.filter(j => j.type === activeTypeFilter);
+            }
+            filteredJobs = filtered;
+            renderJobs(filtered);
+        };
+
+        // ================================
+        // SEARCH JOBS
+        // ================================
+        window.searchJobs = function() {
+            const keyword = document.getElementById('jobSearchInput').value.trim().toLowerCase();
+            const location = document.getElementById('jobLocationFilter').value;
+
+            let filtered = allJobs;
+            if (keyword) {
+                filtered = filtered.filter(j =>
+                    j.title.toLowerCase().includes(keyword) ||
+                    j.company.toLowerCase().includes(keyword) ||
+                    (j.description && j.description.toLowerCase().includes(keyword))
+                );
+            }
+            if (location) {
+                filtered = filtered.filter(j => j.location && j.location.includes(location));
+            }
+            renderJobs(filtered);
+        };
+
+        // ================================
+        // SELECT PLAN
+        // ================================
+        window.selectPlan = function(el) {
+            document.querySelectorAll('.pricing-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+        };
+
+        // ================================
+        // MODAL
+        // ================================
+        window.openPostJobModal = function() {
+            document.getElementById('postJobModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        };
+
+        window.closePostJobModal = function() {
+            document.getElementById('postJobModal').classList.remove('active');
+            document.body.style.overflow = '';
+        };
+
+        // Close modal on overlay click
+        document.getElementById('postJobModal').addEventListener('click', function(e) {
+            if (e.target === this) closePostJobModal();
+        });
+
+        // ================================
+        // SUBMIT JOB
+        // ================================
+        document.getElementById('submitJobBtn').addEventListener('click', async function() {
+            const title = document.getElementById('jobTitle').value.trim();
+            const company = document.getElementById('jobCompany').value.trim();
+            const category = document.getElementById('jobCategory').value;
+            const type = document.getElementById('jobType').value;
+            const location = document.getElementById('jobLocation').value.trim();
+            const deadline = document.getElementById('jobDeadline').value;
+            const description = document.getElementById('jobDescription').value.trim();
+            const applyLink = document.getElementById('jobApplyLink').value.trim();
+            const contactName = document.getElementById('jobContactName').value.trim();
+            const contactEmail = document.getElementById('jobContactEmail').value.trim();
+            const selectedPlan = document.querySelector('.pricing-card.selected');
+            const plan = selectedPlan ? selectedPlan.getAttribute('data-plan') : 'Basic';
+            const price = selectedPlan ? selectedPlan.getAttribute('data-price') : '$10';
+
+            if (!title || !company || !category || !type || !location || !deadline || !description || !applyLink || !contactName || !contactEmail) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+
+            this.textContent = 'Submitting...';
+            this.disabled = true;
+
+            try {
+                await addDoc(collection(db, 'jobs'), {
+                    title, company, category, type, location,
+                    deadline, description, applyLink,
+                    salary: document.getElementById('jobSalary').value.trim(),
+                    contactName, contactEmail,
+                    plan, price,
+                    approved: false,
+                    createdAt: new Date().toISOString(),
+                    date: new Date().toLocaleDateString('en-GB', {
+                        year: 'numeric', month: 'long', day: 'numeric'
+                    })
+                });
+
+                document.getElementById('jobSuccess').style.display = 'block';
+                this.style.display = 'none';
+
+            } catch (error) {
+                alert('Error submitting job. Please try again.');
+                this.textContent = 'Submit Job Advert';
+                this.disabled = false;
+            }
+        });
+
+        // ================================
+        // CHECK URL PARAMS
+        // ================================
+        function checkUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            const cat = params.get('cat');
+            if (cat) {
+                filterJobs('category', cat);
+            }
+        }
+
+        // ================================
+        // INIT
+        // ================================
+        fetchJobs().then(() => checkUrlParams());
+
+    </script>
+
+    <!-- Monetag Push Notifications -->
+    <script src="https://5gvci.com/act/files/tag.min.js?z=11022493" data-cfasync="false" async></script>
+
+</body>
+</html>

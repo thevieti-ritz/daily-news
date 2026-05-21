@@ -52,6 +52,13 @@
             grid-template-columns: 1fr 1fr;
             gap: 30px;
         }
+        <!-- JOBS PANEL -->
+<div class="admin-articles-panel" style="margin-top:30px; border-top-color:#1a5c38;">
+    <h2 style="color:#1a5c38;">🧳 Job Applications</h2>
+    <div id="adminJobsList">
+        <p class="loading-msg">Loading jobs...</p>
+    </div>
+</div>
 
         #articleForm {
             background: #ffffff;
@@ -420,6 +427,7 @@
                     headerBar.insertBefore(userInfo, headerBar.querySelector('a'));
                 }
                 loadAdminArticles();
+                loadAdminJobs();
                 setupImagePreview();
             }
         });
@@ -685,6 +693,73 @@
         // ================================
         // INIT
         // ================================
+       // ================================
+// LOAD JOBS FOR ADMIN
+// ================================
+async function loadAdminJobs() {
+    const list = document.getElementById('adminJobsList');
+    if (!list) return;
+    list.innerHTML = '<p class="loading-msg">Loading jobs...</p>';
+
+    try {
+        const q = query(collection(db, 'jobs'), orderBy('createdAt', 'desc'));
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) {
+            list.innerHTML = '<p class="no-articles">No job submissions yet.</p>';
+            return;
+        }
+
+        list.innerHTML = '';
+        snapshot.forEach(docSnap => {
+            const j = docSnap.data();
+            const id = docSnap.id;
+            const card = document.createElement('div');
+            card.className = 'admin-article-card';
+            card.innerHTML = `
+                <div class="admin-card-info" style="flex:1;">
+                    <span class="label ${j.approved ? 'tech-label' : 'health-label'}">${j.approved ? '✅ Published' : '⏳ Pending'}</span>
+                    <h3>${j.title} — ${j.company}</h3>
+                    <div class="admin-card-meta">
+                        <span>${j.category}</span>
+                        <span>${j.location}</span>
+                        <span>${j.plan} (${j.price})</span>
+                        <span>${j.contactEmail}</span>
+                    </div>
+                </div>
+                <div class="admin-card-actions">
+                    ${!j.approved ? `<button class="edit-btn" onclick="approveJob('${id}')">✅ Approve</button>` : ''}
+                    <button class="delete-btn" onclick="deleteJob('${id}')">Delete</button>
+                </div>
+            `;
+            list.appendChild(card);
+        });
+
+    } catch (error) {
+        list.innerHTML = `<p class="error-msg">Error: ${error.message}</p>`;
+    }
+}
+
+window.approveJob = async function(id) {
+    try {
+        await updateDoc(doc(db, 'jobs', id), { approved: true });
+        showNotification('Job approved and published!', 'success');
+        loadAdminJobs();
+    } catch (error) {
+        showNotification('Error: ' + error.message, 'error');
+    }
+};
+
+window.deleteJob = async function(id) {
+    if (!confirm('Delete this job posting?')) return;
+    try {
+        await deleteDoc(doc(db, 'jobs', id));
+        showNotification('Job deleted.', 'success');
+        loadAdminJobs();
+    } catch (error) {
+        showNotification('Error: ' + error.message, 'error');
+    }
+};
         document.getElementById('publishBtn').addEventListener('click', publishArticle);
         document.getElementById('resetBtn').addEventListener('click', resetForm);
 
