@@ -35,9 +35,16 @@ async function main() {
     }
 
     const db = getFirestore();
-    const parser = new Parser({
-        timeout: 15000,
-        headers: {
+const parser = new Parser({
+    timeout: 15000,
+    customFields: {
+        item: ['dc:creator', 'category']
+    },
+    xml2js: {
+        strict: false,
+        xmlMode: true
+    },
+    headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'application/rss+xml, application/xml, text/xml, */*'
         }
