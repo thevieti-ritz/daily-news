@@ -374,14 +374,12 @@ async function main() {
         console.log(`📰 Fetching from ${source.source}...`);
 
         let feed;
-        if (source.source === 'Red Pepper') {
-            const response = await axios.get(source.url, {
-                timeout: 15000,
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    'Accept': 'application/rss+xml, application/xml, text/xml, */*'
-                }
-            });
+const response = await axios.get(source.url, {
+    timeout: 15000,
+    headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    }
+});
             const $ = cheerio.load(response.data, { xmlMode: true });
             const items = [];
             $('item').each((i, el) => {
