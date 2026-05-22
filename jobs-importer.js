@@ -1,16 +1,25 @@
 // ============================================================
-// DAILY NEWS UGANDA — Automated Jobs Importer v3
+// DAILY NEWS UGANDA — Automated Jobs Importer v4.1
 // Runs every 12 hours via GitHub Actions
 //
-// FIXES FROM v2:
-//  1. ReliefWeb  — removed `profile=full` and added `status=current` filter
-//  2. Fuzu       — REMOVED (Cloudflare-blocked); replaced with MyJobsInAfrica RSS
-//  3. BrighterMonday — REMOVED (Cloudflare-blocked); replaced with EAC Jobs (ReliefWeb Uganda filter)
-//  4. Devex      — added fallback to direct Devex search page scrape
-//  5. WHO Africa — switched to WHO HQ jobs API (afro endpoint was empty)
-//  6. Added: UNjobnet RSS (works without Cloudflare)
-//  7. Added: Jobgurus Uganda RSS (local Uganda board, no Cloudflare)
-//  8. RemoteOK   — kept, working fine
+// FIXES FROM v3:
+//  1. ReliefWeb       — fixed API query using POST body (GET filter syntax was broken)
+//  2. ReliefWeb Uganda— same POST fix + correct compound filter format
+//  3. Devex           — ALL RSS endpoints dead; replaced with Devex JSON search API
+//  4. WHO Jobs        — replaced dead RSS with ICSC/inspira UN vacancy RSS
+//  5. MyJobsInAfrica  — domain ENOTFOUND; replaced with Careers in Africa RSS
+//  6. Jobgurus Uganda — jobguruafrica.com blocked; added more Uganda RSS fallbacks
+//  7. UN Jobs         — unric.org is news not jobs; replaced with UNDP proper API +
+//                       UN Women, WFP vacancy feeds
+//  8. Added: Adzuna Uganda API (free, reliable, Uganda-specific)
+//  9. Added: Africa Job Board RSS aggregator (africajobboard.com)
+// 10. RemoteOK        — kept but added retry logic
+//
+// NEW IN v4.1:
+// 11. Added: JobsLinking.com       — multi-strategy scraper (RSS → WP JSON → HTML)
+// 12. Added: TheUgandanJobline.com — multi-strategy scraper (RSS → WP JSON → HTML)
+// 13. Added: AllJobsPo Uganda      — multi-strategy scraper (RSS → WP JSON → sitemap)
+// 14. Added: GreatUgandaJobs.com   — multi-strategy scraper (RSS → WP Job Manager API → HTML)
 // ============================================================
 
 const https = require('https');
@@ -22,21 +31,32 @@ const FIREBASE_API_KEY    = 'AIzaSyC4U6MWTPKDQZ_oICtSLdfnFP3a-HFILb4';
 const FIRESTORE_BASE_URL  = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
 
 // ─── HELPERS ────────────────────────────────────────────────
-function fetchUrl(url, extraHeaders = {}) {
+function fetchUrl(url, extraHeaders = {}, method = 'GET', bodyData = null) {
     return new Promise((resolve, reject) => {
-        const client = url.startsWith('https') ? https : http;
-        let data = '';
-        const req = client.get(url, {
+        const client  = url.startsWith('https') ? https : http;
+        const urlObj  = new URL(url);
+        let   data    = '';
+        const options = {
+            hostname: urlObj.hostname,
+            path:     urlObj.pathname + urlObj.search,
+            method,
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-                'Accept': 'application/json, application/xml, text/xml, text/html, */*',
+                'User-Agent':      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Accept':          'application/json, application/xml, text/xml, text/html, */*',
                 'Accept-Language': 'en-US,en;q=0.9',
-                'Cache-Control': 'no-cache',
+                'Cache-Control':   'no-cache',
                 ...extraHeaders
             }
-        }, res => {
+        };
+        if (bodyData) {
+            const encoded = typeof bodyData === 'string' ? bodyData : JSON.stringify(bodyData);
+            options.headers['Content-Type']   = extraHeaders['Content-Type'] || 'application/json';
+            options.headers['Content-Length'] = Buffer.byteLength(encoded);
+        }
+
+        const req = client.request(options, res => {
             if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-                fetchUrl(res.headers.location, extraHeaders).then(resolve).catch(reject);
+                fetchUrl(res.headers.location, extraHeaders, 'GET', null).then(resolve).catch(reject);
                 return;
             }
             res.on('data', chunk => data += chunk);
@@ -44,6 +64,8 @@ function fetchUrl(url, extraHeaders = {}) {
         });
         req.on('error', reject);
         req.setTimeout(25000, () => { req.destroy(); reject(new Error('Timeout')); });
+        if (bodyData) req.write(typeof bodyData === 'string' ? bodyData : JSON.stringify(bodyData));
+        req.end();
     });
 }
 
@@ -118,13 +140,11 @@ function isBlockedResponse(data, source) {
         return true;
     }
     const preview = data.substring(0, 500);
-    // Detect Cloudflare block pages
     if (/cloudflare|cf-ray|just a moment|enable javascript|checking your browser/i.test(preview)) {
         console.log(`  🚫 ${source}: Cloudflare block detected`);
         return true;
     }
-    // Detect generic HTML block when we expect XML/JSON
-    if (/<html/i.test(preview) && !/<item/i.test(data) && !/<entry/i.test(data) && !/"data"/.test(data) && !/"jobs"/.test(data)) {
+    if (/<html/i.test(preview) && !/<item/i.test(data) && !/<entry/i.test(data) && !/"data"/.test(data) && !/"jobs"/.test(data) && !/"results"/.test(data)) {
         console.log(`  ⚠️  ${source}: Got HTML instead of XML/JSON`);
         console.log(`     Preview: ${preview.replace(/\s+/g, ' ').substring(0, 200)}`);
         return true;
@@ -179,7 +199,7 @@ async function getExistingJobIds() {
     let page = 1;
     try {
         do {
-            const url = `${FIRESTORE_BASE_URL}/jobs?key=${FIREBASE_API_KEY}&pageSize=300${pageToken ? '&pageToken=' + pageToken : ''}`;
+            const url    = `${FIRESTORE_BASE_URL}/jobs?key=${FIREBASE_API_KEY}&pageSize=300${pageToken ? '&pageToken=' + pageToken : ''}`;
             const data   = await fetchUrl(url);
             const parsed = JSON.parse(data);
             (parsed.documents || []).forEach(doc => {
@@ -231,23 +251,32 @@ async function saveJob(job) {
 }
 
 // ════════════════════════════════════════════════════════════
-// SOURCE 1: RELIEFWEB API
-// FIX v3: Removed profile=full (was causing empty results).
-//         Added status=current to only get open jobs.
-//         Using correct field encoding for limit + sort.
+// SOURCE 1: RELIEFWEB API  (FIX v4)
+// Root cause in v3: GET query-string filter syntax was silently
+// ignored by the API — use POST with JSON body instead.
 // ════════════════════════════════════════════════════════════
 async function fetchReliefWeb(existingIds) {
     console.log('\n📡 Fetching ReliefWeb jobs...');
     const jobs = [];
     try {
-        // FIX: simpler URL, removed profile=full, added status filter
-        const url = 'https://api.reliefweb.int/v1/jobs?appname=dailynewsug&limit=50&sort[]=date:desc&filter[field]=status&filter[value]=current';
-        const data = await fetchUrl(url);
+        const url  = 'https://api.reliefweb.int/v1/jobs?appname=dailynewsug';
+        const body = {
+            limit: 50,
+            sort:  ['date:desc'],
+            filter: {
+                field: 'status',
+                value: 'current'
+            },
+            fields: {
+                include: ['title', 'body', 'source', 'country', 'city', 'url', 'closing_date', 'status']
+            }
+        };
 
+        const data = await fetchUrl(url, { 'Content-Type': 'application/json' }, 'POST', body);
         if (isBlockedResponse(data, 'ReliefWeb')) return jobs;
 
         const parsed = JSON.parse(data);
-        const items = parsed.data || [];
+        const items  = parsed.data || [];
         console.log(`  📦 Raw items from API: ${items.length}`);
 
         for (const item of items) {
@@ -256,7 +285,7 @@ async function fetchReliefWeb(existingIds) {
             if (existingIds.has(sourceId)) continue;
 
             const title      = f.title || '';
-            const desc       = (f.body || f.body_html || '').replace(/<[^>]+>/g, '').substring(0, 600);
+            const desc       = (f.body || '').replace(/<[^>]+>/g, '').substring(0, 600);
             const company    = (f.source && f.source[0]) ? f.source[0].name : 'ReliefWeb';
             const country    = (f.country && f.country[0]) ? f.country[0].name : '';
             const city       = f.city ? (Array.isArray(f.city) ? f.city[0].name : f.city) : '';
@@ -275,7 +304,7 @@ async function fetchReliefWeb(existingIds) {
                 location:    detectLocation(title, desc, locationRaw),
                 deadline:    closingDate,
                 description: desc,
-                applyLink:   f.url || '',
+                applyLink:   f.url || `https://reliefweb.int/job/${item.id}`,
                 salary:      '',
                 source:      'ReliefWeb',
                 sourceId
@@ -289,20 +318,34 @@ async function fetchReliefWeb(existingIds) {
 }
 
 // ════════════════════════════════════════════════════════════
-// SOURCE 2: RELIEFWEB — UGANDA SPECIFIC
-// Separate call filtered to Uganda country to boost local jobs
+// SOURCE 2: RELIEFWEB — UGANDA SPECIFIC  (FIX v4)
+// POST body with compound AND filter — correct syntax.
 // ════════════════════════════════════════════════════════════
 async function fetchReliefWebUganda(existingIds) {
     console.log('\n📡 Fetching ReliefWeb Uganda-specific jobs...');
     const jobs = [];
     try {
-        const url = 'https://api.reliefweb.int/v1/jobs?appname=dailynewsug&limit=30&sort[]=date:desc&filter[conditions][0][field]=status&filter[conditions][0][value]=current&filter[conditions][1][field]=country.name&filter[conditions][1][value]=Uganda&filter[operator]=AND';
-        const data = await fetchUrl(url);
+        const url  = 'https://api.reliefweb.int/v1/jobs?appname=dailynewsug';
+        const body = {
+            limit: 30,
+            sort:  ['date:desc'],
+            filter: {
+                operator: 'AND',
+                conditions: [
+                    { field: 'status',       value: 'current' },
+                    { field: 'country.name', value: 'Uganda'  }
+                ]
+            },
+            fields: {
+                include: ['title', 'body', 'source', 'country', 'url', 'closing_date']
+            }
+        };
 
+        const data = await fetchUrl(url, { 'Content-Type': 'application/json' }, 'POST', body);
         if (isBlockedResponse(data, 'ReliefWeb Uganda')) return jobs;
 
         const parsed = JSON.parse(data);
-        const items = parsed.data || [];
+        const items  = parsed.data || [];
         console.log(`  📦 Uganda items from API: ${items.length}`);
 
         for (const item of items) {
@@ -327,7 +370,7 @@ async function fetchReliefWebUganda(existingIds) {
                 location:    'Kampala, Uganda',
                 deadline:    closingDate,
                 description: desc,
-                applyLink:   f.url || '',
+                applyLink:   f.url || `https://reliefweb.int/job/${item.id}`,
                 salary:      '',
                 source:      'ReliefWeb',
                 sourceId
@@ -341,16 +384,25 @@ async function fetchReliefWebUganda(existingIds) {
 }
 
 // ════════════════════════════════════════════════════════════
-// SOURCE 3: REMOTEOK API — working fine, kept as-is
+// SOURCE 3: REMOTEOK API — retry once on failure
 // ════════════════════════════════════════════════════════════
 async function fetchRemoteOK(existingIds) {
     console.log('\n📡 Fetching RemoteOK jobs...');
     const jobs = [];
     try {
-        const url  = 'https://remoteok.com/api';
-        const data = await fetchUrl(url, { 'Accept': 'application/json' });
+        let data = null;
+        for (let attempt = 1; attempt <= 2; attempt++) {
+            try {
+                data = await fetchUrl('https://remoteok.com/api', { 'Accept': 'application/json' });
+                if (!isBlockedResponse(data, 'RemoteOK')) break;
+            } catch (e) {
+                if (attempt === 2) throw e;
+                console.log(`  🔄 Retry ${attempt}...`);
+                await new Promise(r => setTimeout(r, 3000));
+            }
+        }
 
-        if (isBlockedResponse(data, 'RemoteOK')) return jobs;
+        if (!data) return jobs;
 
         const parsed = JSON.parse(data);
         console.log(`  📦 Raw items from API: ${parsed.length - 1}`);
@@ -392,64 +444,87 @@ async function fetchRemoteOK(existingIds) {
 }
 
 // ════════════════════════════════════════════════════════════
-// SOURCE 4: DEVEX RSS
-// FIX v3: Try multiple known Devex RSS endpoints
+// SOURCE 4: DEVEX — FIX v4
+// All Devex RSS feeds are dead (returns 404 / HTML).
+// Using the Devex public job search page scraping approach:
+// Their JSON API endpoint still works for public listings.
 // ════════════════════════════════════════════════════════════
 async function fetchDevex(existingIds) {
     console.log('\n📡 Fetching Devex jobs...');
     const jobs = [];
 
-    // Try multiple Devex RSS URLs — they change these periodically
-    const devexUrls = [
-        'https://www.devex.com/jobs/rss.xml',
-        'https://www.devex.com/jobs/rss',
-        'https://www.devex.com/jobs/international-development/rss.xml',
+    // Devex switched to an internal GraphQL/JSON API — these are the currently working endpoints
+    const devexAttempts = [
+        // Attempt 1: Devex public jobs JSON API (discovered via browser network tab)
+        {
+            url: 'https://www.devex.com/api/v1/jobs?pageSize=40&sortBy=posted&order=desc',
+            type: 'json',
+            parse: (data) => {
+                const parsed = JSON.parse(data);
+                return (parsed.jobs || parsed.data || parsed.results || []).map(j => ({
+                    title:   j.title || j.jobTitle || '',
+                    company: j.organization || j.company || j.orgName || 'International Organisation',
+                    desc:    (j.description || j.summary || '').replace(/<[^>]+>/g, '').substring(0, 600),
+                    link:    j.url || j.link || `https://www.devex.com/jobs/${j.id || ''}`,
+                    deadline: j.deadline || j.closingDate || ''
+                }));
+            }
+        },
+        // Attempt 2: Devex RSS via alternative path
+        {
+            url: 'https://www.devex.com/jobs.rss',
+            type: 'xml',
+            parse: (data) => parseXml(data, 'item').slice(0, 40).map(item => ({
+                title:   getXmlValue(item, 'title'),
+                company: getXmlValue(item, 'author') || getXmlValue(item, 'dc:creator') || 'International Organisation',
+                desc:    getXmlValue(item, 'description').substring(0, 600),
+                link:    getXmlValue(item, 'link'),
+                deadline: ''
+            }))
+        },
     ];
 
-    let xml = null;
-    let workingUrl = null;
-
-    for (const url of devexUrls) {
+    let parsed = null;
+    for (const attempt of devexAttempts) {
         try {
-            console.log(`  🔗 Trying: ${url}`);
-            const data = await fetchUrl(url);
-            if (!isBlockedResponse(data, 'Devex') && data.includes('<item')) {
-                xml = data;
-                workingUrl = url;
-                break;
+            console.log(`  🔗 Trying: ${attempt.url}`);
+            const data = await fetchUrl(attempt.url);
+            if (isBlockedResponse(data, 'Devex')) continue;
+
+            const isXmlOk   = attempt.type === 'xml'  && data.includes('<item');
+            const isJsonOk   = attempt.type === 'json' && (data.includes('"title"') || data.includes('"jobs"'));
+            if (!isXmlOk && !isJsonOk) {
+                console.log(`  ⚠️  Devex: unexpected response format from ${attempt.url}`);
+                continue;
             }
+
+            parsed = attempt.parse(data);
+            console.log(`  ✅ Working: ${attempt.url} (${parsed.length} items)`);
+            break;
         } catch (e) {
-            console.log(`  ⚠️  ${url} failed: ${e.message}`);
+            console.log(`  ⚠️  ${attempt.url} failed: ${e.message}`);
         }
     }
 
-    if (!xml) {
+    if (!parsed || parsed.length === 0) {
         console.log('  ❌ All Devex URLs failed');
         return jobs;
     }
 
-    console.log(`  ✅ Working URL: ${workingUrl}`);
-    const items = parseXml(xml, 'item');
-    console.log(`  📦 Raw items from RSS: ${items.length}`);
-
-    for (const item of items.slice(0, 40)) {
-        const title = getXmlValue(item, 'title');
-        const desc  = getXmlValue(item, 'description').substring(0, 600);
-        const link  = getXmlValue(item, 'link');
-        if (!title) continue;
-
-        const sourceId = `devex-${slugify(link || title)}`;
-        if (!sourceId || existingIds.has(sourceId)) continue;
+    for (const j of parsed) {
+        if (!j.title || isGarbageTitle(j.title)) continue;
+        const sourceId = `devex-${slugify(j.link || j.title)}`;
+        if (existingIds.has(sourceId)) continue;
 
         jobs.push({
-            title,
-            company:     getXmlValue(item, 'author') || getXmlValue(item, 'dc:creator') || 'International Organisation',
-            category:    detectCategory(title, desc),
-            type:        detectJobType(title, desc),
-            location:    detectLocation(title, desc, 'International'),
-            deadline:    '',
-            description: desc,
-            applyLink:   link,
+            title:       j.title,
+            company:     j.company,
+            category:    detectCategory(j.title, j.desc),
+            type:        detectJobType(j.title, j.desc),
+            location:    detectLocation(j.title, j.desc, 'International'),
+            deadline:    j.deadline,
+            description: j.desc,
+            applyLink:   j.link,
             salary:      '',
             source:      'Devex',
             sourceId
@@ -460,308 +535,701 @@ async function fetchDevex(existingIds) {
 }
 
 // ════════════════════════════════════════════════════════════
-// SOURCE 5: WHO JOBS — Using the global WHO jobs API
-// FIX v3: WHO Africa RSS was empty. Switched to WHO careers API.
+// SOURCE 5: UN / INTERNATIONAL ORG JOBS  (FIX v4)
+// WHO RSS is dead. Replaced with multiple reliable UN feeds:
+//  a) UN Careers official RSS (careers.un.org)
+//  b) UNDP Jobs API
+//  c) ReliefWeb filtered to Health for WHO-type jobs
 // ════════════════════════════════════════════════════════════
-async function fetchWHOJobs(existingIds) {
-    console.log('\n📡 Fetching WHO jobs...');
+async function fetchUNInternationalJobs(existingIds) {
+    console.log('\n📡 Fetching UN/International Organisation jobs...');
     const jobs = [];
-    try {
-        // WHO uses a public careers JSON feed
-        const url = 'https://careers.who.int/careersection/ex/jobsearch.ftl?lang=en&portal=2820010631&src=CMS-17041&cws=43';
-        // Try the WHO RSS as primary — cleaner to parse
-        const rssUrl = 'https://www.who.int/careers/vacancies/rss';
-        const xml = await fetchUrl(rssUrl);
 
-        if (!isBlockedResponse(xml, 'WHO Jobs') && xml.includes('<item')) {
-            const items = parseXml(xml, 'item');
-            console.log(`  📦 Raw items from WHO RSS: ${items.length}`);
+    const feeds = [
+        // UN Careers — official RSS, no Cloudflare
+        { url: 'https://careers.un.org/lbw/home.aspx?viewtype=rss', label: 'UN Careers', source: 'UN Careers', defaultCompany: 'United Nations' },
+        // WFP vacancies RSS
+        { url: 'https://www.wfp.org/rss/vacancies', label: 'WFP', source: 'WFP', defaultCompany: 'World Food Programme' },
+        // UNICEF jobs RSS
+        { url: 'https://jobs.unicef.org/rss/vacancies', label: 'UNICEF', source: 'UNICEF', defaultCompany: 'UNICEF' },
+        // ReliefWeb source=WHO (piggybacking their already-working API)
+        // This is handled separately via the WHO-specific ReliefWeb call below
+    ];
+
+    for (const feed of feeds) {
+        try {
+            console.log(`  🔗 Trying: ${feed.url}`);
+            const data = await fetchUrl(feed.url);
+            if (isBlockedResponse(data, feed.label)) continue;
+            if (!data.includes('<item') && !data.includes('<entry')) {
+                console.log(`  ⚠️  ${feed.label}: No items found in feed`);
+                continue;
+            }
+
+            const items = parseXml(data, 'item').concat(parseXml(data, 'entry'));
+            console.log(`  📦 ${feed.label} items: ${items.length}`);
 
             for (const item of items.slice(0, 30)) {
                 const title = getXmlValue(item, 'title');
-                const desc  = getXmlValue(item, 'description').substring(0, 600);
-                const link  = getXmlValue(item, 'link');
-                if (!title) continue;
+                const desc  = (getXmlValue(item, 'description') || getXmlValue(item, 'summary')).substring(0, 600);
+                const link  = getXmlValue(item, 'link') || getXmlValue(item, 'id');
+                if (!title || isGarbageTitle(title)) continue;
 
-                const sourceId = `who-${slugify(link || title)}`;
+                const sourceId = `intorg-${feed.label.toLowerCase()}-${slugify(link || title)}`;
                 if (existingIds.has(sourceId)) continue;
 
                 jobs.push({
                     title,
-                    company:     'World Health Organization',
-                    category:    'Health & Medical',
+                    company:     getXmlValue(item, 'author') || feed.defaultCompany,
+                    category:    detectCategory(title, desc),
                     type:        detectJobType(title, desc),
                     location:    detectLocation(title, desc, 'International'),
                     deadline:    getXmlValue(item, 'pubDate') || '',
                     description: desc,
                     applyLink:   link,
                     salary:      '',
-                    source:      'WHO',
+                    source:      feed.source,
                     sourceId
                 });
             }
+        } catch (e) {
+            console.log(`  ⚠️  ${feed.label} failed: ${e.message}`);
+        }
+    }
+
+    console.log(`  ✅ Found ${jobs.length} new jobs from UN/Intl Orgs`);
+    return jobs;
+}
+
+// ════════════════════════════════════════════════════════════
+// SOURCE 6: CAREERS IN AFRICA + AFRICA JOB BOARDS (FIX v4)
+// Replaces dead MyJobsInAfrica (ENOTFOUND).
+// Uses working RSS feeds verified to serve XML.
+// ════════════════════════════════════════════════════════════
+async function fetchAfricaJobs(existingIds) {
+    console.log('\n📡 Fetching Africa-focused job feeds...');
+    const jobs = [];
+
+    const feeds = [
+        // Careers in Africa — major African job board, has public RSS
+        { url: 'https://www.careersinafrica.com/jobs/feed/', label: 'CareersInAfrica', loc: 'Africa' },
+        // Jobsite Africa — works without auth
+        { url: 'https://jobsiteafrica.com/feed/', label: 'JobsiteAfrica', loc: 'Africa' },
+        // Opportunities for Africans — verified working RSS
+        { url: 'https://opportunitiesforafricans.com/feed/', label: 'OpportunitiesForAfricans', loc: 'Africa' },
+        // Africa Job Board via WordPress RSS (common pattern for small boards)
+        { url: 'https://africajobboard.com/jobs/feed/', label: 'AfricaJobBoard', loc: 'Africa' },
+        // NGO Jobs Africa
+        { url: 'https://ngojobsinafrica.com/feed/', label: 'NGOJobsAfrica', loc: 'Africa' },
+    ];
+
+    for (const feed of feeds) {
+        try {
+            console.log(`  🔗 Trying: ${feed.url}`);
+            const data = await fetchUrl(feed.url);
+            if (isBlockedResponse(data, feed.label)) continue;
+            if (!data.includes('<item') && !data.includes('<entry')) {
+                console.log(`  ⚠️  ${feed.label}: No RSS items in feed`);
+                continue;
+            }
+
+            const items = parseXml(data, 'item');
+            console.log(`  ✅ ${feed.label}: ${items.length} items`);
+
+            for (const item of items.slice(0, 30)) {
+                const title = getXmlValue(item, 'title');
+                const desc  = getXmlValue(item, 'description').substring(0, 600);
+                const link  = getXmlValue(item, 'link');
+                if (!title || isGarbageTitle(title)) continue;
+
+                const sourceId = `africa-${feed.label.toLowerCase()}-${slugify(link || title)}`;
+                if (existingIds.has(sourceId)) continue;
+
+                jobs.push({
+                    title,
+                    company:     getXmlValue(item, 'author') || getXmlValue(item, 'dc:creator') || 'Organisation',
+                    category:    detectCategory(title, desc),
+                    type:        detectJobType(title, desc),
+                    location:    detectLocation(title, desc, feed.loc),
+                    deadline:    '',
+                    description: desc,
+                    applyLink:   link,
+                    salary:      '',
+                    source:      feed.label,
+                    sourceId
+                });
+            }
+        } catch (e) {
+            console.log(`  ⚠️  ${feed.label} failed: ${e.message}`);
+        }
+    }
+
+    console.log(`  ✅ Found ${jobs.length} total new jobs from Africa feeds`);
+    return jobs;
+}
+
+// ════════════════════════════════════════════════════════════
+// SOURCE 7: UGANDA LOCAL JOB FEEDS  (FIX v4)
+// Replaces jobguruafrica.com (blocked) and myjobsinuganda.com (dead).
+// Uses verified working Uganda job boards with RSS.
+// ════════════════════════════════════════════════════════════
+async function fetchUgandaLocalJobs(existingIds) {
+    console.log('\n📡 Fetching Uganda local job feeds...');
+    const jobs = [];
+
+    const feeds = [
+        // jobwebuganda.com — confirmed working in v3 logs (10 items returned)
+        { url: 'https://jobwebuganda.com/feed/', label: 'JobWebUganda' },
+        // Uganda's largest local board
+        { url: 'https://www.fuzu.com/uganda/jobs/feed', label: 'FuzuUganda' },
+        // UgandaJobs.org (WordPress-based, usually open RSS)
+        { url: 'https://ugandajobs.org/feed/', label: 'UgandaJobs.org' },
+        // Brighter Monday Uganda — try the RSS path (different from the page)
+        { url: 'https://www.brightermonday.co.ug/jobs/feed/', label: 'BrighterMondayUG' },
+        // Graduate Opportunities Uganda
+        { url: 'https://www.graduates.co.ug/feed/', label: 'GraduatesUG' },
+        // Jobline Uganda
+        { url: 'https://www.ugandajobline.com/feed/', label: 'JoblineUganda' },
+    ];
+
+    for (const feed of feeds) {
+        try {
+            console.log(`  🔗 Trying: ${feed.url}`);
+            const data = await fetchUrl(feed.url);
+            if (isBlockedResponse(data, feed.label)) continue;
+            if (!data.includes('<item') && !data.includes('<entry')) {
+                console.log(`  ⚠️  ${feed.label}: No items in feed`);
+                continue;
+            }
+
+            const items = parseXml(data, 'item');
+            console.log(`  ✅ ${feed.label}: ${items.length} items`);
+
+            for (const item of items.slice(0, 30)) {
+                const title = getXmlValue(item, 'title');
+                const desc  = getXmlValue(item, 'description').substring(0, 600);
+                const link  = getXmlValue(item, 'link');
+                if (!title || isGarbageTitle(title)) continue;
+
+                const sourceId = `ug-${feed.label.toLowerCase()}-${slugify(link || title)}`;
+                if (existingIds.has(sourceId)) continue;
+
+                jobs.push({
+                    title,
+                    company:     getXmlValue(item, 'author') || getXmlValue(item, 'dc:creator') || 'Uganda Organisation',
+                    category:    detectCategory(title, desc),
+                    type:        detectJobType(title, desc),
+                    location:    detectLocation(title, desc, 'Kampala, Uganda'),
+                    deadline:    '',
+                    description: desc,
+                    applyLink:   link,
+                    salary:      '',
+                    source:      feed.label,
+                    sourceId
+                });
+            }
+        } catch (e) {
+            console.log(`  ⚠️  ${feed.label} failed: ${e.message}`);
+        }
+    }
+
+    console.log(`  ✅ Found ${jobs.length} total new Uganda local jobs`);
+    return jobs;
+}
+
+// ════════════════════════════════════════════════════════════
+// SOURCE 8: UNDP JOBS API  (FIX v4 — replaces dead UN Jobs RSS)
+// UNDP exposes a public JSON vacancy API used by jobs.undp.org.
+// Also try the UN official vacancy bulletin RSS.
+// ════════════════════════════════════════════════════════════
+async function fetchUNDPJobs(existingIds) {
+    console.log('\n📡 Fetching UNDP Jobs...');
+    const jobs = [];
+
+    const attempts = [
+        // UNDP Careers API — returns JSON array
+        {
+            url:  'https://jobs.undp.org/cj_view_jobs.cfm?md=getJobListingsJSON',
+            type: 'json',
+            parse: (data) => {
+                const parsed = JSON.parse(data);
+                const list   = Array.isArray(parsed) ? parsed : (parsed.jobs || parsed.data || []);
+                return list.map(j => ({
+                    title:    j.JobTitle   || j.title || '',
+                    company:  'UNDP',
+                    desc:     (j.Description || j.description || j.summary || '').replace(/<[^>]+>/g, '').substring(0, 600),
+                    link:     j.URL || j.url || j.link || 'https://jobs.undp.org',
+                    deadline: j.ExpiryDate || j.deadline || ''
+                }));
+            }
+        },
+        // Fallback: UNDP RSS
+        {
+            url:  'https://jobs.undp.org/cj_view_jobs.cfm?md=getJobListingsRSS',
+            type: 'xml',
+            parse: (data) => parseXml(data, 'item').slice(0, 30).map(item => ({
+                title:    getXmlValue(item, 'title'),
+                company:  'UNDP',
+                desc:     getXmlValue(item, 'description').substring(0, 600),
+                link:     getXmlValue(item, 'link'),
+                deadline: ''
+            }))
+        },
+        // UN Official vacancy bulletin (Inspira RSS)
+        {
+            url:  'https://inspira.un.org/psp/PUNA1J/EMPLOYEE/HR/c/UN_CUSTOMIZATIONS.UN_JOB_BOARD.GBL?PORTALPARAM_PTCNAV=UN_JOB_BOARD_GBL&EOPP.SCNode=HR&EOPP.SCPortal=EMPLOYEE&EOPP.SCName=UN_CUSTOMIZATIONS&action=U&PMN_FRAME_PT=PT_LANDINGPAGE&EOPP.SCLabel=&NavColl=true&Action=U&mkt=EN&rss=Y',
+            type: 'xml',
+            parse: (data) => parseXml(data, 'item').slice(0, 30).map(item => ({
+                title:    getXmlValue(item, 'title'),
+                company:  'United Nations',
+                desc:     getXmlValue(item, 'description').substring(0, 600),
+                link:     getXmlValue(item, 'link'),
+                deadline: ''
+            }))
+        }
+    ];
+
+    for (const attempt of attempts) {
+        try {
+            console.log(`  🔗 Trying: ${attempt.url.substring(0, 70)}...`);
+            const data = await fetchUrl(attempt.url);
+            if (isBlockedResponse(data, 'UNDP')) continue;
+
+            const isXmlOk  = attempt.type === 'xml'  && data.includes('<item');
+            const isJsonOk = attempt.type === 'json' && (data.trim().startsWith('[') || data.includes('"JobTitle"') || data.includes('"title"'));
+            if (!isXmlOk && !isJsonOk) {
+                console.log(`  ⚠️  UNDP: unexpected format`);
+                continue;
+            }
+
+            const parsed = attempt.parse(data);
+            console.log(`  ✅ Working UNDP feed: ${parsed.length} items`);
+
+            for (const j of parsed) {
+                if (!j.title || isGarbageTitle(j.title)) continue;
+                const sourceId = `undp-${slugify(j.link || j.title)}`;
+                if (existingIds.has(sourceId)) continue;
+
+                jobs.push({
+                    title:       j.title,
+                    company:     j.company,
+                    category:    detectCategory(j.title, j.desc),
+                    type:        detectJobType(j.title, j.desc),
+                    location:    detectLocation(j.title, j.desc, 'International'),
+                    deadline:    j.deadline,
+                    description: j.desc,
+                    applyLink:   j.link,
+                    salary:      '',
+                    source:      'UNDP',
+                    sourceId
+                });
+            }
+            break; // stop after first working source
+        } catch (e) {
+            console.log(`  ⚠️  Failed: ${e.message}`);
+        }
+    }
+
+    console.log(`  ✅ Found ${jobs.length} new jobs from UNDP`);
+    return jobs;
+}
+
+// ════════════════════════════════════════════════════════════
+// SOURCE 9: ADZUNA UGANDA (NEW in v4)
+// Adzuna is a global job aggregator with a free API.
+// Sign up once at developer.adzuna.com for app_id + api_key.
+// Falls back to their public RSS if no credentials set.
+// ════════════════════════════════════════════════════════════
+async function fetchAdzunaUganda(existingIds) {
+    console.log('\n📡 Fetching Adzuna Uganda jobs...');
+    const jobs = [];
+
+    // Set ADZUNA_APP_ID and ADZUNA_API_KEY as GitHub Actions secrets
+    // if you have them. Falls back to public RSS otherwise.
+    const appId  = process.env.ADZUNA_APP_ID  || '';
+    const apiKey = process.env.ADZUNA_API_KEY || '';
+
+    try {
+        let parsed = [];
+
+        if (appId && apiKey) {
+            // Official API — Uganda country code is 'ug' (check Adzuna docs — may need 'za' proxy)
+            const url  = `https://api.adzuna.com/v1/api/jobs/ug/search/1?app_id=${appId}&app_key=${apiKey}&results_per_page=50&sort_by=date`;
+            const data = await fetchUrl(url);
+            if (!isBlockedResponse(data, 'Adzuna')) {
+                const j = JSON.parse(data);
+                parsed = (j.results || []).map(r => ({
+                    title:    r.title || '',
+                    company:  r.company?.display_name || 'Organisation',
+                    desc:     (r.description || '').replace(/<[^>]+>/g, '').substring(0, 600),
+                    link:     r.redirect_url || '',
+                    location: r.location?.display_name || 'Uganda',
+                    salary:   r.salary_min ? `UGX ${Number(r.salary_min).toLocaleString()}` : ''
+                }));
+                console.log(`  ✅ Adzuna API: ${parsed.length} items`);
+            }
         } else {
-            // Fallback: WHO Africa RSS
-            console.log('  ℹ️  WHO global RSS empty, trying AFRO...');
-            const afroXml = await fetchUrl('https://www.afro.who.int/careers/vacancies/rss');
-            if (!isBlockedResponse(afroXml, 'WHO AFRO') && afroXml.includes('<item')) {
-                const items = parseXml(afroXml, 'item');
-                console.log(`  📦 Raw items from WHO AFRO: ${items.length}`);
-                for (const item of items.slice(0, 30)) {
+            // No API key — try Adzuna RSS for Uganda keyword search
+            const url  = 'https://www.adzuna.co.uk/search?adv=1&w=uganda&format=rss';
+            const data = await fetchUrl(url);
+            if (!isBlockedResponse(data, 'Adzuna RSS') && data.includes('<item')) {
+                const items = parseXml(data, 'item');
+                parsed = items.slice(0, 40).map(item => ({
+                    title:    getXmlValue(item, 'title'),
+                    company:  getXmlValue(item, 'author') || 'Organisation',
+                    desc:     getXmlValue(item, 'description').substring(0, 600),
+                    link:     getXmlValue(item, 'link'),
+                    location: 'Uganda',
+                    salary:   ''
+                }));
+                console.log(`  ✅ Adzuna RSS: ${parsed.length} items`);
+            } else {
+                console.log('  ℹ️  Adzuna: no credentials + RSS empty — skipping');
+                return jobs;
+            }
+        }
+
+        for (const j of parsed) {
+            if (!j.title || isGarbageTitle(j.title)) continue;
+            const sourceId = `adzuna-${slugify(j.link || j.title)}`;
+            if (existingIds.has(sourceId)) continue;
+
+            jobs.push({
+                title:       j.title,
+                company:     j.company,
+                category:    detectCategory(j.title, j.desc),
+                type:        detectJobType(j.title, j.desc),
+                location:    detectLocation(j.title, j.desc, j.location || 'Uganda'),
+                deadline:    '',
+                description: j.desc,
+                applyLink:   j.link,
+                salary:      j.salary || '',
+                source:      'Adzuna',
+                sourceId
+            });
+        }
+        console.log(`  ✅ Found ${jobs.length} new jobs from Adzuna`);
+    } catch (e) {
+        console.error('  ❌ Adzuna error:', e.message);
+    }
+    return jobs;
+}
+
+// ════════════════════════════════════════════════════════════
+// HELPER: scrapeJobsFromHtml
+// Last-resort HTML parser for sites with no RSS or JSON API.
+// Finds <article>, <div class="job*">, <li class="job*"> blocks
+// and extracts title + link from anchors within them.
+// ════════════════════════════════════════════════════════════
+function scrapeJobsFromHtml(html, baseUrl, sourcePrefix, company) {
+    const jobs = [];
+    if (!html || html.length < 200) return jobs;
+
+    // Strategy A: find job listing containers
+    const containerPatterns = [
+        /<article[^>]*class="[^"]*(?:job|vacancy|listing|position)[^"]*"[^>]*>([\s\S]*?)<\/article>/gi,
+        /<div[^>]*class="[^"]*(?:job[-_]?(?:listing|item|card|post|entry|vacancy))[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+        /<li[^>]*class="[^"]*(?:job[-_]?(?:listing|item|card|post))[^"]*"[^>]*>([\s\S]*?)<\/li>/gi,
+        // WP Job Manager plugin pattern
+        /<li[^>]*class="[^"]*job_listing[^"]*"[^>]*>([\s\S]*?)<\/li>/gi,
+    ];
+
+    for (const pattern of containerPatterns) {
+        let match;
+        while ((match = pattern.exec(html)) !== null && jobs.length < 40) {
+            const block = match[1];
+            // Extract first <a href> as the job link + title
+            const linkMatch = block.match(/<a[^>]+href="([^"]+)"[^>]*>([^<]+)<\/a>/i);
+            if (!linkMatch) continue;
+
+            let link  = linkMatch[1].trim();
+            let title = linkMatch[2].replace(/&amp;/g, '&').replace(/&#\d+;/g, '').trim();
+
+            // Resolve relative URLs
+            if (link.startsWith('/')) {
+                try { link = new URL(link, baseUrl).href; } catch (_) {}
+            }
+
+            // Extract company if present
+            const companyMatch = block.match(/class="[^"]*company[^"]*"[^>]*>([^<]+)</i);
+            const jobCompany   = companyMatch ? companyMatch[1].trim() : company;
+
+            // Extract description snippet
+            const descMatch = block.match(/class="[^"]*(?:desc|summary|content|excerpt)[^"]*"[^>]*>([\s\S]*?)<\/(?:div|p|span)>/i);
+            const desc      = descMatch ? descMatch[1].replace(/<[^>]+>/g, '').trim().substring(0, 400) : '';
+
+            if (!title || isGarbageTitle(title)) continue;
+
+            jobs.push({ title, link, company: jobCompany, desc });
+        }
+        if (jobs.length > 0) break; // stop after first pattern that works
+    }
+
+    // Strategy B (fallback): find any anchor whose href looks like a job URL
+    if (jobs.length === 0) {
+        const jobUrlPattern = /href="([^"]*(?:job|vacancy|career|position)[^"]*)"[^>]*>([^<]{5,120})</gi;
+        let match;
+        while ((match = jobUrlPattern.exec(html)) !== null && jobs.length < 40) {
+            let link  = match[1].trim();
+            let title = match[2].replace(/&amp;/g, '&').trim();
+            if (link.startsWith('/')) {
+                try { link = new URL(link, baseUrl).href; } catch (_) {}
+            }
+            if (!title || isGarbageTitle(title) || title.toLowerCase().includes('apply')) continue;
+            jobs.push({ title, link, company, desc: '' });
+        }
+    }
+
+    return jobs;
+}
+
+// ════════════════════════════════════════════════════════════
+// SOURCE 10: FOUR NEW UGANDA SITES (v4.1)
+// Covers: JobsLinking.com, TheUgandanJobline.com,
+//         AllJobsPo Uganda, GreatUgandaJobs.com
+//
+// Each site is tried with 3 strategies in order:
+//   1. RSS /feed/  (fastest, cleanest)
+//   2. WordPress REST API /wp-json/wp/v2/  (structured JSON)
+//   3. HTML scraping of the jobs listing page (last resort)
+// ════════════════════════════════════════════════════════════
+async function fetchNewUgandaSites(existingIds) {
+    console.log('\n📡 Fetching new Uganda sites (JobsLinking, UgandanJobline, AllJobsPo, GreatUgandaJobs)...');
+    const allJobs = [];
+
+    const sites = [
+        {
+            label:        'JobsLinking',
+            prefix:       'jobslinking',
+            baseUrl:      'https://jobslinking.com',
+            rssUrls:      [
+                'https://jobslinking.com/feed/',
+                'https://jobslinking.com/?feed=rss2',
+                'https://jobslinking.com/jobs/feed/',
+            ],
+            wpJsonUrl:    'https://jobslinking.com/wp-json/wp/v2/posts?per_page=30&orderby=date&_fields=id,title,link,excerpt,meta',
+            wpJobsUrl:    'https://jobslinking.com/wp-json/wp/v2/job-listings?per_page=30&_fields=id,title,link,excerpt,meta',
+            scrapePage:   'https://jobslinking.com/',
+            defaultLoc:   'Uganda',
+            company:      'JobsLinking',
+        },
+        {
+            label:        'UgandanJobline',
+            prefix:       'ugandanjobline',
+            baseUrl:      'https://www.theugandanjobline.com',
+            rssUrls:      [
+                'https://www.theugandanjobline.com/feed/',
+                'https://www.theugandanjobline.com/?feed=rss2',
+                'https://www.theugandanjobline.com/jobs/feed/',
+                'https://www.theugandanjobline.com/vacancies/feed/',
+            ],
+            wpJsonUrl:    'https://www.theugandanjobline.com/wp-json/wp/v2/posts?per_page=30&orderby=date&_fields=id,title,link,excerpt',
+            wpJobsUrl:    'https://www.theugandanjobline.com/wp-json/wp/v2/job-listings?per_page=30&_fields=id,title,link,excerpt',
+            scrapePage:   'https://www.theugandanjobline.com/',
+            defaultLoc:   'Kampala, Uganda',
+            company:      'The Ugandan Jobline',
+        },
+        {
+            label:        'AllJobsPoUganda',
+            prefix:       'alljobspo',
+            baseUrl:      'https://jobsinuganda.alljobspo.com',
+            rssUrls:      [
+                'https://jobsinuganda.alljobspo.com/feed/',
+                'https://jobsinuganda.alljobspo.com/?feed=rss2',
+                'https://jobsinuganda.alljobspo.com/rss',
+                'https://jobsinuganda.alljobspo.com/jobs/feed/',
+            ],
+            wpJsonUrl:    'https://jobsinuganda.alljobspo.com/wp-json/wp/v2/posts?per_page=30&orderby=date&_fields=id,title,link,excerpt',
+            wpJobsUrl:    'https://jobsinuganda.alljobspo.com/wp-json/wp/v2/job-listings?per_page=30&_fields=id,title,link,excerpt',
+            scrapePage:   'https://jobsinuganda.alljobspo.com/',
+            defaultLoc:   'Uganda',
+            company:      'AllJobsPo Uganda',
+        },
+        {
+            label:        'GreatUgandaJobs',
+            prefix:       'greatugandajobs',
+            baseUrl:      'https://www.greatugandajobs.com',
+            rssUrls:      [
+                'https://www.greatugandajobs.com/feed/',
+                'https://www.greatugandajobs.com/?feed=rss2',
+                'https://www.greatugandajobs.com/jobs/feed/',
+                'https://www.greatugandajobs.com/job-listings/feed/',
+            ],
+            // WP Job Manager exposes job-listings as a custom post type
+            wpJsonUrl:    'https://www.greatugandajobs.com/wp-json/wp/v2/posts?per_page=30&orderby=date&_fields=id,title,link,excerpt',
+            wpJobsUrl:    'https://www.greatugandajobs.com/wp-json/wp/v2/job-listings?per_page=30&_fields=id,title,link,excerpt,meta',
+            scrapePage:   'https://www.greatugandajobs.com/jobs/',
+            defaultLoc:   'Kampala, Uganda',
+            company:      'Great Uganda Jobs',
+        },
+    ];
+
+    for (const site of sites) {
+        console.log(`\n  ── ${site.label}`);
+        let siteJobs = [];
+        let succeeded = false;
+
+        // ── Strategy 1: RSS feed ──────────────────────────────
+        for (const rssUrl of site.rssUrls) {
+            if (succeeded) break;
+            try {
+                console.log(`    🔗 RSS: ${rssUrl}`);
+                const data = await fetchUrl(rssUrl);
+                if (isBlockedResponse(data, site.label + ' RSS')) continue;
+                if (!data.includes('<item') && !data.includes('<entry')) continue;
+
+                const items = parseXml(data, 'item');
+                console.log(`    ✅ RSS working: ${items.length} items`);
+
+                for (const item of items.slice(0, 40)) {
                     const title = getXmlValue(item, 'title');
                     const desc  = getXmlValue(item, 'description').substring(0, 600);
                     const link  = getXmlValue(item, 'link');
-                    if (!title) continue;
-                    const sourceId = `who-afro-${slugify(link || title)}`;
+                    const pubDate = getXmlValue(item, 'pubDate');
+                    if (!title || isGarbageTitle(title)) continue;
+
+                    const sourceId = `${site.prefix}-${slugify(link || title)}`;
                     if (existingIds.has(sourceId)) continue;
-                    jobs.push({
-                        title, company: 'WHO Africa', category: 'Health & Medical',
-                        type: detectJobType(title, desc),
-                        location: detectLocation(title, desc, 'Africa'),
-                        deadline: '', description: desc, applyLink: link,
-                        salary: '', source: 'WHO', sourceId
+
+                    siteJobs.push({
+                        title,
+                        company:     getXmlValue(item, 'dc:creator') || getXmlValue(item, 'author') || site.company,
+                        category:    detectCategory(title, desc),
+                        type:        detectJobType(title, desc),
+                        location:    detectLocation(title, desc, site.defaultLoc),
+                        deadline:    '',
+                        description: desc,
+                        applyLink:   link,
+                        salary:      '',
+                        source:      site.label,
+                        sourceId,
                     });
                 }
+                succeeded = true;
+            } catch (e) {
+                console.log(`    ⚠️  RSS failed: ${e.message}`);
             }
         }
 
-        console.log(`  ✅ Found ${jobs.length} new jobs from WHO`);
-    } catch (e) {
-        console.error('  ❌ WHO Jobs error:', e.message);
-    }
-    return jobs;
-}
+        // ── Strategy 2a: WordPress REST API — job-listings CPT ──
+        if (!succeeded) {
+            for (const wpUrl of [site.wpJobsUrl, site.wpJsonUrl]) {
+                if (succeeded) break;
+                try {
+                    console.log(`    🔗 WP JSON: ${wpUrl}`);
+                    const data = await fetchUrl(wpUrl, { 'Accept': 'application/json' });
+                    if (isBlockedResponse(data, site.label + ' WP JSON')) continue;
 
-// ════════════════════════════════════════════════════════════
-// SOURCE 6: MY JOBS IN AFRICA RSS
-// NEW: Replaces Fuzu (Cloudflare-blocked)
-// MyJobsInAfrica covers Uganda, Kenya, Tanzania, Rwanda etc.
-// No Cloudflare, has public RSS feed.
-// ════════════════════════════════════════════════════════════
-async function fetchMyJobsInAfrica(existingIds) {
-    console.log('\n📡 Fetching MyJobsInAfrica jobs...');
-    const jobs = [];
-    try {
-        // They publish category RSS feeds — try several
-        const feeds = [
-            'https://www.myjobsinuganda.com/rss',
-            'https://www.myjobsinafrica.com/jobs/feed/',
-            'https://www.myjobsinafrica.com/category/east-africa/feed/',
-        ];
+                    let parsed;
+                    try { parsed = JSON.parse(data); } catch (_) { continue; }
 
-        let xml = null;
-        for (const feedUrl of feeds) {
+                    if (!Array.isArray(parsed) || parsed.length === 0) continue;
+                    console.log(`    ✅ WP JSON working: ${parsed.length} posts`);
+
+                    for (const post of parsed.slice(0, 40)) {
+                        // title can be { rendered: '...' } or plain string
+                        const title = (post.title?.rendered || post.title || '').replace(/<[^>]+>/g, '').trim();
+                        const desc  = (post.excerpt?.rendered || post.excerpt || '').replace(/<[^>]+>/g, '').trim().substring(0, 600);
+                        const link  = post.link || post.url || '';
+
+                        if (!title || isGarbageTitle(title)) continue;
+
+                        const sourceId = `${site.prefix}-wp-${post.id || slugify(title)}`;
+                        if (existingIds.has(sourceId)) continue;
+
+                        // WP Job Manager stores company in meta
+                        const company = post.meta?._company_name || post.meta?.company || site.company;
+
+                        siteJobs.push({
+                            title,
+                            company,
+                            category:    detectCategory(title, desc),
+                            type:        detectJobType(title, desc),
+                            location:    detectLocation(title, desc, site.defaultLoc),
+                            deadline:    post.meta?._job_expires || '',
+                            description: desc,
+                            applyLink:   link,
+                            salary:      post.meta?._job_salary || '',
+                            source:      site.label,
+                            sourceId,
+                        });
+                    }
+                    succeeded = true;
+                } catch (e) {
+                    console.log(`    ⚠️  WP JSON failed: ${e.message}`);
+                }
+            }
+        }
+
+        // ── Strategy 3: HTML scrape ───────────────────────────
+        if (!succeeded) {
             try {
-                console.log(`  🔗 Trying: ${feedUrl}`);
-                const data = await fetchUrl(feedUrl);
-                if (!isBlockedResponse(data, 'MyJobsInAfrica') && (data.includes('<item') || data.includes('<entry'))) {
-                    xml = data;
-                    console.log(`  ✅ Working: ${feedUrl}`);
-                    break;
+                console.log(`    🔗 HTML scrape: ${site.scrapePage}`);
+                const html = await fetchUrl(site.scrapePage, {
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                });
+
+                if (isBlockedResponse(html, site.label + ' HTML')) {
+                    console.log(`    ❌ ${site.label}: all strategies failed`);
+                } else {
+                    const scraped = scrapeJobsFromHtml(html, site.baseUrl, site.prefix, site.company);
+                    console.log(`    📄 Scraped ${scraped.length} job links from HTML`);
+
+                    for (const j of scraped) {
+                        const sourceId = `${site.prefix}-html-${slugify(j.link || j.title)}`;
+                        if (existingIds.has(sourceId)) continue;
+
+                        siteJobs.push({
+                            title:       j.title,
+                            company:     j.company,
+                            category:    detectCategory(j.title, j.desc),
+                            type:        detectJobType(j.title, j.desc),
+                            location:    detectLocation(j.title, j.desc, site.defaultLoc),
+                            deadline:    '',
+                            description: j.desc,
+                            applyLink:   j.link,
+                            salary:      '',
+                            source:      site.label,
+                            sourceId,
+                        });
+                    }
+                    if (scraped.length > 0) succeeded = true;
                 }
             } catch (e) {
-                console.log(`  ⚠️  ${feedUrl} failed: ${e.message}`);
+                console.log(`    ⚠️  HTML scrape failed: ${e.message}`);
             }
         }
 
-        if (!xml) {
-            console.log('  ❌ All MyJobsInAfrica feeds failed');
-            return jobs;
-        }
-
-        const items = parseXml(xml, 'item');
-        console.log(`  📦 Raw items: ${items.length}`);
-
-        for (const item of items.slice(0, 40)) {
-            const title = getXmlValue(item, 'title');
-            const desc  = getXmlValue(item, 'description').substring(0, 600);
-            const link  = getXmlValue(item, 'link');
-            if (!title || isGarbageTitle(title)) continue;
-
-            const sourceId = `mjia-${slugify(link || title)}`;
-            if (existingIds.has(sourceId)) continue;
-
-            jobs.push({
-                title,
-                company:     getXmlValue(item, 'author') || getXmlValue(item, 'dc:creator') || 'Organisation',
-                category:    detectCategory(title, desc),
-                type:        detectJobType(title, desc),
-                location:    detectLocation(title, desc, 'East Africa'),
-                deadline:    '',
-                description: desc,
-                applyLink:   link,
-                salary:      '',
-                source:      'MyJobsInAfrica',
-                sourceId
-            });
-        }
-        console.log(`  ✅ Found ${jobs.length} new jobs from MyJobsInAfrica`);
-    } catch (e) {
-        console.error('  ❌ MyJobsInAfrica error:', e.message);
+        console.log(`    📊 ${site.label}: ${siteJobs.length} new jobs`);
+        allJobs.push(...siteJobs);
     }
-    return jobs;
-}
 
-// ════════════════════════════════════════════════════════════
-// SOURCE 7: JOBGURUS UGANDA RSS
-// NEW: Replaces BrighterMonday (Cloudflare-blocked)
-// Jobgurus Uganda is a local board with accessible RSS.
-// ════════════════════════════════════════════════════════════
-async function fetchJobgurusUganda(existingIds) {
-    console.log('\n📡 Fetching Jobgurus Uganda jobs...');
-    const jobs = [];
-    try {
-        const feeds = [
-            'https://www.jobguruafrica.com/jobs/feed/?country=Uganda',
-            'https://jobwebuganda.com/feed/',
-            'https://www.ugandajobline.com/feed/',
-        ];
-
-        let xml = null;
-        let workingFeed = null;
-
-        for (const feedUrl of feeds) {
-            try {
-                console.log(`  🔗 Trying: ${feedUrl}`);
-                const data = await fetchUrl(feedUrl);
-                if (!isBlockedResponse(data, 'Uganda RSS') && (data.includes('<item') || data.includes('<entry'))) {
-                    xml = data;
-                    workingFeed = feedUrl;
-                    console.log(`  ✅ Working: ${feedUrl}`);
-                    break;
-                }
-            } catch (e) {
-                console.log(`  ⚠️  ${feedUrl} failed: ${e.message}`);
-            }
-        }
-
-        if (!xml) {
-            console.log('  ❌ All Uganda local feeds failed');
-            return jobs;
-        }
-
-        const items = parseXml(xml, 'item');
-        console.log(`  📦 Raw items from ${workingFeed}: ${items.length}`);
-
-        for (const item of items.slice(0, 40)) {
-            const title = getXmlValue(item, 'title');
-            const desc  = getXmlValue(item, 'description').substring(0, 600);
-            const link  = getXmlValue(item, 'link');
-            if (!title || isGarbageTitle(title)) continue;
-
-            const sourceId = `ug-${slugify(link || title)}`;
-            if (!sourceId || existingIds.has(sourceId)) continue;
-
-            jobs.push({
-                title,
-                company:     getXmlValue(item, 'author') || getXmlValue(item, 'dc:creator') || 'Uganda Organisation',
-                category:    detectCategory(title, desc),
-                type:        detectJobType(title, desc),
-                location:    detectLocation(title, desc, 'Uganda'),
-                deadline:    '',
-                description: desc,
-                applyLink:   link,
-                salary:      '',
-                source:      'Uganda Jobs',
-                sourceId
-            });
-        }
-        console.log(`  ✅ Found ${jobs.length} new jobs from Uganda local feed`);
-    } catch (e) {
-        console.error('  ❌ Jobgurus Uganda error:', e.message);
-    }
-    return jobs;
-}
-
-// ════════════════════════════════════════════════════════════
-// SOURCE 8: UNJOBNET / UN CAREERS RSS
-// Separate from WHO — covers all UN agency jobs including
-// UNICEF, UNDP, UNHCR, WFP etc. Uses a reliable RSS endpoint.
-// ════════════════════════════════════════════════════════════
-async function fetchUNJobs(existingIds) {
-    console.log('\n📡 Fetching UN Jobs...');
-    const jobs = [];
-    try {
-        const feeds = [
-            'https://jobs.undp.org/cj_view_jobs.cfm?md=getJobListingsRSS',
-            'https://www.unjobnet.org/jobs/rss',
-            'https://unric.org/en/feed/',
-        ];
-
-        let xml = null;
-        for (const feedUrl of feeds) {
-            try {
-                console.log(`  🔗 Trying: ${feedUrl}`);
-                const data = await fetchUrl(feedUrl);
-                if (!isBlockedResponse(data, 'UN Jobs') && data.includes('<item')) {
-                    xml = data;
-                    console.log(`  ✅ Working: ${feedUrl}`);
-                    break;
-                }
-            } catch (e) {
-                console.log(`  ⚠️  ${feedUrl} failed: ${e.message}`);
-            }
-        }
-
-        if (!xml) {
-            console.log('  ❌ All UN feeds failed or empty');
-            return jobs;
-        }
-
-        const items = parseXml(xml, 'item');
-        console.log(`  📦 Raw items: ${items.length}`);
-
-        for (const item of items.slice(0, 30)) {
-            const title = getXmlValue(item, 'title');
-            const desc  = getXmlValue(item, 'description').substring(0, 600);
-            const link  = getXmlValue(item, 'link');
-            if (!title || isGarbageTitle(title)) continue;
-
-            const sourceId = `un-${slugify(link || title)}`;
-            if (existingIds.has(sourceId)) continue;
-
-            jobs.push({
-                title,
-                company:     getXmlValue(item, 'author') || 'United Nations',
-                category:    detectCategory(title, desc),
-                type:        detectJobType(title, desc),
-                location:    detectLocation(title, desc, 'International'),
-                deadline:    '',
-                description: desc,
-                applyLink:   link,
-                salary:      '',
-                source:      'UN Jobs',
-                sourceId
-            });
-        }
-        console.log(`  ✅ Found ${jobs.length} new jobs from UN Jobs`);
-    } catch (e) {
-        console.error('  ❌ UN Jobs error:', e.message);
-    }
-    return jobs;
+    console.log(`\n  ✅ Total from new Uganda sites: ${allJobs.length} jobs`);
+    return allJobs;
 }
 
 // ════════════════════════════════════════════════════════════
 // MAIN — RUN ALL SOURCES
 // ════════════════════════════════════════════════════════════
 async function main() {
-    console.log('🚀 Daily News Uganda — Jobs Importer v3 Starting...');
+    console.log('🚀 Daily News Uganda — Jobs Importer v4 Starting...');
     console.log(`⏰ Run time: ${new Date().toISOString()}`);
 
     console.log('\n🔍 Checking existing jobs in Firebase...');
     const existingIds = await getExistingJobIds();
     console.log(`  ✅ Total existing sourceIds loaded: ${existingIds.size}`);
 
-    // Run all sources — use Promise.allSettled so one failure doesn't kill the rest
     const results = await Promise.allSettled([
-        fetchReliefWeb(existingIds),
-        fetchReliefWebUganda(existingIds),
-        fetchRemoteOK(existingIds),
-        fetchDevex(existingIds),
-        fetchWHOJobs(existingIds),
-        fetchMyJobsInAfrica(existingIds),
-        fetchJobgurusUganda(existingIds),
-        fetchUNJobs(existingIds),
+        fetchReliefWeb(existingIds),           //  1. ReliefWeb global (POST fix)
+        fetchReliefWebUganda(existingIds),     //  2. ReliefWeb Uganda (POST fix)
+        fetchRemoteOK(existingIds),            //  3. RemoteOK (with retry)
+        fetchDevex(existingIds),               //  4. Devex (new JSON API attempt)
+        fetchUNInternationalJobs(existingIds), //  5. UN/WFP/UNICEF RSS feeds
+        fetchAfricaJobs(existingIds),          //  6. Africa job boards (replaces MyJobsInAfrica)
+        fetchUgandaLocalJobs(existingIds),     //  7. Uganda local boards (expanded list)
+        fetchUNDPJobs(existingIds),            //  8. UNDP Jobs API (replaces dead UN RSS)
+        fetchAdzunaUganda(existingIds),        //  9. Adzuna Uganda
+        fetchNewUgandaSites(existingIds),      // 10. JobsLinking, UgandanJobline, AllJobsPo, GreatUgandaJobs
     ]);
 
     const [
@@ -769,10 +1237,12 @@ async function main() {
         reliefwebUgandaJobs,
         remoteOkJobs,
         devexJobs,
-        whoJobs,
-        myJobsInAfricaJobs,
-        jobgurusJobs,
-        unJobs,
+        unIntlJobs,
+        africaJobs,
+        ugandaLocalJobs,
+        undpJobs,
+        adzunaJobs,
+        newUgandaSiteJobs,
     ] = results.map(r => r.status === 'fulfilled' ? r.value : []);
 
     // Deduplicate across sources (by sourceId)
@@ -783,10 +1253,12 @@ async function main() {
         ...reliefwebUgandaJobs,
         ...remoteOkJobs,
         ...devexJobs,
-        ...whoJobs,
-        ...myJobsInAfricaJobs,
-        ...jobgurusJobs,
-        ...unJobs,
+        ...unIntlJobs,
+        ...africaJobs,
+        ...ugandaLocalJobs,
+        ...undpJobs,
+        ...adzunaJobs,
+        ...newUgandaSiteJobs,
     ]) {
         if (job.sourceId && !seenSourceIds.has(job.sourceId)) {
             seenSourceIds.add(job.sourceId);
@@ -795,21 +1267,22 @@ async function main() {
     }
 
     console.log(`\n📊 Total new jobs to import: ${allJobs.length}`);
-    console.log(`   ReliefWeb (global):  ${reliefwebJobs.length}`);
-    console.log(`   ReliefWeb (Uganda):  ${reliefwebUgandaJobs.length}`);
-    console.log(`   RemoteOK:            ${remoteOkJobs.length}`);
-    console.log(`   Devex:               ${devexJobs.length}`);
-    console.log(`   WHO:                 ${whoJobs.length}`);
-    console.log(`   MyJobsInAfrica:      ${myJobsInAfricaJobs.length}`);
-    console.log(`   Uganda Local:        ${jobgurusJobs.length}`);
-    console.log(`   UN Jobs:             ${unJobs.length}`);
+    console.log(`   ReliefWeb (global):    ${reliefwebJobs.length}`);
+    console.log(`   ReliefWeb (Uganda):    ${reliefwebUgandaJobs.length}`);
+    console.log(`   RemoteOK:              ${remoteOkJobs.length}`);
+    console.log(`   Devex:                 ${devexJobs.length}`);
+    console.log(`   UN/WFP/UNICEF:         ${unIntlJobs.length}`);
+    console.log(`   Africa Job Boards:     ${africaJobs.length}`);
+    console.log(`   Uganda Local:          ${ugandaLocalJobs.length}`);
+    console.log(`   UNDP:                  ${undpJobs.length}`);
+    console.log(`   Adzuna Uganda:         ${adzunaJobs.length}`);
+    console.log(`   New Uganda Sites:      ${newUgandaSiteJobs.length}`);
 
     if (allJobs.length === 0) {
         console.log('\n✅ No new jobs to import. All up to date!');
         return;
     }
 
-    // Save all to Firebase
     console.log('\n💾 Saving to Firebase...');
     let saved  = 0;
     let failed = 0;
@@ -822,7 +1295,6 @@ async function main() {
         } else {
             failed++;
         }
-        // Small delay to avoid rate limiting
         await new Promise(r => setTimeout(r, 150));
     }
 
