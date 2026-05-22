@@ -32,8 +32,9 @@ function setActiveNav() {
 
     navLinks.forEach(link => {
         link.classList.remove('active');
-        const linkPage = link.getAttribute('href').split('/').pop();
-        if (linkPage === currentPage) {
+        const href = link.getAttribute('href') || '';
+        const linkPage = href.split('/').pop().split('?')[0];
+        if (linkPage === currentPage && !href.includes('?')) {
             link.classList.add('active');
         }
     });
@@ -62,9 +63,9 @@ function addCardHovers() {
             card.style.boxShadow = 'none';
         });
 
-        card.addEventListener('click', () => {
-            window.location.href = 'article.html';
-        });
+        // NOTE: Click navigation is handled per-card in the inline Firebase script.
+        // Do NOT add a blanket window.location.href = 'article.html' here,
+        // as it would override the correct article ID routing.
     });
 }
 
@@ -105,8 +106,6 @@ function setupNewsletter() {
 }
 
 setupNewsletter();
-
-
 
 
 // ================================
@@ -207,129 +206,60 @@ function setupBackToTop() {
 }
 
 setupBackToTop();
-// ================================
-// CATEGORY FILTERING
-// ================================
-function setupCategoryFilter() {
-   const sectionLinks = document.querySelectorAll('.section-nav .filter-link');
-    const newsGrid = document.querySelector('.news-grid');
-    const sectionTitle = document.querySelector('.section-heading');
 
-    if (!sectionLinks || !newsGrid) return;
-
-    sectionLinks.forEach(link => {
-        link.addEventListener('click', async (e) => {
-            e.preventDefault();
-
-            // Update active link
-            sectionLinks.forEach(l => l.classList.remove('active'));
-            link.classList.add('active');
-
-            const category = link.textContent.trim();
-
-            // If Top Stories — reload everything
-            if (category === 'Top Stories') {
-                window.location.reload();
-                return;
-            }
-
-            // Filter news grid
-            const allCards = document.querySelectorAll('.news-grid .news-card');
-
-            // If no Firebase cards yet, filter static cards
-            allCards.forEach(card => {
-                const cardLabel = card.querySelector('.label');
-                if (!cardLabel) return;
-
-                const cardCategory = cardLabel.textContent.trim();
-
-                if (
-                    category === 'Top Stories' ||
-                    cardCategory.toLowerCase() === category.toLowerCase()
-                ) {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-
-            // Update section title
-            if (sectionTitle) {
-                sectionTitle.querySelector('span')
-                    ? sectionTitle.querySelector('span').textContent = category
-                    : sectionTitle.textContent = category;
-            }
-
-            // Smooth scroll to news grid
-            newsGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-    });
-}
 
 // ================================
-// ================================
-// CATEGORY FILTERING
+// CATEGORY FILTERING (section-nav)
+// Only intercepts links with data-category (hash or # href).
+// Links to real .html pages are left alone to navigate normally.
 // ================================
 function setupCategoryFilter() {
     const sectionLinks = document.querySelectorAll('.section-nav a');
 
-    if (!sectionLinks) return;
-
     sectionLinks.forEach(link => {
         link.addEventListener('click', (e) => {
-            const href = link.getAttribute('href');
+            const href = link.getAttribute('href') || '';
 
-            // If link goes to a real page, let it navigate normally
-            if (href && href !== '#' && href.includes('.html')) {
+            // Let real page links navigate normally — do NOT preventDefault
+            if (href !== '#' && !href.startsWith('#') && href !== '') {
                 return;
             }
 
-            // Otherwise filter
+            // In-page filter links (href="#" or data-category) — intercept
             e.preventDefault();
 
             sectionLinks.forEach(l => l.classList.remove('active'));
             link.classList.add('active');
 
-            const category = link.textContent.trim();
+            const category = link.getAttribute('data-category') || link.textContent.trim();
 
             if (typeof window.filterArticles === 'function') {
                 window.filterArticles(category);
             }
 
-            const newsSection = document.querySelector('.news-section');
-            if (newsSection) newsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const mainContent = document.querySelector('.main-content');
+            if (mainContent) mainContent.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     });
 }
 
+
 // ================================
-// TOP NAV FILTERING
+// TOP NAV — real page links only.
+// News → index.html  (if already on index, handled by inline script)
+// Opinion → index.html?category=Opinion  (real navigation)
+// Sport → index.html?category=Sports     (real navigation)
+// Jobs → jobs.html                        (real navigation)
+//
+// NO e.preventDefault() here — the browser handles all of these.
+// The inline script in index.html handles the "News" click when
+// already on index.html (to avoid a full reload).
 // ================================
 function setupTopNavFilter() {
-    const topNavLinks = document.querySelectorAll('.top-nav a');
-
-    const categoryMap = {
-        'News': 'Top Stories',
-        'Opinion': 'Opinion',
-        'Sport': 'Sports',
-        'Culture': 'Top Stories',
-        'Lifestyle': 'Top Stories'
-    };
-
-    topNavLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const category = categoryMap[link.textContent.trim()] || 'Top Stories';
-
-            if (typeof window.filterArticles === 'function') {
-                window.filterArticles(category);
-            }
-
-            const newsSection = document.querySelector('.news-section');
-            if (newsSection) newsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-    });
+    // Nothing to intercept — all top-nav links have real hrefs.
+    // Keeping this function as a no-op so existing call below doesn't throw.
 }
+
 
 setupCategoryFilter();
 setupTopNavFilter();
