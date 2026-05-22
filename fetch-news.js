@@ -374,17 +374,22 @@ async function main() {
             console.log(`📰 Fetching from ${source.source}...`);
 
             let feed;
-            if (source.source === 'Red Pepper') {
-                // Fetch raw XML and clean malformed entities before parsing
-                const response = await axios.get(source.url, {
-                    timeout: 15000,
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                        'Accept': 'application/rss+xml, application/xml, text/xml, */*'
-                    }
-                });
-                const cleanXml = response.data.replace(/&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[\da-fA-F]+;)/g, '&amp;');
-                feed = await parser.parseString(cleanXml);
+if (source.source === 'Red Pepper') {
+    const response = await axios.get(source.url, {
+        timeout: 15000,
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'application/rss+xml, application/xml, text/xml, */*'
+        }
+    });
+    let cleanXml = response.data;
+    // Remove stray > and < inside CDATA/description tags
+    cleanXml = cleanXml.replace(/<description>([\s\S]*?)<\/description>/g, (match, inner) => {
+        return '<description><![CDATA[' + inner.replace(/<!\[CDATA\[|\]\]>/g, '') + ']]></description>';
+    });
+    // Fix unescaped & characters
+    cleanXml = cleanXml.replace(/&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[\da-fA-F]+;)/g, '&amp;');
+    feed = await parser.parseString(cleanXml);
             } else {
                 feed = await parser.parseURL(source.url);
             }
