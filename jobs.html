@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- AD SCRIPT 1 -->
+    <script>(function(s){s.dataset.zone='11046408',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
     <meta name="monetag" content="a7697520531dbf6c26debbd85afb3fc0">
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-G6SX3WSJRK"></script>
     <script>
@@ -10,6 +12,7 @@
         gtag('js', new Date());
         gtag('config', 'G-G6SX3WSJRK');
     </script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3178797910676300" crossorigin="anonymous"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jobs in Uganda & East Africa | Daily News Job Board</title>
     <meta name="description" content="Find the latest job vacancies in Uganda, East Africa and remote jobs worldwide. Browse NGO, UN, tech, health, finance jobs on Daily News Job Board.">
@@ -32,6 +35,42 @@
         .jobs-search-bar select { flex: 1; padding: 12px 16px; font-size: 14px; border: none; border-radius: 2px; outline: none; font-family: 'Source Sans 3', Arial, sans-serif; min-width: 150px; }
         .jobs-search-btn { background-color: #c70000; color: #fff; border: none; padding: 12px 24px; font-size: 14px; font-weight: 700; cursor: pointer; border-radius: 2px; font-family: 'Source Sans 3', Arial, sans-serif; transition: background 0.2s; }
         .jobs-search-btn:hover { background-color: #a00000; }
+
+        /* ─── AD SLOT ────────────────────────────────────────── */
+        .ad-slot {
+            background: #f6f6f6;
+            border-top: 1px solid #dcdcdc;
+            border-bottom: 1px solid #dcdcdc;
+            text-align: center;
+            padding: 12px 20px;
+            overflow: hidden;
+        }
+        .ad-slot-label {
+            font-size: 10px;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: block;
+            margin-bottom: 6px;
+            font-family: 'Source Sans 3', Arial, sans-serif;
+        }
+        .ad-slot-sidebar {
+            background: #f6f6f6;
+            border: 1px solid #dcdcdc;
+            text-align: center;
+            padding: 12px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+        /* Injected ad card between job listings */
+        .ad-in-list {
+            background: #f6f6f6;
+            border: 1px solid #dcdcdc;
+            border-top: none;
+            padding: 14px 20px;
+            text-align: center;
+            overflow: hidden;
+        }
 
         /* ─── LOCATION TAB FILTERS ──────────────────────────── */
         .location-tabs {
@@ -142,7 +181,6 @@
         .apply-btn:hover { background-color: #c70000; text-decoration: none; }
 
         /* ─── INDEX WARNING BANNER ──────────────────────────── */
-        /* ADDED: shows a helpful message if Firestore index is missing */
         .index-warning { background: #fff4e5; border: 1px solid #f0a500; border-left: 4px solid #f0a500; padding: 14px 18px; margin: 16px 20px; font-size: 13px; color: #7a4f00; display: none; border-radius: 2px; }
         .index-warning strong { display: block; margin-bottom: 4px; color: #5a3800; }
         .index-warning a { color: #052962; font-weight: 700; }
@@ -193,6 +231,7 @@
             .jobs-hero h1 { font-size: 22px; }
             .job-card-header { flex-direction: column; }
             .job-badges { flex-direction: row; flex-wrap: wrap; }
+            .ad-slot-sidebar { display: none; } /* hide sidebar ad on mobile to avoid clutter */
         }
     </style>
 </head>
@@ -263,6 +302,18 @@
         </div>
     </div>
 
+    <!-- AD SLOT 1: Below hero, above location tabs (leaderboard/banner) -->
+    <div class="ad-slot">
+        <span class="ad-slot-label">Advertisement</span>
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-3178797910676300"
+             data-ad-slot="auto"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
+
     <!-- LOCATION TABS -->
     <div class="location-tabs">
         <div class="location-tabs-inner">
@@ -296,7 +347,7 @@
         <a href="#" class="post-job-btn" onclick="openPostJobModal(); return false;">+ Post a Job</a>
     </div>
 
-    <!-- ADDED: Firestore index warning — shown automatically if index is missing -->
+    <!-- INDEX WARNING -->
     <div class="index-warning" id="indexWarning">
         <strong>⚠️ Setup Required — Firestore Index Missing</strong>
         Your jobs are saved but not loading because a Firestore composite index is needed.
@@ -310,6 +361,18 @@
 
         <!-- SIDEBAR FILTERS -->
         <aside class="jobs-filters">
+
+            <!-- AD SLOT 2: Top of sidebar -->
+            <div class="ad-slot-sidebar">
+                <span class="ad-slot-label">Advertisement</span>
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-3178797910676300"
+                     data-ad-slot="auto"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+            </div>
 
             <div class="filter-widget">
                 <h4>Category</h4>
@@ -344,7 +407,6 @@
 
             <div class="filter-widget">
                 <h4>Source</h4>
-                <!-- CHANGED: Removed Indeed (blocked), added Fuzu and BrighterMonday -->
                 <div class="source-badges" id="sourceFilter">
                     <span class="source-badge active" data-src="all" onclick="filterJobs('source','all')">All</span>
                     <span class="source-badge" data-src="ReliefWeb" onclick="filterJobs('source','ReliefWeb')">ReliefWeb</span>
@@ -355,6 +417,18 @@
                     <span class="source-badge" data-src="BrighterMonday" onclick="filterJobs('source','BrighterMonday')">BrighterMonday</span>
                     <span class="source-badge" data-src="" onclick="filterJobs('source','manual')">Direct Posts</span>
                 </div>
+            </div>
+
+            <!-- AD SLOT 3: Bottom of sidebar -->
+            <div class="ad-slot-sidebar">
+                <span class="ad-slot-label">Advertisement</span>
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-3178797910676300"
+                     data-ad-slot="auto"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
             </div>
 
         </aside>
@@ -369,6 +443,18 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- AD SLOT 4: Below jobs list, above footer -->
+    <div class="ad-slot" style="margin: 0 20px 24px;">
+        <span class="ad-slot-label">Advertisement</span>
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-3178797910676300"
+             data-ad-slot="auto"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
     </div>
 
     <!-- POST JOB MODAL -->
@@ -502,24 +588,12 @@
         let activeLocationFilter = 'all';
         let activeSourceFilter = 'all';
         const PAGE_SIZE = 20;
+        // Ad injected every N job cards in the list
+        const AD_EVERY = 8;
         let currentPage = 1;
 
-        // ── FETCH JOBS ─────────────────────────────────────────
-        // FIX: Two-stage fetch strategy.
-        //
-        // STAGE 1: Try the ideal compound query (approved==true + orderBy createdAt).
-        //   This requires a Firestore composite index. If the index exists, great.
-        //   If not, Firestore throws an error with a direct link to create the index.
-        //
-        // STAGE 2 (fallback): If stage 1 fails (missing index), fetch ALL approved
-        //   jobs without ordering, then sort them client-side. This means jobs still
-        //   show up even before the index is created — no more blank page.
-        //
-        // Once you create the index in Firebase Console the stage 1 query will work
-        // and the fallback is never needed again.
         async function fetchJobs() {
             try {
-                // Stage 1: Compound query (needs composite index)
                 const q = query(
                     collection(db, 'jobs'),
                     where('approved', '==', true),
@@ -536,12 +610,9 @@
             } catch (error) {
                 console.warn('Compound query failed — trying fallback:', error.message);
 
-                // Show index warning banner with the Firebase console link
-                // (Firestore error messages contain a direct URL to create the index)
                 const indexWarning = document.getElementById('indexWarning');
                 if (indexWarning) {
                     indexWarning.style.display = 'block';
-                    // Extract the index creation URL from the error message if present
                     const urlMatch = error.message && error.message.match(/https:\/\/console\.firebase\.google\.com[^\s"']*/);
                     if (urlMatch) {
                         const indexLink = document.getElementById('indexLink');
@@ -552,24 +623,17 @@
                     }
                 }
 
-                // Stage 2: Fallback — fetch without ordering, sort client-side
                 try {
-                    const fallbackQ = query(
-                        collection(db, 'jobs'),
-                        where('approved', '==', true)
-                    );
+                    const fallbackQ = query(collection(db, 'jobs'), where('approved', '==', true));
                     const fallbackSnapshot = await getDocs(fallbackQ);
                     allJobs = [];
                     fallbackSnapshot.forEach(d => allJobs.push({ id: d.id, ...d.data() }));
-
-                    // Sort client-side by createdAt descending
                     allJobs.sort((a, b) => {
                         const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
                         const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
                         return dateB - dateA;
                     });
-
-                    console.log(`✅ Fallback loaded ${allJobs.length} jobs (client-side sorted)`);
+                    console.log(`✅ Fallback loaded ${allJobs.length} jobs`);
                     applyAllFilters();
                     updateLocationCounts();
                     updateCategoryCounts();
@@ -582,7 +646,6 @@
             }
         }
 
-        // ── LOCATION MATCH ─────────────────────────────────────
         function matchesLocation(job, filter) {
             const loc = (job.location || '').toLowerCase();
             const type = (job.type || '').toLowerCase();
@@ -596,19 +659,11 @@
             return true;
         }
 
-        // ── APPLY ALL FILTERS ──────────────────────────────────
         function applyAllFilters() {
             let filtered = allJobs;
-
-            if (activeLocationFilter !== 'all') {
-                filtered = filtered.filter(j => matchesLocation(j, activeLocationFilter));
-            }
-            if (activeCategoryFilter !== 'all') {
-                filtered = filtered.filter(j => j.category === activeCategoryFilter);
-            }
-            if (activeTypeFilter !== 'all') {
-                filtered = filtered.filter(j => j.type === activeTypeFilter);
-            }
+            if (activeLocationFilter !== 'all') filtered = filtered.filter(j => matchesLocation(j, activeLocationFilter));
+            if (activeCategoryFilter !== 'all') filtered = filtered.filter(j => j.category === activeCategoryFilter);
+            if (activeTypeFilter !== 'all') filtered = filtered.filter(j => j.type === activeTypeFilter);
             if (activeSourceFilter !== 'all') {
                 if (activeSourceFilter === 'manual') {
                     filtered = filtered.filter(j => !j.source || j.source === '');
@@ -616,14 +671,13 @@
                     filtered = filtered.filter(j => j.source === activeSourceFilter);
                 }
             }
-
             displayedJobs = filtered;
             currentPage = 1;
             renderJobs(filtered, true);
             document.getElementById('jobsCount').textContent = filtered.length;
         }
 
-        // ── RENDER JOBS ────────────────────────────────────────
+        // ── RENDER JOBS with inline ad every AD_EVERY cards ────
         function renderJobs(jobs, reset = false) {
             const list = document.getElementById('jobsList');
             if (reset) list.innerHTML = '';
@@ -634,7 +688,6 @@
                 return;
             }
 
-            // Sort: premium → featured → basic → rest
             const sorted = [...jobs].sort((a, b) => {
                 const order = { 'Premium': 0, 'Featured': 1, 'Basic': 2 };
                 return (order[a.plan] || 3) - (order[b.plan] || 3);
@@ -644,9 +697,10 @@
             const end = currentPage * PAGE_SIZE;
             const pageJobs = sorted.slice(start, end);
 
+            let cardCount = 0;
             pageJobs.forEach(job => {
                 const isExpired = job.deadline && new Date(job.deadline) < new Date();
-                if (isExpired && job.source) return; // skip expired auto-imported
+                if (isExpired && job.source) return;
 
                 const isPremium = job.plan === 'Premium';
                 const isFeatured = job.plan === 'Featured';
@@ -695,20 +749,36 @@
                     </div>
                 `;
                 list.appendChild(card);
+                cardCount++;
+
+                // Inject an ad unit every AD_EVERY cards (but not after the very last card)
+                if (cardCount % AD_EVERY === 0) {
+                    const adDiv = document.createElement('div');
+                    adDiv.className = 'ad-in-list';
+                    adDiv.innerHTML = `
+                        <span class="ad-slot-label">Advertisement</span>
+                        <ins class="adsbygoogle"
+                             style="display:block"
+                             data-ad-client="ca-pub-3178797910676300"
+                             data-ad-slot="auto"
+                             data-ad-format="auto"
+                             data-full-width-responsive="true"></ins>
+                    `;
+                    list.appendChild(adDiv);
+                    // Push the new ad unit
+                    try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}
+                }
             });
 
-            // Show/hide load more
             document.getElementById('loadMoreWrap').style.display =
                 end < sorted.length ? 'block' : 'none';
         }
 
-        // ── LOAD MORE ──────────────────────────────────────────
         window.loadMore = function() {
             currentPage++;
             renderJobs(displayedJobs, false);
         };
 
-        // ── UPDATE COUNTS ──────────────────────────────────────
         function updateLocationCounts() {
             const tabs = ['all','uganda','eastafrica','remote','hybrid','online','international'];
             tabs.forEach(loc => {
@@ -729,7 +799,6 @@
             });
         }
 
-        // ── FILTER BY LOCATION TAB ─────────────────────────────
         window.filterByLocation = function(loc) {
             activeLocationFilter = loc;
             document.querySelectorAll('.loc-tab').forEach(t => t.classList.remove('active'));
@@ -737,7 +806,6 @@
             applyAllFilters();
         };
 
-        // ── FILTER BY SIDEBAR ──────────────────────────────────
         window.filterJobs = function(type, value) {
             if (type === 'category') {
                 activeCategoryFilter = value;
@@ -750,7 +818,6 @@
             } else if (type === 'source') {
                 activeSourceFilter = value;
                 document.querySelectorAll('.source-badge').forEach(b => b.classList.remove('active'));
-                // CHANGED: handle 'manual' source badge selection correctly
                 const targetSrc = value === 'manual' ? '' : value;
                 const badge = document.querySelector('.source-badge[data-src="' + targetSrc + '"]');
                 if (badge) badge.classList.add('active');
@@ -758,7 +825,6 @@
             applyAllFilters();
         };
 
-        // ── SEARCH ─────────────────────────────────────────────
         window.searchJobs = function() {
             const keyword = document.getElementById('jobSearchInput').value.trim().toLowerCase();
             const category = document.getElementById('jobCategorySearch').value;
@@ -777,12 +843,10 @@
             document.getElementById('jobsCount').textContent = filtered.length;
         };
 
-        // ── ENTER KEY SEARCH ───────────────────────────────────
         document.getElementById('jobSearchInput').addEventListener('keypress', e => {
             if (e.key === 'Enter') searchJobs();
         });
 
-        // ── MODAL ──────────────────────────────────────────────
         window.openPostJobModal = function() {
             document.getElementById('postJobModal').classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -800,7 +864,6 @@
             el.classList.add('selected');
         };
 
-        // ── SUBMIT JOB ─────────────────────────────────────────
         document.getElementById('submitJobBtn').addEventListener('click', async function() {
             const title = document.getElementById('jobTitle').value.trim();
             const company = document.getElementById('jobCompany').value.trim();
@@ -840,7 +903,6 @@
             }
         });
 
-        // ── URL PARAMS ─────────────────────────────────────────
         function checkUrlParams() {
             const params = new URLSearchParams(window.location.search);
             const loc = params.get('loc');
@@ -849,7 +911,6 @@
             if (cat) filterJobs('category', cat);
         }
 
-        // ── INIT ───────────────────────────────────────────────
         fetchJobs().then(() => checkUrlParams());
 
     </script>
