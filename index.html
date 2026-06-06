@@ -85,19 +85,59 @@
       </div>
     </section>
 
-    <!-- Category Pills -->
-    <div class="category-pills" id="categoryPills">
-      <button class="pill active" data-cat="all">All</button>
-      <button class="pill" data-cat="news">News</button>
-      <button class="pill" data-cat="politics">Politics</button>
-      <button class="pill" data-cat="sports">Sports</button>
-      <button class="pill" data-cat="entertainment">Entertainment</button>
-      <button class="pill" data-cat="business">Business</button>
-      <button class="pill" data-cat="technology">Technology</button>
-      <button class="pill" data-cat="health">Health</button>
-      <button class="pill" data-cat="education">Education</button>
-      <button class="pill" data-cat="religion">Religion</button>
+<!-- Sort & Filter Bar -->
+<div class="filter-bar" id="filterBar">
+
+  <div class="filter-group">
+    <label><i class="fas fa-arrow-up-wide-short"></i> Sort By</label>
+    <div class="filter-pills" id="sortPills">
+      <button class="filter-pill active" data-sort="newest">Newest</button>
+      <button class="filter-pill" data-sort="relevance">Relevance</button>
+      <button class="filter-pill" data-sort="views">Most Viewed</button>
+      <button class="filter-pill" data-sort="rating">Top Rated</button>
+      <button class="filter-pill" data-sort="length">Length</button>
     </div>
+  </div>
+
+  <div class="filter-divider"></div>
+
+  <div class="filter-group">
+    <label><i class="fas fa-calendar"></i> Date</label>
+    <div class="filter-pills" id="datePills">
+      <button class="filter-pill active" data-date="all">All Time</button>
+      <button class="filter-pill" data-date="day">Today</button>
+      <button class="filter-pill" data-date="week">This Week</button>
+      <button class="filter-pill" data-date="month">This Month</button>
+      <button class="filter-pill" data-date="year">This Year</button>
+    </div>
+  </div>
+
+  <div class="filter-divider"></div>
+
+  <div class="filter-group">
+    <label><i class="fas fa-clock"></i> Duration</label>
+    <div class="filter-pills" id="durationPills">
+      <button class="filter-pill active" data-duration="all">All</button>
+      <button class="filter-pill" data-duration="short">Short &lt;3min</button>
+      <button class="filter-pill" data-duration="medium">Medium &lt;10min</button>
+      <button class="filter-pill" data-duration="long">Long &gt;10min</button>
+    </div>
+  </div>
+
+  <div class="filter-divider"></div>
+
+  <div class="filter-group">
+    <label><i class="fas fa-film"></i> Quality</label>
+    <div class="filter-pills" id="qualityPills">
+      <button class="filter-pill active" data-quality="all">All</button>
+      <button class="filter-pill" data-quality="4k">4K</button>
+      <button class="filter-pill" data-quality="1080p">1080p</button>
+      <button class="filter-pill" data-quality="720p">720p</button>
+      <button class="filter-pill" data-quality="480p">480p</button>
+    </div>
+  </div>
+
+</div>
 
     <!-- Section Title -->
     <div class="section-header">
