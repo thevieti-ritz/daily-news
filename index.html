@@ -11,6 +11,9 @@
 </head>
 <body>
 
+  <!-- ===== SIDEBAR OVERLAY (must be before sidebar) ===== -->
+  <div class="sidebar-overlay hidden" id="sidebarOverlay"></div>
+
   <!-- ===== TOP NAVBAR ===== -->
   <nav class="navbar">
     <div class="nav-left">
@@ -42,7 +45,6 @@
   <aside class="sidebar" id="sidebar">
     <nav class="side-nav">
 
-      <!-- Categories Section -->
       <button class="side-section-btn" id="categoriesToggle">
         <i class="fas fa-th-large"></i> Categories
         <i class="fas fa-chevron-down side-arrow" id="categoriesArrow"></i>
@@ -61,13 +63,8 @@
 
       <hr/>
 
-      <!-- History -->
       <a href="history.html" class="side-link"><i class="fas fa-clock-rotate-left"></i> History</a>
-
-      <!-- Profile -->
       <a href="profile.html" class="side-link"><i class="fas fa-circle-user"></i> Profile</a>
-
-      <!-- Settings -->
       <a href="settings.html" class="side-link"><i class="fas fa-gear"></i> Settings</a>
 
     </nav>
@@ -85,59 +82,59 @@
       </div>
     </section>
 
-<!-- Sort & Filter Bar -->
-<div class="filter-bar" id="filterBar">
+    <!-- Sort & Filter Bar -->
+    <div class="filter-bar" id="filterBar">
 
-  <div class="filter-group">
-    <label><i class="fas fa-arrow-up-wide-short"></i> Sort By</label>
-    <div class="filter-pills" id="sortPills">
-      <button class="filter-pill active" data-sort="newest">Newest</button>
-      <button class="filter-pill" data-sort="relevance">Relevance</button>
-      <button class="filter-pill" data-sort="views">Most Viewed</button>
-      <button class="filter-pill" data-sort="rating">Top Rated</button>
-      <button class="filter-pill" data-sort="length">Length</button>
+      <div class="filter-group">
+        <label><i class="fas fa-arrow-up-wide-short"></i> Sort By</label>
+        <div class="filter-pills" id="sortPills">
+          <button class="filter-pill active" data-sort="newest">Newest</button>
+          <button class="filter-pill" data-sort="relevance">Relevance</button>
+          <button class="filter-pill" data-sort="views">Most Viewed</button>
+          <button class="filter-pill" data-sort="rating">Top Rated</button>
+          <button class="filter-pill" data-sort="length">Length</button>
+        </div>
+      </div>
+
+      <div class="filter-divider"></div>
+
+      <div class="filter-group">
+        <label><i class="fas fa-calendar"></i> Date</label>
+        <div class="filter-pills" id="datePills">
+          <button class="filter-pill active" data-date="all">All Time</button>
+          <button class="filter-pill" data-date="day">Today</button>
+          <button class="filter-pill" data-date="week">This Week</button>
+          <button class="filter-pill" data-date="month">This Month</button>
+          <button class="filter-pill" data-date="year">This Year</button>
+        </div>
+      </div>
+
+      <div class="filter-divider"></div>
+
+      <div class="filter-group">
+        <label><i class="fas fa-clock"></i> Duration</label>
+        <div class="filter-pills" id="durationPills">
+          <button class="filter-pill active" data-duration="all">All</button>
+          <button class="filter-pill" data-duration="short">Short &lt;3min</button>
+          <button class="filter-pill" data-duration="medium">Medium &lt;10min</button>
+          <button class="filter-pill" data-duration="long">Long &gt;10min</button>
+        </div>
+      </div>
+
+      <div class="filter-divider"></div>
+
+      <div class="filter-group">
+        <label><i class="fas fa-film"></i> Quality</label>
+        <div class="filter-pills" id="qualityPills">
+          <button class="filter-pill active" data-quality="all">All</button>
+          <button class="filter-pill" data-quality="4k">4K</button>
+          <button class="filter-pill" data-quality="1080p">1080p</button>
+          <button class="filter-pill" data-quality="720p">720p</button>
+          <button class="filter-pill" data-quality="480p">480p</button>
+        </div>
+      </div>
+
     </div>
-  </div>
-
-  <div class="filter-divider"></div>
-
-  <div class="filter-group">
-    <label><i class="fas fa-calendar"></i> Date</label>
-    <div class="filter-pills" id="datePills">
-      <button class="filter-pill active" data-date="all">All Time</button>
-      <button class="filter-pill" data-date="day">Today</button>
-      <button class="filter-pill" data-date="week">This Week</button>
-      <button class="filter-pill" data-date="month">This Month</button>
-      <button class="filter-pill" data-date="year">This Year</button>
-    </div>
-  </div>
-
-  <div class="filter-divider"></div>
-
-  <div class="filter-group">
-    <label><i class="fas fa-clock"></i> Duration</label>
-    <div class="filter-pills" id="durationPills">
-      <button class="filter-pill active" data-duration="all">All</button>
-      <button class="filter-pill" data-duration="short">Short &lt;3min</button>
-      <button class="filter-pill" data-duration="medium">Medium &lt;10min</button>
-      <button class="filter-pill" data-duration="long">Long &gt;10min</button>
-    </div>
-  </div>
-
-  <div class="filter-divider"></div>
-
-  <div class="filter-group">
-    <label><i class="fas fa-film"></i> Quality</label>
-    <div class="filter-pills" id="qualityPills">
-      <button class="filter-pill active" data-quality="all">All</button>
-      <button class="filter-pill" data-quality="4k">4K</button>
-      <button class="filter-pill" data-quality="1080p">1080p</button>
-      <button class="filter-pill" data-quality="720p">720p</button>
-      <button class="filter-pill" data-quality="480p">480p</button>
-    </div>
-  </div>
-
-</div>
 
     <!-- Section Title -->
     <div class="section-header">
@@ -167,47 +164,53 @@
         <span class="logo-red">LEAKED</span><span class="logo-white">ARCHIVES</span>
       </div>
       <p>Bringing you the latest entertainment video leaks around the world.</p>
-<div class="footer-links">
-  <a href="privacy.html">Privacy Policy</a>
-  <a href="terms.html">Terms of Use</a>
-</div>
+      <div class="footer-links">
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Use</a>
+      </div>
       <p class="footer-copy">&copy; 2026 Leaked Archives. All rights reserved.</p>
     </div>
   </footer>
 
-  <!-- Sidebar overlay for mobile -->
-  <div class="sidebar-overlay hidden" id="sidebarOverlay"></div>
+  <!-- ===== ALL SCRIPTS — only ONE place, no duplicates ===== -->
+  <script type="module" src="js/firebase.js"></script>
+  <script type="module" src="js/main.js"></script>
 
-  <!-- Sidebar Categories Toggle Script -->
+  <!-- Sidebar & Categories — plain script, runs immediately -->
   <script>
+    // Hamburger menu
+    const menuToggle     = document.getElementById('menuToggle');
+    const sidebar        = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    menuToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      sidebarOverlay.classList.toggle('hidden');
+    });
+
+    sidebarOverlay.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      sidebarOverlay.classList.add('hidden');
+    });
+
+    // Categories dropdown inside sidebar
     const categoriesToggle = document.getElementById('categoriesToggle');
-    const categoriesMenu = document.getElementById('categoriesMenu');
-    const categoriesArrow = document.getElementById('categoriesArrow');
+    const categoriesMenu   = document.getElementById('categoriesMenu');
+    const categoriesArrow  = document.getElementById('categoriesArrow');
 
     categoriesToggle.addEventListener('click', () => {
       const isOpen = categoriesMenu.classList.toggle('open');
       categoriesArrow.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
     });
+
+    // Close sidebar when any sidebar link is clicked (mobile)
+    document.querySelectorAll('.side-link').forEach(link => {
+      link.addEventListener('click', () => {
+        sidebar.classList.remove('open');
+        sidebarOverlay.classList.add('hidden');
+      });
+    });
   </script>
-<script type="module" src="js/firebase.js"></script>
-<script type="module" src="js/main.js"></script>
-<script>
-  // Hamburger menu fix
-  document.addEventListener("DOMContentLoaded", () => {
-    const menuToggle = document.getElementById("menuToggle");
-    const sidebar = document.getElementById("sidebar");
-    const sidebarOverlay = document.getElementById("sidebarOverlay");
 
-    menuToggle?.addEventListener("click", () => {
-      sidebar.classList.toggle("open");
-      sidebarOverlay.classList.toggle("hidden");
-    });
-
-    sidebarOverlay?.addEventListener("click", () => {
-      sidebar.classList.remove("open");
-      sidebarOverlay.classList.add("hidden");
-    });
-  });
-</script>
 </body>
 </html>
