@@ -75,28 +75,60 @@ document.querySelectorAll(".side-link, .side-link.sub").forEach(link => {
   });
 });
 
-// ---- FILTER PILLS SETUP ----
-function setupPills(containerId, stateKey, callback) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  container.querySelectorAll(".filter-pill").forEach(pill => {
-    pill.addEventListener("click", () => {
-      container.querySelectorAll(".filter-pill").forEach(p => p.classList.remove("active"));
-      pill.classList.add("active");
-      // Update the right state variable
-      if (stateKey === "sort")     activeSort     = pill.dataset.sort;
-      if (stateKey === "date")     activeDate     = pill.dataset.date;
-      if (stateKey === "duration") activeDuration = pill.dataset.duration;
-      if (stateKey === "quality")  activeQuality  = pill.dataset.quality;
-      callback();
+// ---- DROPDOWN FILTER SETUP ----
+function setupDropdown(btnId, menuId, labelId, dataKey, onSelect) {
+  const btn    = document.getElementById(btnId);
+  const menu   = document.getElementById(menuId);
+  const label  = document.getElementById(labelId);
+  if (!btn || !menu) return;
+
+  // Toggle menu open/close
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.querySelectorAll('.filter-dropdown-menu').forEach(m => {
+      if (m !== menu) m.classList.add('hidden');
+    });
+    menu.classList.toggle('hidden');
+  });
+
+  // Option selected
+  menu.querySelectorAll('.filter-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      menu.querySelectorAll('.filter-option').forEach(o => o.classList.remove('active'));
+      opt.classList.add('active');
+      const val = opt.dataset[dataKey];
+      const text = opt.textContent.trim();
+
+      // Update label shown on button
+      if (label) {
+        if (dataKey === 'sort') {
+          label.textContent = text;
+        } else {
+          // Show selected value only if not default "all"
+          label.textContent = (val === 'all' || val === 'newest') ? '' : `: ${text}`;
+        }
+      }
+
+      // Highlight button if non-default selected
+      btn.classList.toggle('active-filter', val !== 'all' && val !== 'newest');
+
+      onSelect(val);
+      menu.classList.add('hidden');
+      resetAndLoad();
     });
   });
 }
 
-setupPills("sortPills",     "sort",     resetAndLoad);
-setupPills("datePills",     "date",     resetAndLoad);
-setupPills("durationPills", "duration", resetAndLoad);
-setupPills("qualityPills",  "quality",  resetAndLoad);
+// Close all dropdowns when clicking outside
+document.addEventListener('click', () => {
+  document.querySelectorAll('.filter-dropdown-menu').forEach(m => m.classList.add('hidden'));
+});
+
+// Wire up each dropdown
+setupDropdown('sortBtn',     'sortMenu',     'sortLabel',     'sort',     (v) => { activeSort     = v; });
+setupDropdown('dateBtn',     'dateMenu',     'dateLabel',     'date',     (v) => { activeDate     = v; });
+setupDropdown('durationBtn', 'durationMenu', 'durationLabel', 'duration', (v) => { activeDuration = v; });
+setupDropdown('qualityBtn',  'qualityMenu',  'qualityLabel',  'quality',  (v) => { activeQuality  = v; });
 
 // ---- SEARCH ----
 searchInput?.addEventListener("input", () => {
