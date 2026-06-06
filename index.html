@@ -151,8 +151,25 @@
       categoriesArrow.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
     });
   </script>
+<script type="module" src="js/firebase.js"></script>
+<script type="module" src="js/main.js"></script>
+<script>
+  // Hamburger menu fix
+  document.addEventListener("DOMContentLoaded", () => {
+    const menuToggle = document.getElementById("menuToggle");
+    const sidebar = document.getElementById("sidebar");
+    const sidebarOverlay = document.getElementById("sidebarOverlay");
 
-  <script type="module" src="js/firebase.js"></script>
-  <script type="module" src="js/main.js"></script>
+    menuToggle?.addEventListener("click", () => {
+      sidebar.classList.toggle("open");
+      sidebarOverlay.classList.toggle("hidden");
+    });
+
+    sidebarOverlay?.addEventListener("click", () => {
+      sidebar.classList.remove("open");
+      sidebarOverlay.classList.add("hidden");
+    });
+  });
+</script>
 </body>
 </html>
