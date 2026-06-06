@@ -43,22 +43,29 @@ const logoutBtn       = document.getElementById("logoutBtn");
 // ============================================
 // SIDEBAR & HAMBURGER
 // ============================================
-function openSidebar()  { sidebar.classList.add("open");    sidebarOverlay.classList.remove("hidden"); }
-function closeSidebar() { sidebar.classList.remove("open"); sidebarOverlay.classList.add("hidden"); }
-
 menuToggle.addEventListener("click", () => {
-  sidebar.classList.contains("open") ? closeSidebar() : openSidebar();
+  sidebar.classList.toggle("open");
+  sidebarOverlay.classList.toggle("hidden");
 });
-sidebarOverlay.addEventListener("click", closeSidebar);
-document.querySelectorAll(".side-link").forEach(l => l.addEventListener("click", closeSidebar));
+
+sidebarOverlay.addEventListener("click", () => {
+  sidebar.classList.remove("open");
+  sidebarOverlay.classList.add("hidden");
+});
+
+document.querySelectorAll(".side-link").forEach(link => {
+  link.addEventListener("click", () => {
+    sidebar.classList.remove("open");
+    sidebarOverlay.classList.add("hidden");
+  });
+});
 
 // Categories accordion
-const catToggle = document.getElementById("categoriesToggle");
-const catMenu   = document.getElementById("categoriesMenu");
-const catArrow  = document.getElementById("categoriesArrow");
-catToggle.addEventListener("click", () => {
-  const open = catMenu.classList.toggle("open");
-  catArrow.style.transform = open ? "rotate(180deg)" : "rotate(0deg)";
+document.getElementById("categoriesToggle").addEventListener("click", () => {
+  const menu  = document.getElementById("categoriesMenu");
+  const arrow = document.getElementById("categoriesArrow");
+  const isOpen = menu.classList.toggle("open");
+  arrow.style.transform = isOpen ? "rotate(180deg)" : "rotate(0deg)";
 });
 
 // ============================================
@@ -75,10 +82,15 @@ onAuthStateChanged(auth, (user) => {
     userMenu.classList.add("hidden");
   }
 });
-logoutBtn?.addEventListener("click", (e) => { e.preventDefault(); signOut(auth); });
+
+logoutBtn?.addEventListener("click", (e) => {
+  e.preventDefault();
+  signOut(auth);
+});
 
 // ============================================
 // FILTER DROPDOWNS
+// Menus are moved to <body> so nothing clips them
 // ============================================
 function setupDropdown(btnId, menuId, labelId, dataKey, onSelect) {
   const btn   = document.getElementById(btnId);
@@ -86,12 +98,14 @@ function setupDropdown(btnId, menuId, labelId, dataKey, onSelect) {
   const label = document.getElementById(labelId);
   if (!btn || !menu) return;
 
-  // Move menu to body so NO parent can clip it
+  // Detach menu from filter bar and attach to body
   document.body.appendChild(menu);
+
+  // Style it for free-floating fixed position
   menu.style.position = "fixed";
   menu.style.zIndex   = "99999";
 
-  // Open / close
+  // Toggle open/close
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
 
@@ -100,11 +114,11 @@ function setupDropdown(btnId, menuId, labelId, dataKey, onSelect) {
       if (m !== menu) m.classList.add("hidden");
     });
 
-    // Calculate position fresh each click
+    // Position below the button
     const rect      = btn.getBoundingClientRect();
     menu.style.top  = (rect.bottom + 4) + "px";
     menu.style.left = rect.left + "px";
-    menu.style.minWidth = rect.width + "px";
+    menu.style.minWidth = Math.max(rect.width, 160) + "px";
 
     menu.classList.toggle("hidden");
   });
@@ -113,15 +127,21 @@ function setupDropdown(btnId, menuId, labelId, dataKey, onSelect) {
   menu.querySelectorAll(".filter-option").forEach(opt => {
     opt.addEventListener("click", (e) => {
       e.stopPropagation();
+
       menu.querySelectorAll(".filter-option").forEach(o => o.classList.remove("active"));
       opt.classList.add("active");
 
       const val  = opt.dataset[dataKey];
       const text = opt.textContent.trim();
 
+      // Update button label
       if (label) {
-        label.textContent = dataKey === "sort" ? text : (val === "all" ? "" : `: ${text}`);
+        label.textContent = (dataKey === "sort")
+          ? text
+          : (val === "all" ? "" : `: ${text}`);
       }
+
+      // Red highlight if non-default
       btn.classList.toggle("active-filter", val !== "all" && val !== "newest");
 
       onSelect(val);
@@ -131,7 +151,7 @@ function setupDropdown(btnId, menuId, labelId, dataKey, onSelect) {
   });
 }
 
-// Close all dropdowns when clicking outside
+// Close all dropdowns when tapping anywhere else
 document.addEventListener("click", () => {
   document.querySelectorAll(".filter-dropdown-menu").forEach(m => m.classList.add("hidden"));
 });
@@ -158,6 +178,7 @@ searchInput?.addEventListener("input", () => {
     }
   }, 400);
 });
+
 searchBtn?.addEventListener("click", doSearch);
 searchInput?.addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(); });
 
@@ -170,17 +191,20 @@ function doSearch() {
 }
 
 // ============================================
-// SKELETON LOADING
+// SKELETON CARDS
 // ============================================
 function showSkeletons(count = 8) {
-  videoGrid.innerHTML = Array(count).fill(`
-    <div class="skeleton-card">
-      <div class="skeleton-thumb"></div>
-      <div class="skeleton-info">
-        <div class="skeleton-line long"></div>
-        <div class="skeleton-line short"></div>
-      </div>
-    </div>`).join("");
+  videoGrid.innerHTML = "";
+  for (let i = 0; i < count; i++) {
+    videoGrid.innerHTML += `
+      <div class="skeleton-card">
+        <div class="skeleton-thumb"></div>
+        <div class="skeleton-info">
+          <div class="skeleton-line long"></div>
+          <div class="skeleton-line short"></div>
+        </div>
+      </div>`;
+  }
 }
 
 // ============================================
@@ -196,12 +220,12 @@ function resetAndLoad() {
 // ============================================
 // DATE CUTOFF HELPER
 // ============================================
-function getDateCutoff(f) {
-  const d = new Date();
-  if (f === "day")   { d.setDate(d.getDate() - 1);         return d; }
-  if (f === "week")  { d.setDate(d.getDate() - 7);         return d; }
-  if (f === "month") { d.setMonth(d.getMonth() - 1);       return d; }
-  if (f === "year")  { d.setFullYear(d.getFullYear() - 1); return d; }
+function getDateCutoff(filter) {
+  const now = new Date();
+  if (filter === "day")   { now.setDate(now.getDate() - 1);         return now; }
+  if (filter === "week")  { now.setDate(now.getDate() - 7);         return now; }
+  if (filter === "month") { now.setMonth(now.getMonth() - 1);       return now; }
+  if (filter === "year")  { now.setFullYear(now.getFullYear() - 1); return now; }
   return null;
 }
 
@@ -213,17 +237,18 @@ async function loadVideos() {
   isLoading = true;
 
   try {
-    const ref        = collection(db, "videos");
+    const videosRef  = collection(db, "videos");
     const fetchLimit = currentSearch ? 60 : PAGE_SIZE;
     const pagination = lastDoc ? [startAfter(lastDoc)] : [];
 
+    // Build query based on sort
     const sortMap = {
       views:  ["views",     "desc"],
       rating: ["likes",     "desc"],
       length: ["duration",  "desc"],
     };
     const [sortField, sortDir] = sortMap[activeSort] || ["createdAt", "desc"];
-    const q = query(ref, orderBy(sortField, sortDir), limit(fetchLimit), ...pagination);
+    const q = query(videosRef, orderBy(sortField, sortDir), limit(fetchLimit), ...pagination);
 
     const snapshot = await getDocs(q);
     let docs = snapshot.docs;
@@ -232,9 +257,11 @@ async function loadVideos() {
     if (currentSearch) {
       docs = docs.filter(d => {
         const v = d.data();
-        return v.title?.toLowerCase().includes(currentSearch)
-            || v.description?.toLowerCase().includes(currentSearch)
-            || v.tags?.some(t => t.toLowerCase().includes(currentSearch));
+        return (
+          v.title?.toLowerCase().includes(currentSearch) ||
+          v.description?.toLowerCase().includes(currentSearch) ||
+          v.tags?.some(t => t.toLowerCase().includes(currentSearch))
+        );
       });
     }
 
@@ -242,24 +269,31 @@ async function loadVideos() {
     const cutoff = getDateCutoff(activeDate);
     if (cutoff) {
       docs = docs.filter(d => {
-        const t = d.data().createdAt?.toDate();
-        return t && t >= cutoff;
+        const created = d.data().createdAt?.toDate();
+        return created && created >= cutoff;
       });
     }
 
     // Duration filter
-    if (activeDuration === "short")  docs = docs.filter(d => (d.data().duration || 0) < 180);
-    if (activeDuration === "medium") docs = docs.filter(d => { const s = d.data().duration || 0; return s >= 180 && s < 600; });
-    if (activeDuration === "long")   docs = docs.filter(d => (d.data().duration || 0) >= 600);
+    if (activeDuration === "short") {
+      docs = docs.filter(d => (d.data().duration || 0) < 180);
+    } else if (activeDuration === "medium") {
+      docs = docs.filter(d => { const s = d.data().duration || 0; return s >= 180 && s < 600; });
+    } else if (activeDuration === "long") {
+      docs = docs.filter(d => (d.data().duration || 0) >= 600);
+    }
 
     // Quality filter
-    if (activeQuality !== "all") docs = docs.filter(d => d.data().quality === activeQuality);
+    if (activeQuality !== "all") {
+      docs = docs.filter(d => d.data().quality === activeQuality);
+    }
 
-    // Relevance sort (client-side)
+    // Relevance: score by views + likes
     if (activeSort === "relevance") {
       docs.sort((a, b) => {
-        const score = d => (d.data().views || 0) + (d.data().likes || 0) * 2;
-        return score(b) - score(a);
+        const sA = (a.data().views || 0) + (a.data().likes || 0) * 2;
+        const sB = (b.data().views || 0) + (b.data().likes || 0) * 2;
+        return sB - sA;
       });
     }
 
@@ -281,14 +315,14 @@ async function loadVideos() {
     }
 
     // Render
-    const frag = document.createDocumentFragment();
-    docs.forEach(d => frag.appendChild(createVideoCard({ id: d.id, ...d.data() })));
-    videoGrid.appendChild(frag);
+    const fragment = document.createDocumentFragment();
+    docs.forEach(docSnap => fragment.appendChild(createVideoCard({ id: docSnap.id, ...docSnap.data() })));
+    videoGrid.appendChild(fragment);
 
     // Section title
     if (!currentSearch) {
-      const titles = { newest: "Latest Videos", relevance: "Most Relevant", views: "Most Viewed", rating: "Top Rated", length: "By Length" };
-      sectionTitle.textContent = titles[activeSort] || "Latest Videos";
+      const labels = { newest: "Latest Videos", relevance: "Most Relevant", views: "Most Viewed", rating: "Top Rated", length: "By Length" };
+      sectionTitle.textContent = labels[activeSort] || "Latest Videos";
     }
 
     // Pagination
@@ -303,12 +337,12 @@ async function loadVideos() {
     initLazyLoad();
 
   } catch (err) {
-    console.error(err);
+    console.error("Error:", err);
     videoGrid.innerHTML = `
       <div class="empty-state">
         <i class="fas fa-circle-exclamation"></i>
         <h3>Error loading videos</h3>
-        <p>Please check your connection and refresh.</p>
+        <p>Check your connection and refresh.</p>
       </div>`;
   }
 
@@ -319,28 +353,30 @@ async function loadVideos() {
 // VIDEO CARD
 // ============================================
 function createVideoCard(video) {
-  const card  = document.createElement("div");
+  const card     = document.createElement("div");
   card.className = "video-card";
 
   const thumb    = video.thumbnail || `https://archive.org/services/img/${video.archiveId}`;
-  const views    = formatNum(video.views    || 0);
-  const likes    = formatNum(video.likes    || 0);
+  const views    = formatNumber(video.views    || 0);
+  const likes    = formatNumber(video.likes    || 0);
   const date     = video.createdAt ? timeAgo(video.createdAt.toDate()) : "";
-  const duration = video.duration  ? formatDur(video.duration) : "";
+  const duration = video.duration  ? formatDuration(video.duration) : "";
+  const quality  = video.quality   ? `<span class="quality-badge">${video.quality}</span>` : "";
 
   card.innerHTML = `
     <div class="card-thumb">
       <img data-src="${thumb}"
            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3C/svg%3E"
-           alt="${esc(video.title)}" class="lazy-img"
+           alt="${escapeHtml(video.title)}"
+           class="lazy-img"
            onerror="this.src='https://archive.org/services/img/${video.archiveId}'"/>
       <div class="play-overlay"><i class="fas fa-play-circle"></i></div>
-      ${video.featured ? '<span class="card-badge">Featured</span>' : ""}
-      ${duration       ? `<span class="duration-badge">${duration}</span>` : ""}
-      ${video.quality  ? `<span class="quality-badge">${video.quality}</span>` : ""}
+      ${video.featured ? '<span class="card-badge">Featured</span>' : ''}
+      ${duration ? `<span class="duration-badge">${duration}</span>` : ''}
+      ${quality}
     </div>
     <div class="card-info">
-      <h3>${esc(video.title)}</h3>
+      <h3>${escapeHtml(video.title)}</h3>
       <div class="card-meta">
         <span><i class="fas fa-eye"></i> ${views}</span>
         <span><i class="fas fa-thumbs-up"></i> ${likes}</span>
@@ -354,19 +390,21 @@ function createVideoCard(video) {
 }
 
 // ============================================
-// LAZY LOADING
+// LAZY IMAGE LOADING
 // ============================================
 let lazyObserver = null;
+
 function initLazyLoad() {
   const imgs = document.querySelectorAll("img.lazy-img");
   if ("IntersectionObserver" in window) {
     if (!lazyObserver) {
       lazyObserver = new IntersectionObserver((entries) => {
-        entries.forEach(e => {
-          if (e.isIntersecting) {
-            e.target.src = e.target.dataset.src;
-            e.target.classList.remove("lazy-img");
-            lazyObserver.unobserve(e.target);
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const img = entry.target;
+            img.src = img.dataset.src;
+            img.classList.remove("lazy-img");
+            lazyObserver.unobserve(img);
           }
         });
       }, { rootMargin: "100px" });
@@ -389,14 +427,18 @@ loadMoreBtn?.addEventListener("click", loadVideos);
 // ============================================
 // HELPERS
 // ============================================
-function formatNum(n) {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
-  if (n >= 1_000)     return (n / 1_000).toFixed(1) + "K";
-  return String(n);
+function formatNumber(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
+  if (n >= 1000)    return (n / 1000).toFixed(1) + "K";
+  return n.toString();
 }
-function formatDur(s) {
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+
+function formatDuration(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2, "0")}`;
 }
+
 function timeAgo(date) {
   const s = Math.floor((new Date() - date) / 1000);
   if (s < 60)      return "Just now";
@@ -405,8 +447,9 @@ function timeAgo(date) {
   if (s < 2592000) return Math.floor(s / 86400) + "d ago";
   return date.toLocaleDateString();
 }
-function esc(str) {
-  return (str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+function escapeHtml(str) {
+  return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 // ============================================
