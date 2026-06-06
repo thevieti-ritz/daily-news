@@ -3,30 +3,27 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Sign In — Daily News UG</title>
+  <title>Sign In — Leaked Archives</title>
   <link rel="stylesheet" href="css/style.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 </head>
 <body class="auth-page">
 
-  <!-- Back to home -->
   <a href="index.html" class="back-home"><i class="fas fa-arrow-left"></i> Back to Home</a>
 
   <div class="auth-container">
 
     <div class="auth-logo">
-      <span class="logo-red">DAILY</span><span class="logo-white">NEWS</span><span class="logo-tag">UG</span>
+      <span class="logo-red">LEAKED</span><span class="logo-white">ARCHIVES</span>
     </div>
-    <p class="auth-tagline">Sign in to like, comment &amp; stay updated</p>
+    <p class="auth-tagline">Sign in to comment, download &amp; more</p>
 
-    <!-- Tab switcher -->
     <div class="auth-tabs">
       <button class="auth-tab active" id="tabSignIn">Sign In</button>
       <button class="auth-tab" id="tabSignUp">Create Account</button>
     </div>
 
-    <!-- Error / Success message -->
     <div class="auth-message hidden" id="authMessage"></div>
 
     <!-- SIGN IN FORM -->
@@ -41,13 +38,10 @@
         <button class="toggle-pw" type="button" onclick="togglePw('signInPassword')"><i class="fas fa-eye"></i></button>
       </div>
       <button class="btn-auth" id="signInBtn"><i class="fas fa-sign-in-alt"></i> Sign In</button>
-
       <div class="auth-divider"><span>or</span></div>
-
       <button class="btn-google" id="googleSignInBtn">
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"/> Continue with Google
       </button>
-
       <p class="forgot-pw"><a href="#" id="forgotPwLink">Forgot password?</a></p>
     </div>
 
@@ -67,9 +61,7 @@
         <button class="toggle-pw" type="button" onclick="togglePw('signUpPassword')"><i class="fas fa-eye"></i></button>
       </div>
       <button class="btn-auth" id="signUpBtn"><i class="fas fa-user-plus"></i> Create Account</button>
-
       <div class="auth-divider"><span>or</span></div>
-
       <button class="btn-google" id="googleSignUpBtn">
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"/> Continue with Google
       </button>

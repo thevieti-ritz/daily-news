@@ -1,168 +1,147 @@
 // ============================================
-// AUTH.JS — Login & Signup Logic
-// Handles email/password and Google sign-in
+// AUTH.JS — Leaked Archives
+// Handles: Sign Up, Sign In, Google, Logout
 // ============================================
 
-import { auth } from "./firebase.js";
+import { auth, db } from "./firebase.js";
 import {
-  signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
-  updateProfile,
   sendPasswordResetEmail,
-  onAuthStateChanged
+  onAuthStateChanged,
+  updateProfile
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import {
+  doc, setDoc, getDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-const googleProvider = new GoogleAuthProvider();
+// ---- Elements ----
+const tabSignIn     = document.getElementById('tabSignIn');
+const tabSignUp     = document.getElementById('tabSignUp');
+const signInForm    = document.getElementById('signInForm');
+const signUpForm    = document.getElementById('signUpForm');
+const authMessage   = document.getElementById('authMessage');
 
-// ---- DOM REFS ----
-const tabSignIn = document.getElementById("tabSignIn");
-const tabSignUp = document.getElementById("tabSignUp");
-const signInForm = document.getElementById("signInForm");
-const signUpForm = document.getElementById("signUpForm");
-const authMessage = document.getElementById("authMessage");
+// ---- Tab Switching ----
+tabSignIn.addEventListener('click', () => {
+  tabSignIn.classList.add('active');
+  tabSignUp.classList.remove('active');
+  signInForm.classList.remove('hidden');
+  signUpForm.classList.add('hidden');
+  clearMessage();
+});
 
-const signInEmail = document.getElementById("signInEmail");
-const signInPassword = document.getElementById("signInPassword");
-const signInBtn = document.getElementById("signInBtn");
-const googleSignInBtn = document.getElementById("googleSignInBtn");
+tabSignUp.addEventListener('click', () => {
+  tabSignUp.classList.add('active');
+  tabSignIn.classList.remove('active');
+  signUpForm.classList.remove('hidden');
+  signInForm.classList.add('hidden');
+  clearMessage();
+});
 
-const signUpName = document.getElementById("signUpName");
-const signUpEmail = document.getElementById("signUpEmail");
-const signUpPassword = document.getElementById("signUpPassword");
-const signUpBtn = document.getElementById("signUpBtn");
-const googleSignUpBtn = document.getElementById("googleSignUpBtn");
+// ---- Show Message ----
+function showMessage(text, type = 'error') {
+  authMessage.textContent = text;
+  authMessage.className = `auth-message ${type}`;
+}
+function clearMessage() {
+  authMessage.textContent = '';
+  authMessage.className = 'auth-message hidden';
+}
 
-const forgotPwLink = document.getElementById("forgotPwLink");
-
-// ---- REDIRECT IF ALREADY LOGGED IN ----
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    // Send back to where they came from, or home
-    const redirect = new URLSearchParams(window.location.search).get("redirect") || "index.html";
-    window.location.href = redirect;
+// ---- Save user profile to Firestore ----
+async function saveUserProfile(user, extraData = {}) {
+  const userRef = doc(db, 'users', user.uid);
+  const snap = await getDoc(userRef);
+  if (!snap.exists()) {
+    await setDoc(userRef, {
+      uid: user.uid,
+      name: user.displayName || extraData.name || 'Anonymous',
+      username: extraData.username || user.email.split('@')[0],
+      email: user.email,
+      avatar: user.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`,
+      joinedAt: serverTimestamp(),
+      downloads: []
+    });
   }
-});
+}
 
-// ---- TAB SWITCHING ----
-tabSignIn?.addEventListener("click", () => {
-  tabSignIn.classList.add("active");
-  tabSignUp.classList.remove("active");
-  signInForm.classList.remove("hidden");
-  signUpForm.classList.add("hidden");
-  clearMessage();
-});
+// ---- SIGN UP ----
+document.getElementById('signUpBtn').addEventListener('click', async () => {
+  const name     = document.getElementById('signUpName').value.trim();
+  const email    = document.getElementById('signUpEmail').value.trim();
+  const password = document.getElementById('signUpPassword').value;
 
-tabSignUp?.addEventListener("click", () => {
-  tabSignUp.classList.add("active");
-  tabSignIn.classList.remove("active");
-  signUpForm.classList.remove("hidden");
-  signInForm.classList.add("hidden");
-  clearMessage();
+  if (!name) return showMessage('Please enter your full name.');
+  if (!email) return showMessage('Please enter your email.');
+  if (password.length < 6) return showMessage('Password must be at least 6 characters.');
+
+  try {
+    showMessage('Creating your account...', 'success');
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    await updateProfile(result.user, { displayName: name });
+    await saveUserProfile(result.user, { name });
+    showMessage('Account created! Redirecting...', 'success');
+    setTimeout(() => window.location.href = 'index.html', 1500);
+  } catch (err) {
+    if (err.code === 'auth/email-already-in-use') showMessage('This email is already registered. Try signing in.');
+    else showMessage(err.message);
+  }
 });
 
 // ---- SIGN IN ----
-signInBtn?.addEventListener("click", async () => {
-  const email = signInEmail.value.trim();
-  const password = signInPassword.value;
+document.getElementById('signInBtn').addEventListener('click', async () => {
+  const email    = document.getElementById('signInEmail').value.trim();
+  const password = document.getElementById('signInPassword').value;
 
-  if (!email || !password) {
-    showMessage("Please fill in all fields.", "error");
-    return;
-  }
-
-  signInBtn.disabled = true;
-  signInBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+  if (!email) return showMessage('Please enter your email.');
+  if (!password) return showMessage('Please enter your password.');
 
   try {
+    showMessage('Signing in...', 'success');
     await signInWithEmailAndPassword(auth, email, password);
-    showMessage("Signed in! Redirecting...", "success");
+    showMessage('Welcome back! Redirecting...', 'success');
+    setTimeout(() => window.location.href = 'index.html', 1500);
   } catch (err) {
-    showMessage(friendlyError(err.code), "error");
-    signInBtn.disabled = false;
-    signInBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+    if (err.code === 'auth/user-not-found') showMessage('No account found with this email.');
+    else if (err.code === 'auth/wrong-password') showMessage('Incorrect password. Try again.');
+    else showMessage(err.message);
   }
 });
 
-// ---- SIGN UP ----
-signUpBtn?.addEventListener("click", async () => {
-  const name = signUpName.value.trim();
-  const email = signUpEmail.value.trim();
-  const password = signUpPassword.value;
+// ---- GOOGLE SIGN IN / SIGN UP ----
+const googleProvider = new GoogleAuthProvider();
 
-  if (!name || !email || !password) {
-    showMessage("Please fill in all fields.", "error");
-    return;
-  }
-  if (password.length < 6) {
-    showMessage("Password must be at least 6 characters.", "error");
-    return;
-  }
-
-  signUpBtn.disabled = true;
-  signUpBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating account...';
-
+async function googleAuth() {
   try {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(cred.user, { displayName: name });
-    showMessage("Account created! Redirecting...", "success");
+    const result = await signInWithPopup(auth, googleProvider);
+    await saveUserProfile(result.user);
+    showMessage('Signed in with Google! Redirecting...', 'success');
+    setTimeout(() => window.location.href = 'index.html', 1500);
   } catch (err) {
-    showMessage(friendlyError(err.code), "error");
-    signUpBtn.disabled = false;
-    signUpBtn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+    showMessage(err.message);
   }
-});
+}
 
-// ---- GOOGLE SIGN IN ----
-const handleGoogle = async () => {
-  try {
-    await signInWithPopup(auth, googleProvider);
-    showMessage("Signed in! Redirecting...", "success");
-  } catch (err) {
-    showMessage(friendlyError(err.code), "error");
-  }
-};
-googleSignInBtn?.addEventListener("click", handleGoogle);
-googleSignUpBtn?.addEventListener("click", handleGoogle);
+document.getElementById('googleSignInBtn').addEventListener('click', googleAuth);
+document.getElementById('googleSignUpBtn').addEventListener('click', googleAuth);
 
 // ---- FORGOT PASSWORD ----
-forgotPwLink?.addEventListener("click", async (e) => {
+document.getElementById('forgotPwLink').addEventListener('click', async (e) => {
   e.preventDefault();
-  const email = signInEmail.value.trim();
-  if (!email) {
-    showMessage("Enter your email address first, then click Forgot Password.", "error");
-    return;
-  }
+  const email = document.getElementById('signInEmail').value.trim();
+  if (!email) return showMessage('Enter your email above first, then click Forgot Password.');
   try {
     await sendPasswordResetEmail(auth, email);
-    showMessage("Password reset email sent! Check your inbox.", "success");
+    showMessage('Password reset email sent! Check your inbox.', 'success');
   } catch (err) {
-    showMessage(friendlyError(err.code), "error");
+    showMessage(err.message);
   }
 });
 
-// ---- HELPERS ----
-function showMessage(msg, type) {
-  authMessage.textContent = msg;
-  authMessage.className = `auth-message ${type}`;
-  authMessage.classList.remove("hidden");
-}
-
-function clearMessage() {
-  authMessage.classList.add("hidden");
-}
-
-function friendlyError(code) {
-  switch (code) {
-    case "auth/invalid-email": return "Invalid email address.";
-    case "auth/user-not-found": return "No account found with this email.";
-    case "auth/wrong-password": return "Incorrect password. Try again.";
-    case "auth/email-already-in-use": return "This email is already registered. Sign in instead.";
-    case "auth/weak-password": return "Password is too weak. Use at least 6 characters.";
-    case "auth/too-many-requests": return "Too many attempts. Please wait and try again.";
-    case "auth/popup-closed-by-user": return "Google sign-in was cancelled.";
-    case "auth/invalid-credential": return "Incorrect email or password.";
-    default: return "Something went wrong. Please try again.";
-  }
-}
+// ---- REDIRECT IF ALREADY LOGGED IN ----
+onAuthStateChanged(auth, (user) => {
+  if (user) window.location.href = 'index.html';
+});
