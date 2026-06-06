@@ -1140,3 +1140,40 @@ select option { background: var(--bg3); }
 
   .auth-container { padding: 24px 20px; }
 }
+/* ===== SIDEBAR SECTION BUTTON ===== */
+.side-section-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1rem;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 10px 16px;
+  text-align: left;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.side-section-btn:hover {
+  background: rgba(255,255,255,0.08);
+}
+.side-arrow {
+  margin-left: auto;
+  transition: transform 0.3s;
+}
+.side-submenu {
+  display: none;
+  flex-direction: column;
+  padding-left: 12px;
+}
+.side-submenu.open {
+  display: flex;
+}
+.side-link.sub {
+  font-size: 0.9rem;
+  opacity: 0.85;
+}

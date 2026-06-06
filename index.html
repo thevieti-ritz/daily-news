@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Daily News UG — Video</title>
-  <meta name="description" content="Watch the latest videos from Uganda, East Africa and the World — News, Sports, Entertainment and more."/>
+  <title>Leaked Archives</title>
+  <meta name="description" content="Bringing you the latest entertainment video leaks around the world."/>
   <link rel="stylesheet" href="css/style.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
@@ -16,7 +16,7 @@
     <div class="nav-left">
       <button class="hamburger" id="menuToggle"><i class="fas fa-bars"></i></button>
       <a href="index.html" class="logo">
-        <span class="logo-red">DAILY</span><span class="logo-white">NEWS</span><span class="logo-tag">UG</span>
+        <span class="logo-red">LEAKED</span><span class="logo-white">ARCHIVES</span>
       </a>
     </div>
 
@@ -41,19 +41,35 @@
   <!-- ===== SIDEBAR ===== -->
   <aside class="sidebar" id="sidebar">
     <nav class="side-nav">
-      <a href="index.html" class="side-link active"><i class="fas fa-house"></i> Home</a>
-      <a href="index.html?cat=news" class="side-link"><i class="fas fa-newspaper"></i> News</a>
-      <a href="index.html?cat=politics" class="side-link"><i class="fas fa-landmark"></i> Politics</a>
-      <a href="index.html?cat=sports" class="side-link"><i class="fas fa-futbol"></i> Sports</a>
-      <a href="index.html?cat=entertainment" class="side-link"><i class="fas fa-film"></i> Entertainment</a>
-      <a href="index.html?cat=business" class="side-link"><i class="fas fa-briefcase"></i> Business</a>
-      <a href="index.html?cat=technology" class="side-link"><i class="fas fa-microchip"></i> Technology</a>
-      <a href="index.html?cat=health" class="side-link"><i class="fas fa-heart-pulse"></i> Health</a>
-      <a href="index.html?cat=education" class="side-link"><i class="fas fa-graduation-cap"></i> Education</a>
-      <a href="index.html?cat=religion" class="side-link"><i class="fas fa-church"></i> Religion</a>
+
+      <!-- Categories Section -->
+      <button class="side-section-btn" id="categoriesToggle">
+        <i class="fas fa-th-large"></i> Categories
+        <i class="fas fa-chevron-down side-arrow" id="categoriesArrow"></i>
+      </button>
+      <div class="side-submenu" id="categoriesMenu">
+        <a href="index.html?cat=news" class="side-link sub"><i class="fas fa-newspaper"></i> News</a>
+        <a href="index.html?cat=politics" class="side-link sub"><i class="fas fa-landmark"></i> Politics</a>
+        <a href="index.html?cat=sports" class="side-link sub"><i class="fas fa-futbol"></i> Sports</a>
+        <a href="index.html?cat=entertainment" class="side-link sub"><i class="fas fa-film"></i> Entertainment</a>
+        <a href="index.html?cat=business" class="side-link sub"><i class="fas fa-briefcase"></i> Business</a>
+        <a href="index.html?cat=technology" class="side-link sub"><i class="fas fa-microchip"></i> Technology</a>
+        <a href="index.html?cat=health" class="side-link sub"><i class="fas fa-heart-pulse"></i> Health</a>
+        <a href="index.html?cat=education" class="side-link sub"><i class="fas fa-graduation-cap"></i> Education</a>
+        <a href="index.html?cat=religion" class="side-link sub"><i class="fas fa-church"></i> Religion</a>
+      </div>
+
       <hr/>
-      <a href="about.html" class="side-link"><i class="fas fa-circle-info"></i> About</a>
-      <a href="contact.html" class="side-link"><i class="fas fa-envelope"></i> Contact</a>
+
+      <!-- History -->
+      <a href="history.html" class="side-link"><i class="fas fa-clock-rotate-left"></i> History</a>
+
+      <!-- Profile -->
+      <a href="profile.html" class="side-link"><i class="fas fa-circle-user"></i> Profile</a>
+
+      <!-- Settings -->
+      <a href="settings.html" class="side-link"><i class="fas fa-gear"></i> Settings</a>
+
     </nav>
   </aside>
 
@@ -64,8 +80,8 @@
     <section class="hero" id="heroSection">
       <div class="hero-text">
         <p class="hero-sub">🔴 LIVE &amp; LATEST</p>
-        <h1>Uganda's #1 Video Platform</h1>
-        <p>News · Sports · Entertainment · Business · And More</p>
+        <h1>The World's #1 Leak Platform</h1>
+        <p>Entertainment · Celebrity · Viral · Exclusive Leaks</p>
       </div>
     </section>
 
@@ -91,7 +107,6 @@
 
     <!-- Video Grid -->
     <div class="video-grid" id="videoGrid">
-      <!-- Videos load here from Firebase -->
       <div class="loading-screen">
         <div class="spinner"></div>
         <p>Loading videos...</p>
@@ -108,20 +123,34 @@
   <!-- ===== FOOTER ===== -->
   <footer class="footer">
     <div class="footer-inner">
-      <div class="footer-logo"><span class="logo-red">DAILY</span><span class="logo-white">NEWS</span><span class="logo-tag">UG</span></div>
-      <p>Uganda's Premier Video Platform — News, Sports, Entertainment &amp; More</p>
+      <div class="footer-logo">
+        <span class="logo-red">LEAKED</span><span class="logo-white">ARCHIVES</span>
+      </div>
+      <p>Bringing you the latest entertainment video leaks around the world.</p>
       <div class="footer-links">
         <a href="about.html">About</a>
         <a href="contact.html">Contact</a>
         <a href="privacy.html">Privacy</a>
         <a href="terms.html">Terms</a>
       </div>
-      <p class="footer-copy">&copy; 2025 Daily News UG. All rights reserved.</p>
+      <p class="footer-copy">&copy; 2025 Leaked Archives. All rights reserved.</p>
     </div>
   </footer>
 
   <!-- Sidebar overlay for mobile -->
   <div class="sidebar-overlay hidden" id="sidebarOverlay"></div>
+
+  <!-- Sidebar Categories Toggle Script -->
+  <script>
+    const categoriesToggle = document.getElementById('categoriesToggle');
+    const categoriesMenu = document.getElementById('categoriesMenu');
+    const categoriesArrow = document.getElementById('categoriesArrow');
+
+    categoriesToggle.addEventListener('click', () => {
+      const isOpen = categoriesMenu.classList.toggle('open');
+      categoriesArrow.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+    });
+  </script>
 
   <script type="module" src="js/firebase.js"></script>
   <script type="module" src="js/main.js"></script>
