@@ -1,5 +1,5 @@
 /* ============================================
-   DAILY NEWS UG — VIDEO PLATFORM
+   LEAKED ARCHIVES — VIDEO PLATFORM
    Complete Stylesheet
    ============================================ */
 
@@ -69,18 +69,28 @@ select option { background: var(--bg3); }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding: 0 12px;
   z-index: 1000;
-  gap: 12px;
+  gap: 8px;
 }
-.nav-left { display: flex; align-items: center; gap: 12px; }
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
 .hamburger {
-  background: none; border: none; color: var(--white);
-  font-size: 20px; padding: 6px; cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--white);
+  font-size: 20px;
+  padding: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 .logo {
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: 22px;
   letter-spacing: 1px;
   white-space: nowrap;
 }
@@ -101,6 +111,7 @@ select option { background: var(--bg3); }
 /* Search */
 .search-bar {
   flex: 1;
+  min-width: 0;
   max-width: 520px;
   display: flex;
   align-items: center;
@@ -115,26 +126,36 @@ select option { background: var(--bg3); }
   border: none;
   padding: 8px 4px;
   flex: 1;
+  min-width: 0;
   font-size: 14px;
   border-radius: 0;
 }
 .search-bar button {
   background: var(--red);
   color: white;
-  width: 34px; height: 34px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 14px;
+  flex-shrink: 0;
   transition: background var(--transition);
 }
 .search-bar button:hover { background: var(--red-dark); }
 
 /* Nav Right */
-.nav-right { display: flex; align-items: center; gap: 10px; }
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
 .btn-login {
   background: var(--red);
   color: white;
-  padding: 7px 16px;
+  padding: 7px 14px;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 700;
@@ -204,7 +225,7 @@ select option { background: var(--bg3); }
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 20px;
+  padding: 12px 20px;
   font-size: 14px;
   font-weight: 600;
   color: var(--muted);
@@ -225,6 +246,50 @@ select option { background: var(--bg3); }
   inset: 0;
   background: rgba(0,0,0,0.6);
   z-index: 850;
+}
+
+/* ============================================
+   SIDEBAR SECTION BUTTON (Categories toggle)
+   ============================================ */
+.side-section-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 14px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 12px 20px;
+  text-align: left;
+  border-left: 3px solid transparent;
+  transition: all var(--transition);
+}
+.side-section-btn:hover {
+  color: var(--white);
+  background: var(--bg3);
+  border-left-color: var(--red);
+}
+.side-section-btn i:first-child { width: 18px; text-align: center; }
+.side-arrow {
+  margin-left: auto;
+  transition: transform 0.3s;
+  font-size: 12px;
+}
+.side-submenu {
+  display: none;
+  flex-direction: column;
+  padding-left: 8px;
+  background: var(--bg);
+}
+.side-submenu.open { display: flex; }
+.side-link.sub {
+  font-size: 13px;
+  padding: 10px 20px 10px 28px;
+  opacity: 0.9;
 }
 
 /* ============================================
@@ -264,14 +329,14 @@ select option { background: var(--bg3); }
 }
 .hero-text h1 {
   font-family: var(--font-display);
-  font-size: clamp(32px, 5vw, 56px);
+  font-size: clamp(28px, 5vw, 56px);
   color: var(--white);
   line-height: 1;
   margin-bottom: 10px;
 }
 .hero-text p {
   color: var(--muted);
-  font-size: 15px;
+  font-size: 14px;
 }
 
 /* ============================================
@@ -280,14 +345,15 @@ select option { background: var(--bg3); }
 .category-pills {
   display: flex;
   gap: 8px;
-  padding: 16px 24px;
+  padding: 14px 16px;
   overflow-x: auto;
   border-bottom: 1px solid var(--border);
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
 .category-pills::-webkit-scrollbar { display: none; }
 .pill {
-  padding: 7px 18px;
+  padding: 7px 16px;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 700;
@@ -296,6 +362,7 @@ select option { background: var(--bg3); }
   color: var(--muted);
   border: 1px solid var(--border);
   transition: all var(--transition);
+  touch-action: manipulation;
 }
 .pill:hover { color: var(--white); border-color: #555; }
 .pill.active { background: var(--red); color: white; border-color: var(--red); }
@@ -307,11 +374,11 @@ select option { background: var(--bg3); }
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 20px 24px 8px;
+  padding: 16px 16px 8px;
 }
 .section-header h2 {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 20px;
   letter-spacing: 1px;
 }
 .video-count {
@@ -329,7 +396,7 @@ select option { background: var(--bg3); }
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
-  padding: 16px 24px;
+  padding: 16px;
 }
 
 /* Video Card */
@@ -349,7 +416,7 @@ select option { background: var(--bg3); }
 .card-thumb {
   position: relative;
   width: 100%;
-  padding-top: 56.25%; /* 16:9 */
+  padding-top: 56.25%;
   background: var(--bg3);
   overflow: hidden;
 }
@@ -508,14 +575,14 @@ select option { background: var(--bg3); }
   margin-bottom: 10px;
 }
 .video-title {
-  font-size: clamp(18px, 2.5vw, 24px);
+  font-size: clamp(16px, 2.5vw, 24px);
   font-weight: 800;
   line-height: 1.3;
   margin-bottom: 10px;
 }
 .video-meta-row {
   display: flex;
-  gap: 20px;
+  gap: 16px;
   color: var(--muted);
   font-size: 13px;
   margin-bottom: 16px;
@@ -539,7 +606,7 @@ select option { background: var(--bg3); }
   background: var(--bg3);
   color: var(--white);
   border: 1px solid var(--border);
-  padding: 8px 18px;
+  padding: 8px 16px;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 700;
@@ -587,10 +654,7 @@ select option { background: var(--bg3); }
 }
 .comment-avatar { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; }
 .comment-input-wrap { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-.comment-input-wrap input {
-  border-radius: 24px;
-  padding: 10px 16px;
-}
+.comment-input-wrap input { border-radius: 24px; padding: 10px 16px; }
 .btn-post-comment {
   align-self: flex-end;
   background: var(--red);
@@ -762,10 +826,7 @@ select option { background: var(--bg3); }
   font-size: 14px;
   z-index: 1;
 }
-.input-group input {
-  padding-left: 38px;
-  padding-right: 38px;
-}
+.input-group input { padding-left: 38px; padding-right: 38px; }
 .toggle-pw {
   position: absolute;
   right: 12px;
@@ -998,12 +1059,7 @@ select option { background: var(--bg3); }
   overflow: hidden;
   align-items: center;
 }
-.manage-thumb {
-  width: 100px;
-  height: 56px;
-  object-fit: cover;
-  flex-shrink: 0;
-}
+.manage-thumb { width: 100px; height: 56px; object-fit: cover; flex-shrink: 0; }
 .manage-info { flex: 1; padding: 8px; }
 .manage-info h4 { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
 .manage-info span { font-size: 11px; color: var(--muted); }
@@ -1080,13 +1136,19 @@ select option { background: var(--bg3); }
   background: var(--bg2);
   border-top: 1px solid var(--border);
   margin-left: var(--sidebar-w);
-  padding: 32px;
+  padding: 32px 16px;
   text-align: center;
 }
 .footer-inner { max-width: 600px; margin: 0 auto; }
 .footer-logo { font-family: var(--font-display); font-size: 28px; margin-bottom: 8px; }
 .footer p { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
-.footer-links { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; }
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
 .footer-links a { font-size: 13px; color: var(--muted); transition: color var(--transition); }
 .footer-links a:hover { color: var(--red); }
 .footer-copy { font-size: 12px; color: var(--bg4); }
@@ -1099,81 +1161,101 @@ select option { background: var(--bg3); }
 .video-card { animation: fadeIn 0.3s ease both; }
 
 /* ============================================
-   RESPONSIVE — TABLET
+   RESPONSIVE — TABLET (max 1024px)
    ============================================ */
 @media (max-width: 1024px) {
   .watch-container { grid-template-columns: 1fr; }
   .admin-grid { grid-template-columns: 1fr; }
-  .watch-right { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
-  .related-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .watch-right {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  .related-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
   .related-title { grid-column: 1 / -1; }
 }
 
 /* ============================================
-   RESPONSIVE — MOBILE
+   RESPONSIVE — MOBILE (max 768px)
    ============================================ */
 @media (max-width: 768px) {
   :root { --sidebar-w: 0px; }
 
+  /* Sidebar slides in from left */
   .sidebar {
     transform: translateX(-220px);
     width: 220px;
+    z-index: 950;
   }
   .sidebar.open { transform: translateX(0); }
   .sidebar-overlay { display: block !important; }
   .sidebar-overlay.hidden { display: none !important; }
 
+  /* Main layout */
   .main-content { margin-left: 0; }
-  .footer { margin-left: 0; }
+  .footer { margin-left: 0; padding: 24px 16px; }
 
-  .video-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; padding: 12px; }
-  .hero { padding: 32px 16px; }
-  .section-header { padding: 16px 12px 6px; }
-  .category-pills { padding: 12px; }
+  /* Navbar */
+  .navbar { padding: 0 10px; gap: 6px; }
+  .logo { font-size: 18px; }
+  .btn-login { padding: 6px 10px; font-size: 12px; }
+  .btn-login span { display: none; } /* hide text, show icon only */
 
-  .watch-container { padding: 12px; gap: 16px; }
-  .admin-container { padding: 16px; }
-  .admin-stats { grid-template-columns: repeat(2, 1fr); }
+  /* Search bar takes full remaining space */
+  .search-bar { max-width: none; }
+  .search-bar input { font-size: 13px; }
 
-  .search-bar { max-width: none; flex: 1; }
-  .logo { font-size: 20px; }
+  /* Hero */
+  .hero { padding: 28px 16px; }
+  .hero-text h1 { font-size: 28px; }
+  .hero-sub { font-size: 11px; letter-spacing: 2px; }
 
-  .auth-container { padding: 24px 20px; }
+  /* Category pills */
+  .category-pills { padding: 10px 12px; gap: 6px; }
+  .pill { padding: 6px 12px; font-size: 12px; }
+
+  /* Section header */
+  .section-header { padding: 14px 12px 6px; }
+  .section-header h2 { font-size: 18px; }
+
+  /* Video grid — 2 columns on mobile */
+  .video-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  .card-info { padding: 8px 10px; }
+  .card-info h3 { font-size: 12px; }
+  .card-meta { font-size: 11px; gap: 6px; }
+
+  /* Watch page */
+  .watch-container { padding: 10px; gap: 12px; }
+
+  /* Admin */
+  .admin-container { padding: 12px; }
+  .admin-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .admin-card { padding: 16px; }
+
+  /* Auth */
+  .auth-container { padding: 24px 16px; }
+
+  /* Footer */
+  .footer-links { gap: 12px; }
+  .footer-logo { font-size: 22px; }
 }
-/* ===== SIDEBAR SECTION BUTTON ===== */
-.side-section-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  background: none;
-  border: none;
-  color: inherit;
-  font-size: 1rem;
-  font-family: inherit;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 10px 16px;
-  text-align: left;
-  border-radius: 8px;
-  transition: background 0.2s;
-}
-.side-section-btn:hover {
-  background: rgba(255,255,255,0.08);
-}
-.side-arrow {
-  margin-left: auto;
-  transition: transform 0.3s;
-}
-.side-submenu {
-  display: none;
-  flex-direction: column;
-  padding-left: 12px;
-}
-.side-submenu.open {
-  display: flex;
-}
-.side-link.sub {
-  font-size: 0.9rem;
-  opacity: 0.85;
+
+/* ============================================
+   RESPONSIVE — SMALL MOBILE (max 400px)
+   ============================================ */
+@media (max-width: 400px) {
+  .logo { font-size: 15px; }
+  .search-bar input::placeholder { font-size: 12px; }
+  .video-grid { grid-template-columns: 1fr 1fr; gap: 8px; padding: 8px; }
+  .hero-text h1 { font-size: 24px; }
+  .pill { padding: 5px 10px; font-size: 11px; }
+  .btn-login { padding: 5px 8px; font-size: 11px; }
 }
