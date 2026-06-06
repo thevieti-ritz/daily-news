@@ -1,234 +1,271 @@
-// ================================
-//   DAILY NEWS - ADMIN PANEL
-// ================================
+// ============================================
+// ADMIN.JS — Admin Panel Logic
+// Handles video upload, editing, deleting,
+// stats dashboard — admin only
+// ============================================
 
-import { db, storage, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, orderBy, query, ref, uploadBytes, getDownloadURL } from './firebase.js';
+import { db, auth } from "./firebase.js";
+import {
+  collection, addDoc, getDocs, doc, updateDoc,
+  deleteDoc, serverTimestamp, query, orderBy, getCountFromServer
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// ================================
-// LOAD ALL ARTICLES IN ADMIN
-// ================================
-async function loadAdminArticles() {
-    const list = document.getElementById('adminArticleList');
-    if (!list) return;
+// ============================================================
+// ⚠️ IMPORTANT: Replace this with YOUR email address
+// Only this email will be able to access the admin panel
+// ============================================================
+const ADMIN_EMAIL = "dbernardinvestments@gmail.com";
 
-    list.innerHTML = '<p class="loading-msg">Loading articles...</p>';
+// ---- DOM REFS ----
+const accessDenied = document.getElementById("accessDenied");
+const adminWrap = document.getElementById("adminWrap");
+const adminUserName = document.getElementById("adminUserName");
+const adminLogout = document.getElementById("adminLogout");
 
-    try {
-        const q = query(collection(db, 'articles'), orderBy('createdAt', 'desc'));
-        const snapshot = await getDocs(q);
+const uploadMessage = document.getElementById("uploadMessage");
+const videoTitleInput = document.getElementById("videoTitle");
+const archiveIdInput = document.getElementById("archiveId");
+const thumbnailInput = document.getElementById("thumbnailUrl");
+const categorySelect = document.getElementById("videoCategory");
+const descriptionInput = document.getElementById("videoDescription");
+const tagsInput = document.getElementById("videoTags");
+const isFeaturedInput = document.getElementById("isFeatured");
+const uploadBtn = document.getElementById("uploadBtn");
 
-        if (snapshot.empty) {
-            list.innerHTML = '<p class="no-articles">No articles yet. Create your first one above!</p>';
-            return;
-        }
+const manageList = document.getElementById("manageList");
+const managerSearch = document.getElementById("managerSearch");
 
-        list.innerHTML = '';
-        snapshot.forEach(docSnap => {
-            const a = docSnap.data();
-            const id = docSnap.id;
+const editModal = document.getElementById("editModal");
+const closeEditModal = document.getElementById("closeEditModal");
+const saveEditBtn = document.getElementById("saveEditBtn");
 
-            const card = document.createElement('div');
-            card.className = 'admin-article-card';
-            card.innerHTML = `
-                <div class="admin-card-info">
-                    <span class="label ${a.category.toLowerCase()}-label">${a.category}</span>
-                    <h3>${a.title}</h3>
-                    <div class="admin-card-meta">
-                        <span>By ${a.author}</span>
-                        <span>${a.date}</span>
-                    </div>
-                </div>
-                <div class="admin-card-actions">
-                    <button class="edit-btn" onclick="editArticle('${id}')">Edit</button>
-                    <button class="delete-btn" onclick="deleteArticle('${id}')">Delete</button>
-                </div>
-            `;
-            list.appendChild(card);
-        });
+let allVideos = [];
 
-    } catch (error) {
-        list.innerHTML = `<p class="error-msg">Error loading articles: ${error.message}</p>`;
-    }
-}
+// ---- AUTH CHECK ----
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    window.location.href = "login.html";
+    return;
+  }
 
-// ================================
-// PUBLISH ARTICLE
-// ================================
-async function publishArticle() {
-    const title = document.getElementById('artTitle').value.trim();
-    const category = document.getElementById('artCategory').value;
-    const author = document.getElementById('artAuthor').value.trim();
-    const standfirst = document.getElementById('artStandfirst').value.trim();
-    const body = document.getElementById('artBody').value.trim();
-    const imageFile = document.getElementById('artImage').files[0];
-    const editId = document.getElementById('editId').value;
+  if (user.email !== ADMIN_EMAIL) {
+    accessDenied.classList.remove("hidden");
+    return;
+  }
 
-    // VALIDATION
-    if (!title || !category || !author || !standfirst || !body) {
-        showNotification('Please fill in all required fields.', 'error');
-        return;
-    }
-
-    const publishBtn = document.getElementById('publishBtn');
-    publishBtn.textContent = 'Publishing...';
-    publishBtn.disabled = true;
-
-    try {
-        let imageUrl = document.getElementById('currentImage').value || '';
-
-        // UPLOAD IMAGE IF PROVIDED
-        if (imageFile) {
-            const imageRef = ref(storage, `articles/${Date.now()}_${imageFile.name}`);
-            await uploadBytes(imageRef, imageFile);
-            imageUrl = await getDownloadURL(imageRef);
-        }
-
-        const articleData = {
-            title,
-            category,
-            author,
-            standfirst,
-            body,
-            imageUrl,
-            date: new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-            createdAt: new Date().toISOString()
-        };
-
-        if (editId) {
-            // UPDATE EXISTING
-            await updateDoc(doc(db, 'articles', editId), articleData);
-            showNotification('Article updated successfully!', 'success');
-        } else {
-            // CREATE NEW
-            await addDoc(collection(db, 'articles'), articleData);
-            showNotification('Article published successfully!', 'success');
-        }
-
-        resetForm();
-        loadAdminArticles();
-
-    } catch (error) {
-        showNotification(`Error: ${error.message}`, 'error');
-    } finally {
-        publishBtn.textContent = 'Publish Article';
-        publishBtn.disabled = false;
-    }
-}
-
-// ================================
-// DELETE ARTICLE
-// ================================
-window.deleteArticle = async function(id) {
-    if (!confirm('Are you sure you want to delete this article? This cannot be undone.')) return;
-
-    try {
-        await deleteDoc(doc(db, 'articles', id));
-        showNotification('Article deleted.', 'success');
-        loadAdminArticles();
-    } catch (error) {
-        showNotification(`Error deleting: ${error.message}`, 'error');
-    }
-}
-
-// ================================
-// EDIT ARTICLE
-// ================================
-window.editArticle = async function(id) {
-    try {
-        const snapshot = await getDocs(collection(db, 'articles'));
-        snapshot.forEach(docSnap => {
-            if (docSnap.id === id) {
-                const a = docSnap.data();
-                document.getElementById('artTitle').value = a.title;
-                document.getElementById('artCategory').value = a.category;
-                document.getElementById('artAuthor').value = a.author;
-                document.getElementById('artStandfirst').value = a.standfirst;
-                document.getElementById('artBody').value = a.body;
-                document.getElementById('editId').value = id;
-                document.getElementById('currentImage').value = a.imageUrl || '';
-                document.getElementById('formTitle').textContent = 'Edit Article';
-                document.getElementById('publishBtn').textContent = 'Update Article';
-
-                // Scroll to form
-                document.getElementById('articleForm').scrollIntoView({ behavior: 'smooth' });
-            }
-        });
-    } catch (error) {
-        showNotification(`Error loading article: ${error.message}`, 'error');
-    }
-}
-
-// ================================
-// RESET FORM
-// ================================
-function resetForm() {
-    document.getElementById('artTitle').value = '';
-    document.getElementById('artCategory').value = '';
-    document.getElementById('artAuthor').value = '';
-    document.getElementById('artStandfirst').value = '';
-    document.getElementById('artBody').value = '';
-    document.getElementById('artImage').value = '';
-    document.getElementById('editId').value = '';
-    document.getElementById('currentImage').value = '';
-    document.getElementById('formTitle').textContent = 'Write New Article';
-    document.getElementById('publishBtn').textContent = 'Publish Article';
-}
-
-// ================================
-// NOTIFICATION
-// ================================
-function showNotification(message, type) {
-    const existing = document.querySelector('.admin-notification');
-    if (existing) existing.remove();
-
-    const notif = document.createElement('div');
-    notif.className = `admin-notification ${type}`;
-    notif.textContent = message;
-    document.body.appendChild(notif);
-
-    setTimeout(() => notif.remove(), 4000);
-}
-
-// ================================
-// IMAGE PREVIEW
-// ================================
-function setupImagePreview() {
-    const imageInput = document.getElementById('artImage');
-    if (!imageInput) return;
-
-    imageInput.addEventListener('change', () => {
-        const file = imageInput.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = e => {
-            let preview = document.getElementById('imagePreview');
-            if (!preview) {
-                preview = document.createElement('img');
-                preview.id = 'imagePreview';
-                preview.style.cssText = 'width:100%; max-height:200px; object-fit:cover; margin-top:8px; border:1px solid #dcdcdc;';
-                imageInput.parentNode.appendChild(preview);
-            }
-            preview.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    });
-}
-
-// ================================
-// INIT
-// ================================
-document.addEventListener('DOMContentLoaded', () => {
-    loadAdminArticles();
-    setupImagePreview();
-
-    const publishBtn = document.getElementById('publishBtn');
-    if (publishBtn) {
-        publishBtn.addEventListener('click', publishArticle);
-    }
-
-    const resetBtn = document.getElementById('resetBtn');
-    if (resetBtn) {
-        resetBtn.addEventListener('click', resetForm);
-    }
+  // Admin confirmed
+  adminWrap.classList.remove("hidden");
+  adminUserName.textContent = user.displayName || user.email;
+  loadDashboard();
+  loadVideosForManager();
 });
+
+adminLogout?.addEventListener("click", (e) => {
+  e.preventDefault();
+  signOut(auth).then(() => window.location.href = "index.html");
+});
+
+// ---- UPLOAD VIDEO ----
+uploadBtn?.addEventListener("click", async () => {
+  const title = videoTitleInput.value.trim();
+  const archiveId = archiveIdInput.value.trim();
+  const category = categorySelect.value;
+
+  if (!title) { showUploadMsg("Please enter a video title.", "error"); return; }
+  if (!archiveId) { showUploadMsg("Please enter the Archive.org embed ID.", "error"); return; }
+  if (!category) { showUploadMsg("Please select a category.", "error"); return; }
+
+  // Clean up archive ID (remove full URL if pasted by mistake)
+  const cleanId = archiveId
+    .replace("https://archive.org/details/", "")
+    .replace("https://archive.org/embed/", "")
+    .replace(/\/$/, "")
+    .trim();
+
+  uploadBtn.disabled = true;
+  uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
+
+  try {
+    const tags = tagsInput.value.split(",").map(t => t.trim().toLowerCase()).filter(Boolean);
+    const thumbnail = thumbnailInput.value.trim() || `https://archive.org/services/img/${cleanId}`;
+
+    await addDoc(collection(db, "videos"), {
+      title,
+      archiveId: cleanId,
+      thumbnail,
+      category,
+      description: descriptionInput.value.trim(),
+      tags,
+      featured: isFeaturedInput.checked,
+      views: 0,
+      likes: 0,
+      likedBy: [],
+      createdAt: serverTimestamp()
+    });
+
+    showUploadMsg(`✅ "${title}" published successfully!`, "success");
+
+    // Clear form
+    videoTitleInput.value = "";
+    archiveIdInput.value = "";
+    thumbnailInput.value = "";
+    categorySelect.value = "";
+    descriptionInput.value = "";
+    tagsInput.value = "";
+    isFeaturedInput.checked = false;
+
+    // Refresh
+    loadDashboard();
+    loadVideosForManager();
+
+  } catch (err) {
+    showUploadMsg("Error: " + err.message, "error");
+  }
+
+  uploadBtn.disabled = false;
+  uploadBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Publish Video';
+});
+
+// ---- DASHBOARD STATS ----
+async function loadDashboard() {
+  try {
+    const snap = await getDocs(collection(db, "videos"));
+    let totalViews = 0, totalLikes = 0, totalComments = 0;
+
+    for (const d of snap.docs) {
+      const data = d.data();
+      totalViews += data.views || 0;
+      totalLikes += data.likes || 0;
+      // Count comments subcollection
+      try {
+        const commentSnap = await getCountFromServer(collection(db, "videos", d.id, "comments"));
+        totalComments += commentSnap.data().count || 0;
+      } catch {}
+    }
+
+    document.getElementById("totalVideos").textContent = snap.size;
+    document.getElementById("totalViews").textContent = formatNumber(totalViews);
+    document.getElementById("totalLikes").textContent = formatNumber(totalLikes);
+    document.getElementById("totalComments").textContent = formatNumber(totalComments);
+  } catch (err) {
+    console.error("Stats error:", err);
+  }
+}
+
+// ---- LOAD VIDEOS FOR MANAGER ----
+async function loadVideosForManager() {
+  manageList.innerHTML = `<div class="loading-screen"><div class="spinner"></div><p>Loading...</p></div>`;
+  try {
+    const q = query(collection(db, "videos"), orderBy("createdAt", "desc"));
+    const snap = await getDocs(q);
+    allVideos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderManageList(allVideos);
+  } catch (err) {
+    manageList.innerHTML = `<p style="color:var(--red)">Error: ${err.message}</p>`;
+  }
+}
+
+function renderManageList(videos) {
+  manageList.innerHTML = "";
+  if (videos.length === 0) {
+    manageList.innerHTML = `<p style="color:var(--muted);font-size:13px;text-align:center;padding:24px">No videos found.</p>`;
+    return;
+  }
+  videos.forEach(v => manageList.appendChild(createManageItem(v)));
+}
+
+function createManageItem(video) {
+  const el = document.createElement("div");
+  el.className = "manage-item";
+  const thumb = video.thumbnail || `https://archive.org/services/img/${video.archiveId}`;
+  el.innerHTML = `
+    <img class="manage-thumb" src="${thumb}" alt="${escapeHtml(video.title)}"
+         onerror="this.src='https://archive.org/services/img/${video.archiveId}'"/>
+    <div class="manage-info">
+      <h4>${escapeHtml(video.title)}</h4>
+      <span><i class="fas fa-eye"></i> ${formatNumber(video.views||0)} · 
+            <i class="fas fa-thumbs-up"></i> ${formatNumber(video.likes||0)} · 
+            ${video.category || "general"}</span>
+    </div>
+    <div class="manage-actions">
+      <button class="btn-edit" data-id="${video.id}"><i class="fas fa-pen"></i> Edit</button>
+      <button class="btn-delete" data-id="${video.id}"><i class="fas fa-trash"></i></button>
+    </div>`;
+
+  el.querySelector(".btn-edit").addEventListener("click", () => openEditModal(video));
+  el.querySelector(".btn-delete").addEventListener("click", async () => {
+    if (confirm(`Delete "${video.title}"? This cannot be undone.`)) {
+      await deleteDoc(doc(db, "videos", video.id));
+      el.remove();
+      loadDashboard();
+    }
+  });
+
+  return el;
+}
+
+// ---- MANAGER SEARCH ----
+managerSearch?.addEventListener("input", () => {
+  const q = managerSearch.value.toLowerCase();
+  renderManageList(allVideos.filter(v =>
+    v.title?.toLowerCase().includes(q) ||
+    v.category?.toLowerCase().includes(q)
+  ));
+});
+
+// ---- EDIT MODAL ----
+function openEditModal(video) {
+  document.getElementById("editVideoId").value = video.id;
+  document.getElementById("editTitle").value = video.title || "";
+  document.getElementById("editDescription").value = video.description || "";
+  document.getElementById("editCategory").value = video.category || "news";
+  document.getElementById("editThumbnail").value = video.thumbnail || "";
+  editModal.classList.remove("hidden");
+}
+
+closeEditModal?.addEventListener("click", () => editModal.classList.add("hidden"));
+editModal?.addEventListener("click", (e) => { if (e.target === editModal) editModal.classList.add("hidden"); });
+
+saveEditBtn?.addEventListener("click", async () => {
+  const id = document.getElementById("editVideoId").value;
+  const title = document.getElementById("editTitle").value.trim();
+  const description = document.getElementById("editDescription").value.trim();
+  const category = document.getElementById("editCategory").value;
+  const thumbnail = document.getElementById("editThumbnail").value.trim();
+
+  if (!title) { alert("Title cannot be empty."); return; }
+
+  saveEditBtn.disabled = true;
+  saveEditBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+  try {
+    await updateDoc(doc(db, "videos", id), { title, description, category, thumbnail });
+    editModal.classList.add("hidden");
+    loadVideosForManager();
+    loadDashboard();
+  } catch (err) {
+    alert("Error saving: " + err.message);
+  }
+
+  saveEditBtn.disabled = false;
+  saveEditBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+});
+
+// ---- HELPERS ----
+function showUploadMsg(msg, type) {
+  uploadMessage.textContent = msg;
+  uploadMessage.className = `admin-message ${type}`;
+  uploadMessage.classList.remove("hidden");
+  setTimeout(() => uploadMessage.classList.add("hidden"), 5000);
+}
+
+function formatNumber(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
+  if (n >= 1000) return (n / 1000).toFixed(1) + "K";
+  return n.toString();
+}
+
+function escapeHtml(str) {
+  return (str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}

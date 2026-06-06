@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Watch — Daily News UG</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <button class="hamburger" id="menuToggle"><i class="fas fa-bars"></i></button>
+      <a href="index.html" class="logo">
+        <span class="logo-red">DAILY</span><span class="logo-white">NEWS</span><span class="logo-tag">UG</span>
+      </a>
+    </div>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search videos..." autocomplete="off"/>
+      <button id="searchBtn"><i class="fas fa-search"></i></button>
+    </div>
+    <div class="nav-right">
+      <a href="login.html" class="btn-login" id="authLink"><i class="fas fa-user"></i> Sign In</a>
+      <div class="user-menu hidden" id="userMenu">
+        <img src="https://api.dicebear.com/7.x/thumbs/svg?seed=user" class="avatar" id="userAvatar"/>
+        <div class="dropdown" id="userDropdown">
+          <span id="userDisplayName"></span>
+          <a href="admin.html"><i class="fas fa-upload"></i> Upload Video</a>
+          <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <nav class="side-nav">
+      <a href="index.html" class="side-link"><i class="fas fa-house"></i> Home</a>
+      <a href="index.html?cat=news" class="side-link"><i class="fas fa-newspaper"></i> News</a>
+      <a href="index.html?cat=politics" class="side-link"><i class="fas fa-landmark"></i> Politics</a>
+      <a href="index.html?cat=sports" class="side-link"><i class="fas fa-futbol"></i> Sports</a>
+      <a href="index.html?cat=entertainment" class="side-link"><i class="fas fa-film"></i> Entertainment</a>
+      <a href="index.html?cat=business" class="side-link"><i class="fas fa-briefcase"></i> Business</a>
+      <a href="index.html?cat=technology" class="side-link"><i class="fas fa-microchip"></i> Technology</a>
+      <a href="index.html?cat=health" class="side-link"><i class="fas fa-heart-pulse"></i> Health</a>
+      <a href="index.html?cat=education" class="side-link"><i class="fas fa-graduation-cap"></i> Education</a>
+      <a href="index.html?cat=religion" class="side-link"><i class="fas fa-church"></i> Religion</a>
+      <hr/>
+      <a href="about.html" class="side-link"><i class="fas fa-circle-info"></i> About</a>
+      <a href="contact.html" class="side-link"><i class="fas fa-envelope"></i> Contact</a>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content watch-layout" id="mainContent">
+
+    <div class="watch-container">
+
+      <!-- LEFT: Player + Info -->
+      <div class="watch-left">
+
+        <!-- Video Player -->
+        <div class="player-wrap">
+          <iframe id="videoPlayer" src="" frameborder="0"
+            allowfullscreen webkitallowfullscreen mozallowfullscreen
+            allow="autoplay; fullscreen">
+          </iframe>
+        </div>
+
+        <!-- Video Info -->
+        <div class="video-info-box">
+          <span class="video-category-badge" id="videoCategoryBadge">Category</span>
+          <h1 class="video-title" id="videoTitle">Loading...</h1>
+          <div class="video-meta-row">
+            <span><i class="fas fa-eye"></i> <span id="viewCount">0</span> views</span>
+            <span><i class="fas fa-calendar"></i> <span id="videoDate"></span></span>
+          </div>
+
+          <!-- Like / Share -->
+          <div class="action-row">
+            <button class="action-btn" id="likeBtn">
+              <i class="fas fa-thumbs-up"></i>
+              <span id="likeCount">0</span>
+            </button>
+            <button class="action-btn" id="shareBtn">
+              <i class="fas fa-share-nodes"></i> Share
+            </button>
+            <button class="action-btn" id="copyLinkBtn">
+              <i class="fas fa-link"></i> Copy Link
+            </button>
+          </div>
+
+          <!-- Description -->
+          <div class="video-description" id="videoDescription"></div>
+        </div>
+
+        <!-- Comments Section -->
+        <div class="comments-section">
+          <h3><i class="fas fa-comments"></i> Comments <span id="commentCount" class="comment-count-badge">0</span></h3>
+
+          <!-- Add Comment -->
+          <div class="comment-form" id="commentForm">
+            <img src="https://api.dicebear.com/7.x/thumbs/svg?seed=guest" class="comment-avatar" id="commentUserAvatar"/>
+            <div class="comment-input-wrap">
+              <input type="text" id="commentInput" placeholder="Add a comment... (sign in required)"/>
+              <button class="btn-post-comment" id="postCommentBtn"><i class="fas fa-paper-plane"></i> Post</button>
+            </div>
+          </div>
+
+          <!-- Comments List -->
+          <div class="comments-list" id="commentsList">
+            <div class="loading-screen"><div class="spinner"></div><p>Loading comments...</p></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: Related Videos -->
+      <div class="watch-right">
+        <h3 class="related-title">More Videos</h3>
+        <div class="related-list" id="relatedVideos">
+          <div class="loading-screen"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Share Modal -->
+  <div class="modal-overlay hidden" id="shareModal">
+    <div class="modal">
+      <button class="modal-close" id="closeShareModal"><i class="fas fa-times"></i></button>
+      <h3>Share this video</h3>
+      <div class="share-grid">
+        <a class="share-btn whatsapp" id="shareWhatsapp" target="_blank"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+        <a class="share-btn facebook" id="shareFacebook" target="_blank"><i class="fab fa-facebook"></i> Facebook</a>
+        <a class="share-btn twitter" id="shareTwitter" target="_blank"><i class="fab fa-x-twitter"></i> X / Twitter</a>
+        <a class="share-btn telegram" id="shareTelegram" target="_blank"><i class="fab fa-telegram"></i> Telegram</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-overlay hidden" id="sidebarOverlay"></div>
+
+  <script type="module" src="js/firebase.js"></script>
+  <script type="module" src="js/watch.js"></script>
+</body>
+</html>

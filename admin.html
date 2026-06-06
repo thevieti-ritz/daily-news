@@ -1,769 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script>(function(s){s.dataset.zone='11034907',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3178797910676300"
-     crossorigin="anonymous"></script>
-    <meta charset="UTF-8">
-    <!-- Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-G6SX3WSJRK"></script>
-<script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-G6SX3WSJRK');
-</script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Daily News</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        .admin-wrap {
-            max-width: 1200px;
-            margin: 30px auto;
-            padding: 0 20px;
-        }
-
-        .admin-header-bar {
-            background-color: #052962;
-            color: white;
-            padding: 16px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        .admin-header-bar h1 {
-            font-family: 'Libre Baskerville', Georgia, serif;
-            font-size: 22px;
-        }
-
-        .admin-header-bar a {
-            color: rgba(255,255,255,0.8);
-            font-size: 13px;
-            font-weight: 600;
-        }
-
-        .admin-header-bar a:hover { color: white; }
-
-        .admin-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-        }
-        <!-- JOBS PANEL -->
-<div class="admin-articles-panel" style="margin-top:30px; border-top-color:#1a5c38;">
-    <h2 style="color:#1a5c38;">🧳 Job Applications</h2>
-    <div id="adminJobsList">
-        <p class="loading-msg">Loading jobs...</p>
-    </div>
-</div>
-
-        #articleForm {
-            background: #ffffff;
-            border: 1px solid #dcdcdc;
-            border-top: 4px solid #052962;
-            padding: 24px;
-        }
-
-        #formTitle {
-            font-family: 'Libre Baskerville', Georgia, serif;
-            font-size: 20px;
-            font-weight: 700;
-            color: #052962;
-            margin-bottom: 20px;
-        }
-
-        .admin-form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin-bottom: 16px;
-        }
-
-        .admin-form-group label {
-            font-size: 13px;
-            font-weight: 700;
-            color: #121212;
-        }
-
-        .admin-form-group input,
-        .admin-form-group select,
-        .admin-form-group textarea {
-            padding: 10px 12px;
-            font-size: 14px;
-            border: 1px solid #dcdcdc;
-            outline: none;
-            font-family: 'Source Sans 3', Arial, sans-serif;
-            transition: border-color 0.2s;
-            border-radius: 2px;
-            width: 100%;
-        }
-
-        .admin-form-group input:focus,
-        .admin-form-group select:focus,
-        .admin-form-group textarea:focus {
-            border-color: #052962;
-        }
-
-        .admin-form-group textarea {
-            resize: vertical;
-            min-height: 200px;
-            line-height: 1.6;
-        }
-
-        .admin-btn-row {
-            display: flex;
-            gap: 10px;
-        }
-
-        #publishBtn {
-            background-color: #052962;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
-            border-radius: 2px;
-            transition: background 0.2s;
-            flex: 1;
-        }
-
-        #publishBtn:hover { background-color: #c70000; }
-        #publishBtn:disabled { opacity: 0.7; cursor: not-allowed; }
-
-        #resetBtn {
-            background-color: #f6f6f6;
-            color: #121212;
-            border: 1px solid #dcdcdc;
-            padding: 12px 20px;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
-            border-radius: 2px;
-            transition: background 0.2s;
-        }
-
-        #resetBtn:hover { background-color: #dcdcdc; }
-
-        .admin-articles-panel {
-            background: #ffffff;
-            border: 1px solid #dcdcdc;
-            border-top: 4px solid #c70000;
-            padding: 24px;
-        }
-
-        .admin-articles-panel h2 {
-            font-family: 'Libre Baskerville', Georgia, serif;
-            font-size: 20px;
-            font-weight: 700;
-            color: #c70000;
-            margin-bottom: 20px;
-        }
-
-        .admin-article-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            padding: 14px 0;
-            border-bottom: 1px solid #dcdcdc;
-            gap: 12px;
-        }
-
-        .admin-article-card:last-child { border-bottom: none; }
-
-        .admin-card-info h3 {
-            font-family: 'Libre Baskerville', Georgia, serif;
-            font-size: 14px;
-            font-weight: 700;
-            color: #121212;
-            margin: 6px 0 4px 0;
-            line-height: 1.3;
-        }
-
-        .admin-card-meta {
-            display: flex;
-            gap: 12px;
-            font-size: 11px;
-            color: #767676;
-        }
-
-        .admin-card-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            flex-shrink: 0;
-        }
-
-        .edit-btn {
-            background-color: #052962;
-            color: white;
-            border: none;
-            padding: 6px 14px;
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            border-radius: 2px;
-            transition: background 0.2s;
-        }
-
-        .edit-btn:hover { background-color: #1a6eb5; }
-
-        .delete-btn {
-            background-color: #f6f6f6;
-            color: #c70000;
-            border: 1px solid #c70000;
-            padding: 6px 14px;
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            border-radius: 2px;
-            transition: all 0.2s;
-        }
-
-        .delete-btn:hover {
-            background-color: #c70000;
-            color: white;
-        }
-
-        .loading-msg, .no-articles, .error-msg {
-            font-size: 13px;
-            color: #767676;
-            padding: 20px 0;
-            text-align: center;
-        }
-
-        .error-msg { color: #c70000; }
-
-        /* IMAGE PREVIEW */
-        .image-preview-wrap {
-            margin-top: 8px;
-            display: none;
-        }
-
-        .image-preview-wrap img {
-            width: 100%;
-            max-height: 200px;
-            object-fit: cover;
-            border: 1px solid #dcdcdc;
-            border-radius: 2px;
-        }
-
-        .image-upload-status {
-            font-size: 12px;
-            color: #767676;
-            margin-top: 6px;
-            display: none;
-        }
-
-        .image-upload-status.uploading { color: #052962; }
-        .image-upload-status.done { color: #1a5c38; }
-        .image-upload-status.error { color: #c70000; }
-
-        /* ADMIN ARTICLE THUMBNAIL */
-        .admin-card-thumb {
-            width: 60px;
-            height: 45px;
-            object-fit: cover;
-            border-radius: 2px;
-            flex-shrink: 0;
-        }
-
-        .admin-card-thumb-placeholder {
-            width: 60px;
-            height: 45px;
-            background: linear-gradient(135deg, #052962, #1a6eb5);
-            border-radius: 2px;
-            flex-shrink: 0;
-        }
-
-        /* NOTIFICATION */
-        .admin-notification {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            padding: 14px 20px;
-            font-size: 14px;
-            font-weight: 700;
-            border-radius: 2px;
-            z-index: 9999;
-            color: white;
-            animation: slideIn 0.3s ease;
-        }
-
-        .admin-notification.success { background-color: #1a5c38; }
-        .admin-notification.error { background-color: #c70000; }
-
-        @keyframes slideIn {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        @media (max-width: 900px) {
-            .admin-layout { grid-template-columns: 1fr; }
-        }
-    </style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel — Daily News UG</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 </head>
-<body style="background-color:#f6f6f6;">
+<body class="admin-page">
 
-    <!-- ADMIN HEADER -->
-    <div class="admin-header-bar">
-        <h1>⚙️ Daily News — Admin Panel</h1>
-        <div style="display:flex; align-items:center; gap:16px;">
-            <a href="index.html">← Back to Website</a>
-            <button onclick="signOutAdmin()" style="background:#c70000; color:#fff; border:none; padding:7px 14px; font-weight:700; cursor:pointer; border-radius:2px; font-size:13px;">Sign Out</button>
-        </div>
+  <!-- Access denied screen (shown before admin check) -->
+  <div class="access-denied hidden" id="accessDenied">
+    <div class="denied-box">
+      <i class="fas fa-lock fa-3x"></i>
+      <h2>Access Denied</h2>
+      <p>You must be an admin to view this page.</p>
+      <a href="index.html" class="btn-auth">Go Home</a>
     </div>
+  </div>
 
-    <div class="admin-wrap">
-        <div class="admin-layout">
+  <!-- Admin Panel (shown only to admin) -->
+  <div class="admin-wrap hidden" id="adminWrap">
 
-            <!-- WRITE ARTICLE FORM -->
-            <div id="articleForm">
-                <h2 id="formTitle">Write New Article</h2>
+    <!-- Admin Navbar -->
+    <nav class="admin-nav">
+      <a href="index.html" class="logo">
+        <span class="logo-red">DAILY</span><span class="logo-white">NEWS</span><span class="logo-tag">UG</span>
+        <span class="admin-badge">ADMIN</span>
+      </a>
+      <div class="admin-nav-right">
+        <span id="adminUserName"></span>
+        <a href="index.html" class="btn-login"><i class="fas fa-eye"></i> View Site</a>
+        <a href="#" id="adminLogout" class="btn-login"><i class="fas fa-sign-out-alt"></i> Logout</a>
+      </div>
+    </nav>
 
-                <input type="hidden" id="editId">
-                <input type="hidden" id="currentImage">
+    <div class="admin-container">
 
-                <div class="admin-form-group">
-                    <label for="artTitle">Headline *</label>
-                    <input type="text" id="artTitle" placeholder="Enter the article headline...">
-                </div>
+      <!-- Stats Row -->
+      <div class="admin-stats" id="adminStats">
+        <div class="stat-card"><i class="fas fa-video"></i><div><span id="totalVideos">0</span><p>Total Videos</p></div></div>
+        <div class="stat-card"><i class="fas fa-eye"></i><div><span id="totalViews">0</span><p>Total Views</p></div></div>
+        <div class="stat-card"><i class="fas fa-thumbs-up"></i><div><span id="totalLikes">0</span><p>Total Likes</p></div></div>
+        <div class="stat-card"><i class="fas fa-comments"></i><div><span id="totalComments">0</span><p>Comments</p></div></div>
+      </div>
 
-                <div class="admin-form-group">
-                    <label for="artCategory">Category *</label>
-                    <select id="artCategory">
-                        <option value="">Select category</option>
-                        <option value="Politics">Politics</option>
-                        <option value="Business">Business</option>
-                        <option value="Sports">Sports</option>
-                        <option value="Technology">Technology</option>
-                        <option value="Health">Health</option>
-                        <option value="Environment">Environment</option>
-                        <option value="Education">Education</option>
-                        <option value="Opinion">Opinion</option>
-                    </select>
-                </div>
+      <div class="admin-grid">
 
-                <div class="admin-form-group">
-                    <label for="artAuthor">Author Name *</label>
-                    <input type="text" id="artAuthor" placeholder="e.g. John Doe">
-                </div>
+        <!-- UPLOAD FORM -->
+        <div class="admin-card">
+          <h2><i class="fas fa-upload"></i> Upload New Video</h2>
+          <p class="admin-hint">Upload your video to <a href="https://archive.org/upload" target="_blank">archive.org</a> first, then paste the embed ID below.</p>
 
-                <div class="admin-form-group">
-                    <label for="artStandfirst">Standfirst / Summary *</label>
-                    <textarea id="artStandfirst" rows="3" placeholder="A short summary that appears below the headline..."></textarea>
-                </div>
+          <div class="admin-message hidden" id="uploadMessage"></div>
 
-                <div class="admin-form-group">
-                    <label for="artBody">Article Body *</label>
-                    <textarea id="artBody" placeholder="Write the full article here. Separate paragraphs with a blank line..."></textarea>
-                </div>
+          <div class="form-group">
+            <label>Video Title *</label>
+            <input type="text" id="videoTitle" placeholder="e.g. Uganda vs Kenya — Full Match"/>
+          </div>
 
-                <div class="admin-form-group">
-                    <label for="artImage">Featured Image</label>
-                    <input type="file" id="artImage" accept="image/*">
-                    <div class="image-preview-wrap" id="imagePreviewWrap">
-                        <img id="imagePreview" src="" alt="Preview">
-                    </div>
-                    <div class="image-upload-status" id="imageUploadStatus"></div>
-                </div>
+          <div class="form-group">
+            <label>Archive.org Embed ID *
+              <span class="hint-icon" title="The part after archive.org/details/ in your video URL">?</span>
+            </label>
+            <input type="text" id="archiveId" placeholder="e.g. because-he-lives-i-can-face-tomorrow"/>
+            <small>From URL: archive.org/details/<strong>THIS-PART-HERE</strong></small>
+          </div>
 
-                <div class="admin-btn-row">
-                    <button id="publishBtn">Publish Article</button>
-                    <button id="resetBtn">Clear Form</button>
-                </div>
-            </div>
+          <div class="form-group">
+            <label>Thumbnail Image URL</label>
+            <input type="text" id="thumbnailUrl" placeholder="https://... (leave blank for auto-generated)"/>
+          </div>
 
-            <!-- PUBLISHED ARTICLES -->
-            <div class="admin-articles-panel">
-                <h2>Published Articles</h2>
-                <div id="adminArticleList">
-                    <p class="loading-msg">Loading articles...</p>
-                </div>
-            </div>
+          <div class="form-group">
+            <label>Category *</label>
+            <select id="videoCategory">
+              <option value="">-- Select Category --</option>
+              <option value="news">News</option>
+              <option value="politics">Politics</option>
+              <option value="sports">Sports</option>
+              <option value="entertainment">Entertainment</option>
+              <option value="business">Business</option>
+              <option value="technology">Technology</option>
+              <option value="health">Health</option>
+              <option value="education">Education</option>
+              <option value="religion">Religion</option>
+            </select>
+          </div>
 
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="videoDescription" rows="4" placeholder="Describe what this video is about..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Tags (comma separated)</label>
+            <input type="text" id="videoTags" placeholder="e.g. Uganda, Football, 2025"/>
+          </div>
+
+          <div class="form-group">
+            <label>Featured Video?</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="isFeatured"/>
+              <span class="toggle-slider"></span>
+            </label>
+            <small>Featured videos appear at the top of the homepage</small>
+          </div>
+
+          <button class="btn-upload" id="uploadBtn">
+            <i class="fas fa-cloud-upload-alt"></i> Publish Video
+          </button>
         </div>
+
+        <!-- VIDEO MANAGER -->
+        <div class="admin-card">
+          <h2><i class="fas fa-list"></i> Manage Videos</h2>
+          <div class="video-manager-search">
+            <input type="text" id="managerSearch" placeholder="Search your videos..."/>
+          </div>
+          <div class="manage-list" id="manageList">
+            <div class="loading-screen"><div class="spinner"></div><p>Loading videos...</p></div>
+          </div>
+        </div>
+
+      </div>
     </div>
+  </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, orderBy, query } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  <!-- Edit Modal -->
+  <div class="modal-overlay hidden" id="editModal">
+    <div class="modal modal-large">
+      <button class="modal-close" id="closeEditModal"><i class="fas fa-times"></i></button>
+      <h3><i class="fas fa-pen"></i> Edit Video</h3>
+      <input type="hidden" id="editVideoId"/>
+      <div class="form-group"><label>Title</label><input type="text" id="editTitle"/></div>
+      <div class="form-group"><label>Description</label><textarea id="editDescription" rows="3"></textarea></div>
+      <div class="form-group"><label>Category</label>
+        <select id="editCategory">
+          <option value="news">News</option>
+          <option value="politics">Politics</option>
+          <option value="sports">Sports</option>
+          <option value="entertainment">Entertainment</option>
+          <option value="business">Business</option>
+          <option value="technology">Technology</option>
+          <option value="health">Health</option>
+          <option value="education">Education</option>
+          <option value="religion">Religion</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Thumbnail URL</label><input type="text" id="editThumbnail"/></div>
+      <button class="btn-upload" id="saveEditBtn"><i class="fas fa-save"></i> Save Changes</button>
+    </div>
+  </div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyC4U6MWTPKDQZ_oICtSLdfnFP3a-HFILb4",
-            authDomain: "daily-news-a8c64.firebaseapp.com",
-            projectId: "daily-news-a8c64",
-            storageBucket: "daily-news-a8c64.firebasestorage.app",
-            messagingSenderId: "75335342698",
-            appId: "1:75335342698:web:3e65f3d773eca7730b4813"
-        };
-
-        // ================================
-        // CLOUDINARY CONFIG
-        // ================================
-        const CLOUDINARY_CLOUD_NAME = 'dpbdwrnfw';
-        const CLOUDINARY_UPLOAD_PRESET = 'daily_news_uploads';
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-
-        // ================================
-        // AUTH GUARD
-        // ================================
-        onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                window.location.href = 'login.html';
-            } else {
-                const headerBar = document.querySelector('.admin-header-bar');
-                if (headerBar) {
-                    const userInfo = document.createElement('span');
-                    userInfo.style.cssText = 'font-size:12px; color:rgba(255,255,255,0.7); margin-right:16px;';
-                    userInfo.textContent = `Logged in as ${user.email}`;
-                    headerBar.insertBefore(userInfo, headerBar.querySelector('a'));
-                }
-                loadAdminArticles();
-                loadAdminJobs();
-                setupImagePreview();
-            }
-        });
-
-        // ================================
-        // SIGN OUT
-        // ================================
-        window.signOutAdmin = async function() {
-            await signOut(auth);
-            window.location.href = 'login.html';
-        }
-
-        // ================================
-        // IMAGE PREVIEW
-        // ================================
-        function setupImagePreview() {
-            const imageInput = document.getElementById('artImage');
-            const previewWrap = document.getElementById('imagePreviewWrap');
-            const preview = document.getElementById('imagePreview');
-
-            if (!imageInput) return;
-
-            imageInput.addEventListener('change', () => {
-                const file = imageInput.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    preview.src = e.target.result;
-                    previewWrap.style.display = 'block';
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-
-        // ================================
-        // UPLOAD IMAGE TO CLOUDINARY
-        // ================================
-        async function uploadImageToCloudinary(file) {
-            const statusEl = document.getElementById('imageUploadStatus');
-
-            statusEl.textContent = '⏳ Uploading image...';
-            statusEl.className = 'image-upload-status uploading';
-            statusEl.style.display = 'block';
-
-            try {
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-                formData.append('cloud_name', CLOUDINARY_CLOUD_NAME);
-
-                const response = await fetch(
-                    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-                    { method: 'POST', body: formData }
-                );
-
-                const data = await response.json();
-
-                if (data.secure_url) {
-                    statusEl.textContent = '✅ Image uploaded successfully!';
-                    statusEl.className = 'image-upload-status done';
-                    return data.secure_url;
-                } else {
-                    throw new Error(data.error?.message || 'Upload failed');
-                }
-
-            } catch (error) {
-                statusEl.textContent = `❌ Image upload failed: ${error.message}`;
-                statusEl.className = 'image-upload-status error';
-                return '';
-            }
-        }
-
-        // ================================
-        // LOAD ARTICLES
-        // ================================
-        async function loadAdminArticles() {
-            const list = document.getElementById('adminArticleList');
-            list.innerHTML = '<p class="loading-msg">Loading articles...</p>';
-
-            try {
-                const q = query(collection(db, 'articles'), orderBy('createdAt', 'desc'));
-                const snapshot = await getDocs(q);
-
-                if (snapshot.empty) {
-                    list.innerHTML = '<p class="no-articles">No articles yet. Create your first one above!</p>';
-                    return;
-                }
-
-                list.innerHTML = '';
-                snapshot.forEach(docSnap => {
-                    const a = docSnap.data();
-                    const id = docSnap.id;
-                    const card = document.createElement('div');
-                    card.className = 'admin-article-card';
-                    card.innerHTML = `
-                        ${a.imageUrl
-                            ? `<img src="${a.imageUrl}" class="admin-card-thumb" alt="${a.title}">`
-                            : `<div class="admin-card-thumb-placeholder"></div>`
-                        }
-                        <div class="admin-card-info" style="flex:1;">
-                            <span class="label ${a.category.toLowerCase()}-label">${a.category}</span>
-                            <h3>${a.title}</h3>
-                            <div class="admin-card-meta">
-                                <span>By ${a.author}</span>
-                                <span>${a.date}</span>
-                            </div>
-                        </div>
-                        <div class="admin-card-actions">
-                            <button class="edit-btn" onclick="editArticle('${id}')">Edit</button>
-                            <button class="delete-btn" onclick="deleteArticle('${id}')">Delete</button>
-                        </div>
-                    `;
-                    list.appendChild(card);
-                });
-
-            } catch (error) {
-                list.innerHTML = `<p class="error-msg">Error: ${error.message}</p>`;
-            }
-        }
-
-        // ================================
-        // PUBLISH ARTICLE
-        // ================================
-        async function publishArticle() {
-            const title = document.getElementById('artTitle').value.trim();
-            const category = document.getElementById('artCategory').value;
-            const author = document.getElementById('artAuthor').value.trim();
-            const standfirst = document.getElementById('artStandfirst').value.trim();
-            const body = document.getElementById('artBody').value.trim();
-            const imageFile = document.getElementById('artImage').files[0];
-            const editId = document.getElementById('editId').value;
-
-            if (!title || !category || !author || !standfirst || !body) {
-                showNotification('Please fill in all required fields.', 'error');
-                return;
-            }
-
-            const publishBtn = document.getElementById('publishBtn');
-            publishBtn.textContent = 'Publishing...';
-            publishBtn.disabled = true;
-
-            try {
-                // Upload image if provided
-                let imageUrl = document.getElementById('currentImage').value || '';
-                if (imageFile) {
-                    imageUrl = await uploadImageToCloudinary(imageFile);
-                }
-
-                const articleData = {
-                    title,
-                    category,
-                    author,
-                    standfirst,
-                    body,
-                    imageUrl,
-                    date: new Date().toLocaleDateString('en-GB', {
-                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-                    }),
-                    createdAt: new Date().toISOString()
-                };
-
-                if (editId) {
-                    await updateDoc(doc(db, 'articles', editId), articleData);
-                    showNotification('Article updated successfully!', 'success');
-                } else {
-                    await addDoc(collection(db, 'articles'), articleData);
-                    showNotification('Article published successfully!', 'success');
-                }
-
-                resetForm();
-                loadAdminArticles();
-
-            } catch (error) {
-                showNotification(`Error: ${error.message}`, 'error');
-            } finally {
-                publishBtn.textContent = 'Publish Article';
-                publishBtn.disabled = false;
-            }
-        }
-
-        // ================================
-        // DELETE ARTICLE
-        // ================================
-        window.deleteArticle = async function(id) {
-            if (!confirm('Are you sure you want to delete this article?')) return;
-            try {
-                await deleteDoc(doc(db, 'articles', id));
-                showNotification('Article deleted.', 'success');
-                loadAdminArticles();
-            } catch (error) {
-                showNotification(`Error: ${error.message}`, 'error');
-            }
-        }
-
-        // ================================
-        // EDIT ARTICLE
-        // ================================
-        window.editArticle = async function(id) {
-            try {
-                const snapshot = await getDocs(collection(db, 'articles'));
-                snapshot.forEach(docSnap => {
-                    if (docSnap.id === id) {
-                        const a = docSnap.data();
-                        document.getElementById('artTitle').value = a.title;
-                        document.getElementById('artCategory').value = a.category;
-                        document.getElementById('artAuthor').value = a.author;
-                        document.getElementById('artStandfirst').value = a.standfirst;
-                        document.getElementById('artBody').value = a.body;
-                        document.getElementById('editId').value = id;
-                        document.getElementById('currentImage').value = a.imageUrl || '';
-                        document.getElementById('formTitle').textContent = 'Edit Article';
-                        document.getElementById('publishBtn').textContent = 'Update Article';
-
-                        // Show existing image preview
-                        if (a.imageUrl) {
-                            const preview = document.getElementById('imagePreview');
-                            const previewWrap = document.getElementById('imagePreviewWrap');
-                            preview.src = a.imageUrl;
-                            previewWrap.style.display = 'block';
-                        }
-
-                        document.getElementById('articleForm').scrollIntoView({ behavior: 'smooth' });
-                    }
-                });
-            } catch (error) {
-                showNotification(`Error: ${error.message}`, 'error');
-            }
-        }
-
-        // ================================
-        // RESET FORM
-        // ================================
-        function resetForm() {
-            document.getElementById('artTitle').value = '';
-            document.getElementById('artCategory').value = '';
-            document.getElementById('artAuthor').value = '';
-            document.getElementById('artStandfirst').value = '';
-            document.getElementById('artBody').value = '';
-            document.getElementById('artImage').value = '';
-            document.getElementById('editId').value = '';
-            document.getElementById('currentImage').value = '';
-            document.getElementById('formTitle').textContent = 'Write New Article';
-            document.getElementById('publishBtn').textContent = 'Publish Article';
-            document.getElementById('imagePreviewWrap').style.display = 'none';
-            document.getElementById('imageUploadStatus').style.display = 'none';
-            document.getElementById('imageUploadStatus').textContent = '';
-        }
-
-        // ================================
-        // NOTIFICATION
-        // ================================
-        function showNotification(message, type) {
-            const existing = document.querySelector('.admin-notification');
-            if (existing) existing.remove();
-            const notif = document.createElement('div');
-            notif.className = `admin-notification ${type}`;
-            notif.textContent = message;
-            document.body.appendChild(notif);
-            setTimeout(() => notif.remove(), 4000);
-        }
-
-        // ================================
-        // INIT
-        // ================================
-       // ================================
-// LOAD JOBS FOR ADMIN
-// ================================
-async function loadAdminJobs() {
-    const list = document.getElementById('adminJobsList');
-    if (!list) return;
-    list.innerHTML = '<p class="loading-msg">Loading jobs...</p>';
-
-    try {
-        const q = query(collection(db, 'jobs'), orderBy('createdAt', 'desc'));
-        const snapshot = await getDocs(q);
-
-        if (snapshot.empty) {
-            list.innerHTML = '<p class="no-articles">No job submissions yet.</p>';
-            return;
-        }
-
-        list.innerHTML = '';
-        snapshot.forEach(docSnap => {
-            const j = docSnap.data();
-            const id = docSnap.id;
-            const card = document.createElement('div');
-            card.className = 'admin-article-card';
-            card.innerHTML = `
-                <div class="admin-card-info" style="flex:1;">
-                    <span class="label ${j.approved ? 'tech-label' : 'health-label'}">${j.approved ? '✅ Published' : '⏳ Pending'}</span>
-                    <h3>${j.title} — ${j.company}</h3>
-                    <div class="admin-card-meta">
-                        <span>${j.category}</span>
-                        <span>${j.location}</span>
-                        <span>${j.plan} (${j.price})</span>
-                        <span>${j.contactEmail}</span>
-                    </div>
-                </div>
-                <div class="admin-card-actions">
-                    ${!j.approved ? `<button class="edit-btn" onclick="approveJob('${id}')">✅ Approve</button>` : ''}
-                    <button class="delete-btn" onclick="deleteJob('${id}')">Delete</button>
-                </div>
-            `;
-            list.appendChild(card);
-        });
-
-    } catch (error) {
-        list.innerHTML = `<p class="error-msg">Error: ${error.message}</p>`;
-    }
-}
-
-window.approveJob = async function(id) {
-    try {
-        await updateDoc(doc(db, 'jobs', id), { approved: true });
-        showNotification('Job approved and published!', 'success');
-        loadAdminJobs();
-    } catch (error) {
-        showNotification('Error: ' + error.message, 'error');
-    }
-};
-
-window.deleteJob = async function(id) {
-    if (!confirm('Delete this job posting?')) return;
-    try {
-        await deleteDoc(doc(db, 'jobs', id));
-        showNotification('Job deleted.', 'success');
-        loadAdminJobs();
-    } catch (error) {
-        showNotification('Error: ' + error.message, 'error');
-    }
-};
-        document.getElementById('publishBtn').addEventListener('click', publishArticle);
-        document.getElementById('resetBtn').addEventListener('click', resetForm);
-
-    </script>
-
+  <script type="module" src="js/firebase.js"></script>
+  <script type="module" src="js/admin.js"></script>
 </body>
 </html>

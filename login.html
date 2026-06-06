@@ -1,213 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login - Daily News</title>
-    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Source Sans 3', Arial, sans-serif;
-            background-color: #052962;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .login-logo {
-            font-family: 'Libre Baskerville', Georgia, serif;
-            font-size: 36px;
-            font-weight: 700;
-            color: #ffffff;
-            margin-bottom: 8px;
-            text-align: center;
-        }
-
-        .login-tagline {
-            font-size: 13px;
-            color: rgba(255,255,255,0.7);
-            margin-bottom: 32px;
-            text-align: center;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        .login-box {
-            background: #ffffff;
-            padding: 36px;
-            width: 100%;
-            max-width: 400px;
-            border-top: 4px solid #c70000;
-        }
-
-        .login-box h2 {
-            font-family: 'Libre Baskerville', Georgia, serif;
-            font-size: 20px;
-            font-weight: 700;
-            color: #052962;
-            margin-bottom: 24px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            font-size: 13px;
-            font-weight: 700;
-            color: #121212;
-        }
-
-        .form-group input {
-            padding: 11px 12px;
-            font-size: 14px;
-            border: 1px solid #dcdcdc;
-            outline: none;
-            border-radius: 2px;
-            transition: border-color 0.2s;
-            font-family: 'Source Sans 3', Arial, sans-serif;
-        }
-
-        .form-group input:focus {
-            border-color: #052962;
-        }
-
-        .login-btn {
-            width: 100%;
-            background-color: #052962;
-            color: #ffffff;
-            border: none;
-            padding: 13px;
-            font-size: 15px;
-            font-weight: 700;
-            cursor: pointer;
-            border-radius: 2px;
-            transition: background 0.2s;
-            margin-top: 8px;
-            font-family: 'Source Sans 3', Arial, sans-serif;
-        }
-
-        .login-btn:hover {
-            background-color: #c70000;
-        }
-
-        .login-btn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        .error-msg {
-            display: none;
-            background-color: #fff0f0;
-            border: 1px solid #c70000;
-            color: #c70000;
-            padding: 10px 14px;
-            font-size: 13px;
-            font-weight: 600;
-            border-radius: 2px;
-            margin-bottom: 16px;
-        }
-
-        .back-link {
-            display: block;
-            text-align: center;
-            margin-top: 20px;
-            font-size: 13px;
-            color: rgba(255,255,255,0.7);
-            text-decoration: none;
-        }
-
-        .back-link:hover {
-            color: #ffffff;
-        }
-    </style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign In — Daily News UG</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 </head>
-<body>
+<body class="auth-page">
 
-    <div class="login-logo">Daily News</div>
-    <p class="login-tagline">Admin Access Only</p>
+  <!-- Back to home -->
+  <a href="index.html" class="back-home"><i class="fas fa-arrow-left"></i> Back to Home</a>
 
-    <div class="login-box">
-        <h2>⚙️ Sign in to Admin Panel</h2>
+  <div class="auth-container">
 
-        <div class="error-msg" id="errorMsg">
-            Incorrect email or password. Please try again.
-        </div>
+    <div class="auth-logo">
+      <span class="logo-red">DAILY</span><span class="logo-white">NEWS</span><span class="logo-tag">UG</span>
+    </div>
+    <p class="auth-tagline">Sign in to like, comment &amp; stay updated</p>
 
-        <div class="form-group">
-            <label for="email">Email Address</label>
-            <input type="email" id="email" placeholder="your@email.com">
-        </div>
-
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" placeholder="Enter your password">
-        </div>
-
-        <button class="login-btn" id="loginBtn">Sign In</button>
+    <!-- Tab switcher -->
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabSignIn">Sign In</button>
+      <button class="auth-tab" id="tabSignUp">Create Account</button>
     </div>
 
-    <a href="index.html" class="back-link">← Back to Daily News</a>
+    <!-- Error / Success message -->
+    <div class="auth-message hidden" id="authMessage"></div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    <!-- SIGN IN FORM -->
+    <div class="auth-form" id="signInForm">
+      <div class="input-group">
+        <i class="fas fa-envelope"></i>
+        <input type="email" id="signInEmail" placeholder="Email address" autocomplete="email"/>
+      </div>
+      <div class="input-group">
+        <i class="fas fa-lock"></i>
+        <input type="password" id="signInPassword" placeholder="Password" autocomplete="current-password"/>
+        <button class="toggle-pw" type="button" onclick="togglePw('signInPassword')"><i class="fas fa-eye"></i></button>
+      </div>
+      <button class="btn-auth" id="signInBtn"><i class="fas fa-sign-in-alt"></i> Sign In</button>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyC4U6MWTPKDQZ_oICtSLdfnFP3a-HFILb4",
-            authDomain: "daily-news-a8c64.firebaseapp.com",
-            projectId: "daily-news-a8c64",
-            storageBucket: "daily-news-a8c64.firebasestorage.app",
-            messagingSenderId: "75335342698",
-            appId: "1:75335342698:web:3e65f3d773eca7730b4813"
-        };
+      <div class="auth-divider"><span>or</span></div>
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
+      <button class="btn-google" id="googleSignInBtn">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"/> Continue with Google
+      </button>
 
-        const loginBtn = document.getElementById('loginBtn');
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
-        const errorMsg = document.getElementById('errorMsg');
+      <p class="forgot-pw"><a href="#" id="forgotPwLink">Forgot password?</a></p>
+    </div>
 
-        // Allow pressing Enter to login
-        passwordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') loginBtn.click();
-        });
+    <!-- SIGN UP FORM -->
+    <div class="auth-form hidden" id="signUpForm">
+      <div class="input-group">
+        <i class="fas fa-user"></i>
+        <input type="text" id="signUpName" placeholder="Your full name"/>
+      </div>
+      <div class="input-group">
+        <i class="fas fa-envelope"></i>
+        <input type="email" id="signUpEmail" placeholder="Email address" autocomplete="email"/>
+      </div>
+      <div class="input-group">
+        <i class="fas fa-lock"></i>
+        <input type="password" id="signUpPassword" placeholder="Create a password (min 6 chars)" autocomplete="new-password"/>
+        <button class="toggle-pw" type="button" onclick="togglePw('signUpPassword')"><i class="fas fa-eye"></i></button>
+      </div>
+      <button class="btn-auth" id="signUpBtn"><i class="fas fa-user-plus"></i> Create Account</button>
 
-        loginBtn.addEventListener('click', async () => {
-            const email = emailInput.value.trim();
-            const password = passwordInput.value.trim();
+      <div class="auth-divider"><span>or</span></div>
 
-            if (!email || !password) {
-                errorMsg.textContent = 'Please enter your email and password.';
-                errorMsg.style.display = 'block';
-                return;
-            }
+      <button class="btn-google" id="googleSignUpBtn">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"/> Continue with Google
+      </button>
+    </div>
 
-            loginBtn.textContent = 'Signing in...';
-            loginBtn.disabled = true;
-            errorMsg.style.display = 'none';
+  </div>
 
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                // Success — go to admin panel
-                window.location.href = 'admin.html';
-            } catch (error) {
-                errorMsg.textContent = 'Incorrect email or password. Please try again.';
-                errorMsg.style.display = 'block';
-                loginBtn.textContent = 'Sign In';
-                loginBtn.disabled = false;
-            }
-        });
-    </script>
-
+  <script type="module" src="js/firebase.js"></script>
+  <script type="module" src="js/auth.js"></script>
+  <script>
+    function togglePw(id) {
+      const input = document.getElementById(id);
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+  </script>
 </body>
 </html>
