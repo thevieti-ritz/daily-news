@@ -1311,15 +1311,14 @@ img:not(.lazy-img) {
   padding: 10px 16px;
   background: var(--bg2);
   border-bottom: 1px solid var(--border);
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
   flex-wrap: nowrap;
+  overflow: visible;
+  position: relative;
+  z-index: 400;
 }
-.filter-bar::-webkit-scrollbar { display: none; }
 
 .filter-dropdown-wrap {
-  position: relative;
+  position: static;
   flex-shrink: 0;
 }
 
