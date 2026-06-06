@@ -106,6 +106,12 @@ function setupDropdown(btnId, menuId, labelId, dataKey, onSelect) {
     document.querySelectorAll(".filter-dropdown-menu").forEach(m => {
       if (m !== menu) m.classList.add("hidden");
     });
+
+    // Position the menu right below the button
+    const rect = btn.getBoundingClientRect();
+    menu.style.top  = (rect.bottom + 6) + "px";
+    menu.style.left = rect.left + "px";
+
     menu.classList.toggle("hidden");
   });
 
