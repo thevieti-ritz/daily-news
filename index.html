@@ -189,41 +189,5 @@
   <script type="module" src="js/firebase.js"></script>
   <script type="module" src="js/main.js"></script>
 
-  <!-- Sidebar & Categories — plain script, runs immediately -->
-  <script>
-    // Hamburger menu
-    const menuToggle     = document.getElementById('menuToggle');
-    const sidebar        = document.getElementById('sidebar');
-    const sidebarOverlay = document.getElementById('sidebarOverlay');
-
-    menuToggle.addEventListener('click', () => {
-      sidebar.classList.toggle('open');
-      sidebarOverlay.classList.toggle('hidden');
-    });
-
-    sidebarOverlay.addEventListener('click', () => {
-      sidebar.classList.remove('open');
-      sidebarOverlay.classList.add('hidden');
-    });
-
-    // Categories dropdown inside sidebar
-    const categoriesToggle = document.getElementById('categoriesToggle');
-    const categoriesMenu   = document.getElementById('categoriesMenu');
-    const categoriesArrow  = document.getElementById('categoriesArrow');
-
-    categoriesToggle.addEventListener('click', () => {
-      const isOpen = categoriesMenu.classList.toggle('open');
-      categoriesArrow.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
-    });
-
-    // Close sidebar when any sidebar link is clicked (mobile)
-    document.querySelectorAll('.side-link').forEach(link => {
-      link.addEventListener('click', () => {
-        sidebar.classList.remove('open');
-        sidebarOverlay.classList.add('hidden');
-      });
-    });
-  </script>
-
 </body>
 </html>
