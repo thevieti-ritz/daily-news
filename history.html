@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Watch History — Leaked Archives</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    .history-page {
+      margin-top: var(--nav-h);
+      padding: 24px 20px 80px;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+      box-sizing: border-box;
+      width: 100%;
+    }
+
+    .history-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .history-header h1 {
+      font-family: var(--font-display);
+      font-size: 28px;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .history-header h1 i { color: var(--red); }
+
+    .btn-clear-history {
+      background: rgba(230,57,70,0.15);
+      color: var(--red);
+      border: 1px solid rgba(230,57,70,0.3);
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all var(--transition);
+      cursor: pointer;
+    }
+    .btn-clear-history:hover,
+    .btn-clear-history:active {
+      background: var(--red);
+      color: white;
+    }
+
+    .history-count {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    /* History item — horizontal card */
+    .history-item {
+      display: flex;
+      gap: 14px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all var(--transition);
+      -webkit-tap-highlight-color: transparent;
+      position: relative;
+    }
+    .history-item:hover,
+    .history-item:active {
+      border-color: #444;
+      background: var(--bg3);
+    }
+    .history-thumb-wrap {
+      position: relative;
+      flex-shrink: 0;
+      width: 160px;
+      height: 90px;
+    }
+    .history-thumb {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .history-play {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.3);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .history-item:hover .history-play { opacity: 1; }
+    .history-play i { font-size: 28px; color: white; }
+
+    .history-info {
+      flex: 1;
+      padding: 12px 12px 12px 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 6px;
+    }
+    .history-title {
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .history-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .history-meta span { display: flex; align-items: center; gap: 4px; }
+    .history-cat {
+      background: var(--bg4);
+      color: var(--muted);
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-transform: capitalize;
+    }
+    .history-watched {
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Delete single item button */
+    .btn-remove-item {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(0,0,0,0.6);
+      color: var(--muted);
+      border: none;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      opacity: 0;
+      transition: all 0.2s;
+      cursor: pointer;
+      z-index: 2;
+    }
+    .history-item:hover .btn-remove-item { opacity: 1; }
+    .btn-remove-item:hover { background: var(--red); color: white; }
+
+    /* Sign in prompt */
+    .history-signin {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    .history-signin i { font-size: 48px; color: var(--bg4); margin-bottom: 16px; display: block; }
+    .history-signin h2 { font-size: 20px; color: var(--white); margin-bottom: 8px; }
+    .history-signin p { font-size: 14px; margin-bottom: 20px; }
+    .btn-signin-history {
+      background: var(--red);
+      color: white;
+      padding: 10px 28px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background var(--transition);
+    }
+    .btn-signin-history:hover { background: var(--red-dark); }
+
+    /* Empty state */
+    .history-empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    .history-empty i { font-size: 48px; color: var(--bg4); margin-bottom: 16px; display: block; }
+    .history-empty h2 { font-size: 20px; color: var(--white); margin-bottom: 8px; }
+    .history-empty p { font-size: 14px; margin-bottom: 20px; }
+    .btn-browse {
+      background: var(--red);
+      color: white;
+      padding: 10px 28px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Loading */
+    .history-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      gap: 16px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 768px) {
+      .history-page { padding: 16px 12px 80px; }
+      .history-header h1 { font-size: 22px; }
+      .history-thumb-wrap { width: 120px; height: 68px; }
+      .history-title { font-size: 13px; }
+      .history-meta { font-size: 11px; gap: 6px; }
+      .btn-remove-item { opacity: 1; } /* always show on mobile */
+    }
+
+    @media (max-width: 400px) {
+      .history-thumb-wrap { width: 100px; height: 56px; }
+      .history-title { font-size: 12px; }
+      .history-header h1 { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar Overlay -->
+  <div class="sidebar-overlay hidden" id="sidebarOverlay"></div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <button class="hamburger" id="menuToggle"><i class="fas fa-bars"></i></button>
+      <a href="index.html" class="logo">
+        <span class="logo-red">LEAKED</span><span class="logo-white">ARCHIVES</span>
+      </a>
+    </div>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search videos..." autocomplete="off"/>
+      <button id="searchBtn"><i class="fas fa-search"></i></button>
+    </div>
+    <div class="nav-right">
+      <a href="login.html" class="btn-login" id="authLink"><i class="fas fa-user"></i> Sign In</a>
+      <div class="user-menu hidden" id="userMenu">
+        <img src="https://api.dicebear.com/7.x/thumbs/svg?seed=user" class="avatar" id="userAvatar"/>
+        <div class="dropdown">
+          <span id="userDisplayName"></span>
+          <a href="profile.html"><i class="fas fa-circle-user"></i> My Profile</a>
+          <a href="history.html"><i class="fas fa-clock-rotate-left"></i> History</a>
+          <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <nav class="side-nav">
+      <button class="side-section-btn" id="categoriesToggle">
+        <i class="fas fa-th-large"></i> Categories
+        <i class="fas fa-chevron-down side-arrow" id="categoriesArrow"></i>
+      </button>
+      <div class="side-submenu" id="categoriesMenu">
+        <a href="index.html?cat=entertainment" class="side-link sub"><i class="fas fa-film"></i> Entertainment</a>
+        <a href="index.html?cat=celebrity" class="side-link sub"><i class="fas fa-star"></i> Celebrity</a>
+        <a href="index.html?cat=viral" class="side-link sub"><i class="fas fa-fire"></i> Viral</a>
+        <a href="index.html?cat=music" class="side-link sub"><i class="fas fa-music"></i> Music</a>
+        <a href="index.html?cat=sports" class="side-link sub"><i class="fas fa-futbol"></i> Sports</a>
+        <a href="index.html?cat=news" class="side-link sub"><i class="fas fa-newspaper"></i> News</a>
+        <a href="index.html?cat=comedy" class="side-link sub"><i class="fas fa-face-laugh"></i> Comedy</a>
+        <a href="index.html?cat=naija" class="side-link sub"><i class="fas fa-globe-africa"></i> Naija</a>
+        <a href="index.html?cat=uganda" class="side-link sub"><i class="fas fa-globe-africa"></i> Uganda</a>
+        <a href="index.html?cat=kenya" class="side-link sub"><i class="fas fa-globe-africa"></i> Kenya</a>
+      </div>
+      <hr/>
+      <a href="history.html" class="side-link active"><i class="fas fa-clock-rotate-left"></i> History</a>
+      <a href="profile.html" class="side-link"><i class="fas fa-circle-user"></i> Profile</a>
+      <a href="settings.html" class="side-link"><i class="fas fa-gear"></i> Settings</a>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+    <div class="history-page">
+
+      <div class="history-header">
+        <h1><i class="fas fa-clock-rotate-left"></i> Watch History</h1>
+        <button class="btn-clear-history hidden" id="clearHistoryBtn">
+          <i class="fas fa-trash"></i> Clear All
+        </button>
+      </div>
+
+      <div id="historyContent">
+        <div class="history-loading">
+          <div class="spinner"></div>
+          <p>Loading history...</p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-logo">
+        <span class="logo-red">LEAKED</span><span class="logo-white">ARCHIVES</span>
+      </div>
+      <div class="footer-links">
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Use</a>
+      </div>
+      <p class="footer-copy">&copy; 2026 Leaked Archives. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="js/firebase.js"></script>
+  <script type="module">
+    import { auth, db } from "./js/firebase.js";
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import {
+      collection, query, orderBy, getDocs,
+      deleteDoc, doc
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // ---- DOM ----
+    const historyContent  = document.getElementById("historyContent");
+    const clearHistoryBtn = document.getElementById("clearHistoryBtn");
+    const authLink        = document.getElementById("authLink");
+    const userMenu        = document.getElementById("userMenu");
+    const userAvatar      = document.getElementById("userAvatar");
+    const userDisplayName = document.getElementById("userDisplayName");
+    const logoutBtn       = document.getElementById("logoutBtn");
+    const menuToggle      = document.getElementById("menuToggle");
+    const sidebar         = document.getElementById("sidebar");
+    const sidebarOverlay  = document.getElementById("sidebarOverlay");
+
+    // ---- SIDEBAR ----
+    menuToggle.addEventListener("click", () => {
+      sidebar.classList.toggle("open");
+      sidebarOverlay.classList.toggle("hidden");
+    });
+    sidebarOverlay.addEventListener("click", () => {
+      sidebar.classList.remove("open");
+      sidebarOverlay.classList.add("hidden");
+    });
+    document.getElementById("categoriesToggle").addEventListener("click", () => {
+      const menu  = document.getElementById("categoriesMenu");
+      const arrow = document.getElementById("categoriesArrow");
+      const isOpen = menu.classList.toggle("open");
+      arrow.style.transform = isOpen ? "rotate(180deg)" : "rotate(0deg)";
+    });
+    document.querySelectorAll(".side-link").forEach(link => {
+      link.addEventListener("click", () => {
+        sidebar.classList.remove("open");
+        sidebarOverlay.classList.add("hidden");
+      });
+    });
+
+    // ---- SEARCH ----
+    document.getElementById("searchBtn").addEventListener("click", () => {
+      const val = document.getElementById("searchInput").value.trim();
+      if (val) window.location.href = `index.html?search=${encodeURIComponent(val)}`;
+    });
+    document.getElementById("searchInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        const val = e.target.value.trim();
+        if (val) window.location.href = `index.html?search=${encodeURIComponent(val)}`;
+      }
+    });
+
+    // ---- AUTH ----
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        authLink.classList.add("hidden");
+        userMenu.classList.remove("hidden");
+        userDisplayName.textContent = user.displayName || user.email.split("@")[0];
+        userAvatar.src = user.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
+        loadHistory(user);
+      } else {
+        // Not signed in
+        authLink.classList.remove("hidden");
+        userMenu.classList.add("hidden");
+        historyContent.innerHTML = `
+          <div class="history-signin">
+            <i class="fas fa-lock"></i>
+            <h2>Sign in to see your history</h2>
+            <p>Your watch history is saved to your account when you are signed in.</p>
+            <a href="login.html" class="btn-signin-history">
+              <i class="fas fa-sign-in-alt"></i> Sign In
+            </a>
+          </div>`;
+      }
+    });
+
+    logoutBtn?.addEventListener("click", (e) => {
+      e.preventDefault();
+      signOut(auth).then(() => window.location.href = "index.html");
+    });
+
+    // ---- LOAD HISTORY ----
+    async function loadHistory(user) {
+      try {
+        const q    = query(
+          collection(db, "users", user.uid, "history"),
+          orderBy("watchedAt", "desc")
+        );
+        const snap = await getDocs(q);
+
+        if (snap.empty) {
+          historyContent.innerHTML = `
+            <div class="history-empty">
+              <i class="fas fa-clock-rotate-left"></i>
+              <h2>No history yet</h2>
+              <p>Videos you watch will appear here.</p>
+              <a href="index.html" class="btn-browse">
+                <i class="fas fa-play"></i> Browse Videos
+              </a>
+            </div>`;
+          return;
+        }
+
+        // Show clear button
+        clearHistoryBtn.classList.remove("hidden");
+
+        // Count
+        historyContent.innerHTML = `<p class="history-count">${snap.size} video${snap.size !== 1 ? "s" : ""} watched</p>`;
+
+        // Render each item
+        snap.forEach(d => {
+          const item = { id: d.id, ...d.data() };
+          historyContent.appendChild(createHistoryItem(item, user.uid));
+        });
+
+      } catch (err) {
+        console.error("History error:", err);
+        historyContent.innerHTML = `
+          <div class="history-empty">
+            <i class="fas fa-circle-exclamation"></i>
+            <h2>Error loading history</h2>
+            <p>Please refresh and try again.</p>
+          </div>`;
+      }
+    }
+
+    // ---- CREATE HISTORY ITEM ----
+    function createHistoryItem(item, userId) {
+      const el    = document.createElement("div");
+      el.className = "history-item";
+      el.dataset.id = item.id;
+
+      const thumb    = item.thumbnail || `https://archive.org/services/img/${item.archiveId}`;
+      const watchedAt = item.watchedAt
+        ? timeAgo(item.watchedAt.toDate())
+        : "Recently";
+
+      el.innerHTML = `
+        <div class="history-thumb-wrap">
+          <img class="history-thumb" src="${escapeHtml(thumb)}"
+               alt="${escapeHtml(item.title)}"
+               onerror="this.src='https://archive.org/services/img/${escapeHtml(item.archiveId)}'"/>
+          <div class="history-play"><i class="fas fa-play-circle"></i></div>
+        </div>
+        <div class="history-info">
+          <div class="history-title">${escapeHtml(item.title)}</div>
+          <div class="history-meta">
+            <span class="history-cat">${escapeHtml(item.category || "general")}</span>
+            <span><i class="fas fa-eye"></i> ${formatNumber(item.views || 0)}</span>
+          </div>
+          <div class="history-watched">
+            <i class="fas fa-clock"></i> Watched ${watchedAt}
+          </div>
+        </div>
+        <button class="btn-remove-item" title="Remove from history">
+          <i class="fas fa-times"></i>
+        </button>`;
+
+      // Click card to watch
+      el.addEventListener("click", (e) => {
+        if (e.target.closest(".btn-remove-item")) return;
+        window.location.href = `watch.html?v=${item.videoId}`;
+      });
+
+      // Remove single item
+      el.querySelector(".btn-remove-item").addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (confirm("Remove this video from history?")) {
+          await deleteDoc(doc(db, "users", userId, "history", item.id));
+          el.remove();
+          // Update count
+          const countEl = historyContent.querySelector(".history-count");
+          if (countEl) {
+            const remaining = historyContent.querySelectorAll(".history-item").length;
+            if (remaining === 0) {
+              clearHistoryBtn.classList.add("hidden");
+              historyContent.innerHTML = `
+                <div class="history-empty">
+                  <i class="fas fa-clock-rotate-left"></i>
+                  <h2>No history yet</h2>
+                  <p>Videos you watch will appear here.</p>
+                  <a href="index.html" class="btn-browse">
+                    <i class="fas fa-play"></i> Browse Videos
+                  </a>
+                </div>`;
+            } else {
+              countEl.textContent = `${remaining} video${remaining !== 1 ? "s" : ""} watched`;
+            }
+          }
+        }
+      });
+
+      return el;
+    }
+
+    // ---- CLEAR ALL HISTORY ----
+    clearHistoryBtn.addEventListener("click", async () => {
+      if (!confirm("Clear your entire watch history? This cannot be undone.")) return;
+
+      const user = auth.currentUser;
+      if (!user) return;
+
+      clearHistoryBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Clearing...';
+      clearHistoryBtn.disabled = true;
+
+      try {
+        const q    = query(collection(db, "users", user.uid, "history"));
+        const snap = await getDocs(q);
+        const deletes = snap.docs.map(d => deleteDoc(doc(db, "users", user.uid, "history", d.id)));
+        await Promise.all(deletes);
+
+        clearHistoryBtn.classList.add("hidden");
+        historyContent.innerHTML = `
+          <div class="history-empty">
+            <i class="fas fa-clock-rotate-left"></i>
+            <h2>History cleared</h2>
+            <p>Videos you watch will appear here.</p>
+            <a href="index.html" class="btn-browse">
+              <i class="fas fa-play"></i> Browse Videos
+            </a>
+          </div>`;
+      } catch (err) {
+        alert("Error clearing history: " + err.message);
+        clearHistoryBtn.disabled = false;
+        clearHistoryBtn.innerHTML = '<i class="fas fa-trash"></i> Clear All';
+      }
+    });
+
+    // ---- HELPERS ----
+    function formatNumber(n) {
+      if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
+      if (n >= 1000)    return (n / 1000).toFixed(1) + "K";
+      return n.toString();
+    }
+
+    function timeAgo(date) {
+      const s = Math.floor((new Date() - date) / 1000);
+      if (s < 60)      return "Just now";
+      if (s < 3600)    return Math.floor(s / 60) + "m ago";
+      if (s < 86400)   return Math.floor(s / 3600) + "h ago";
+      if (s < 2592000) return Math.floor(s / 86400) + "d ago";
+      return date.toLocaleDateString();
+    }
+
+    function escapeHtml(str) {
+      return (str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    }
+  </script>
+
+</body>
+</html>
