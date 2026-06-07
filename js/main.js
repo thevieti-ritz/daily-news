@@ -453,6 +453,94 @@ function escapeHtml(str) {
 }
 
 // ============================================
-// INIT
+// CATEGORY URL PARAMETER
+// Reads ?cat= from URL and filters on load
 // ============================================
-loadVideos();
+const urlParams = new URLSearchParams(window.location.search);
+const catParam = urlParams.get("cat");
+const searchParam = urlParams.get("search");
+
+if (searchParam) {
+  // If coming from watch page search redirect
+  searchInput.value = searchParam;
+  doSearch();
+} else if (catParam) {
+  // If coming from sidebar category link
+  currentSearch = "";
+  // Store category as active filter for display
+  const catLabel = catParam.charAt(0).toUpperCase() + catParam.slice(1);
+  sectionTitle.textContent = catLabel;
+
+  // Override loadVideos to filter by category
+  const videosRef = collection(db, "videos");
+
+  async function loadByCategory() {
+    if (isLoading) return;
+    isLoading = true;
+    showSkeletons(PAGE_SIZE);
+
+    try {
+      const { query: q, where, orderBy, limit, startAfter, getDocs } = await import(
+        "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
+      );
+
+      const snap = await getDocs(
+        q(videosRef,
+          where("category", "==", catParam.toLowerCase()),
+          orderBy("createdAt", "desc"),
+          limit(PAGE_SIZE),
+          ...(lastDoc ? [startAfter(lastDoc)] : [])
+        )
+      );
+
+      if (!lastDoc) videoGrid.innerHTML = "";
+
+      if (snap.empty && !lastDoc) {
+        videoGrid.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-video-slash"></i>
+            <h3>No videos found</h3>
+            <p>No videos in "${catLabel}" yet.</p>
+          </div>`;
+        videoCount.textContent = "";
+        loadMoreBtn.classList.add("hidden");
+        isLoading = false;
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+      snap.docs.forEach(docSnap => {
+        fragment.appendChild(createVideoCard({ id: docSnap.id, ...docSnap.data() }));
+      });
+      videoGrid.appendChild(fragment);
+
+      videoCount.textContent = `${videoGrid.querySelectorAll(".video-card").length} videos`;
+
+      if (snap.docs.length === PAGE_SIZE) {
+        lastDoc = snap.docs[snap.docs.length - 1];
+        loadMoreBtn.classList.remove("hidden");
+      } else {
+        loadMoreBtn.classList.add("hidden");
+      }
+
+      initLazyLoad();
+    } catch (err) {
+      console.error("Category load error:", err);
+      videoGrid.innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-circle-exclamation"></i>
+          <h3>Error loading videos</h3>
+          <p>Please refresh and try again.</p>
+        </div>`;
+    }
+
+    isLoading = false;
+  }
+
+  loadByCategory();
+  loadMoreBtn?.addEventListener("click", loadByCategory);
+
+} else {
+  // Normal homepage load
+  loadVideos();
+}
