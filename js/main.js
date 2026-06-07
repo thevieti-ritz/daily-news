@@ -1,18 +1,18 @@
 // ============================================
-// MAIN.JS — Leaked Archives
+// MAIN.JS — Leaked Archives (Optimized)
 // ============================================
 
 import { db, auth } from "./firebase.js";
 import {
   collection, query, orderBy, limit,
-  startAfter, getDocs
+  startAfter, getDocs, where
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // ============================================
 // CONFIG & STATE
 // ============================================
-const PAGE_SIZE    = 8;
+const PAGE_SIZE    = 12; // increased for better UX
 let lastDoc        = null;
 let currentSearch  = "";
 let isLoading      = false;
@@ -21,9 +21,13 @@ let activeSort     = "newest";
 let activeDate     = "all";
 let activeDuration = "all";
 let activeQuality  = "all";
+let activeCategory = null;
+
+// Simple in-memory cache to avoid refetching same data
+const videoCache = new Map();
 
 // ============================================
-// DOM REFS
+// DOM REFS — cached once, never re-queried
 // ============================================
 const videoGrid       = document.getElementById("videoGrid");
 const loadMoreBtn     = document.getElementById("loadMoreBtn");
@@ -41,26 +45,22 @@ const userDisplayName = document.getElementById("userDisplayName");
 const logoutBtn       = document.getElementById("logoutBtn");
 
 // ============================================
-// SIDEBAR & HAMBURGER
+// SIDEBAR
 // ============================================
 menuToggle.addEventListener("click", () => {
   sidebar.classList.toggle("open");
   sidebarOverlay.classList.toggle("hidden");
 });
-
 sidebarOverlay.addEventListener("click", () => {
   sidebar.classList.remove("open");
   sidebarOverlay.classList.add("hidden");
 });
-
 document.querySelectorAll(".side-link").forEach(link => {
   link.addEventListener("click", () => {
     sidebar.classList.remove("open");
     sidebarOverlay.classList.add("hidden");
   });
 });
-
-// Categories accordion
 document.getElementById("categoriesToggle").addEventListener("click", () => {
   const menu  = document.getElementById("categoriesMenu");
   const arrow = document.getElementById("categoriesArrow");
@@ -69,7 +69,7 @@ document.getElementById("categoriesToggle").addEventListener("click", () => {
 });
 
 // ============================================
-// AUTH
+// AUTH — deferred so it doesn't block video load
 // ============================================
 onAuthStateChanged(auth, (user) => {
   if (user) {
@@ -82,7 +82,6 @@ onAuthStateChanged(auth, (user) => {
     userMenu.classList.add("hidden");
   }
 });
-
 logoutBtn?.addEventListener("click", (e) => {
   e.preventDefault();
   signOut(auth);
@@ -90,7 +89,6 @@ logoutBtn?.addEventListener("click", (e) => {
 
 // ============================================
 // FILTER DROPDOWNS
-// Menus are moved to <body> so nothing clips them
 // ============================================
 function setupDropdown(btnId, menuId, labelId, dataKey, onSelect) {
   const btn   = document.getElementById(btnId);
@@ -98,65 +96,45 @@ function setupDropdown(btnId, menuId, labelId, dataKey, onSelect) {
   const label = document.getElementById(labelId);
   if (!btn || !menu) return;
 
-  // Detach menu from filter bar and attach to body
   document.body.appendChild(menu);
-
-  // Style it for free-floating fixed position
   menu.style.position = "fixed";
   menu.style.zIndex   = "99999";
 
-  // Toggle open/close
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
-
-    // Close every other dropdown
     document.querySelectorAll(".filter-dropdown-menu").forEach(m => {
       if (m !== menu) m.classList.add("hidden");
     });
-
-    // Position below the button
-    const rect      = btn.getBoundingClientRect();
-    menu.style.top  = (rect.bottom + 4) + "px";
-    menu.style.left = rect.left + "px";
+    const rect = btn.getBoundingClientRect();
+    menu.style.top      = (rect.bottom + 4) + "px";
+    menu.style.left     = rect.left + "px";
     menu.style.minWidth = Math.max(rect.width, 160) + "px";
-
     menu.classList.toggle("hidden");
   });
 
-  // Option selected
   menu.querySelectorAll(".filter-option").forEach(opt => {
     opt.addEventListener("click", (e) => {
       e.stopPropagation();
-
       menu.querySelectorAll(".filter-option").forEach(o => o.classList.remove("active"));
       opt.classList.add("active");
-
       const val  = opt.dataset[dataKey];
       const text = opt.textContent.trim();
-
-      // Update button label
       if (label) {
-        label.textContent = (dataKey === "sort")
-          ? text
-          : (val === "all" ? "" : `: ${text}`);
+        label.textContent = dataKey === "sort" ? text : (val === "all" ? "" : `: ${text}`);
       }
-
-      // Red highlight if non-default
       btn.classList.toggle("active-filter", val !== "all" && val !== "newest");
-
       onSelect(val);
       menu.classList.add("hidden");
+      videoCache.clear(); // clear cache on filter change
       resetAndLoad();
     });
   });
 }
 
-// Close all dropdowns when tapping anywhere else
 document.addEventListener("click", () => {
   document.querySelectorAll(".filter-dropdown-menu").forEach(m => m.classList.add("hidden"));
 });
 
-// Wire up dropdowns
 setupDropdown("sortBtn",     "sortMenu",     "sortLabel",     "sort",     (v) => { activeSort     = v; });
 setupDropdown("dateBtn",     "dateMenu",     "dateLabel",     "date",     (v) => { activeDate     = v; });
 setupDropdown("durationBtn", "durationMenu", "durationLabel", "duration", (v) => { activeDuration = v; });
@@ -173,12 +151,13 @@ searchInput?.addEventListener("input", () => {
       doSearch();
     } else if (val.length === 0) {
       currentSearch = "";
-      sectionTitle.textContent = "Latest Videos";
+      sectionTitle.textContent = activeCategory
+        ? activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)
+        : "Latest Videos";
       resetAndLoad();
     }
-  }, 400);
+  }, 350);
 });
-
 searchBtn?.addEventListener("click", doSearch);
 searchInput?.addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(); });
 
@@ -187,24 +166,24 @@ function doSearch() {
   if (!val) return;
   currentSearch = val;
   sectionTitle.textContent = `Results: "${searchInput.value.trim()}"`;
+  videoCache.clear();
   resetAndLoad();
 }
 
 // ============================================
-// SKELETON CARDS
+// SKELETON CARDS — built once as template
 // ============================================
-function showSkeletons(count = 8) {
-  videoGrid.innerHTML = "";
-  for (let i = 0; i < count; i++) {
-    videoGrid.innerHTML += `
-      <div class="skeleton-card">
-        <div class="skeleton-thumb"></div>
-        <div class="skeleton-info">
-          <div class="skeleton-line long"></div>
-          <div class="skeleton-line short"></div>
-        </div>
-      </div>`;
-  }
+const skeletonHTML = `
+  <div class="skeleton-card">
+    <div class="skeleton-thumb"></div>
+    <div class="skeleton-info">
+      <div class="skeleton-line long"></div>
+      <div class="skeleton-line short"></div>
+    </div>
+  </div>`.repeat(PAGE_SIZE);
+
+function showSkeletons() {
+  videoGrid.innerHTML = skeletonHTML;
 }
 
 // ============================================
@@ -213,12 +192,12 @@ function showSkeletons(count = 8) {
 function resetAndLoad() {
   lastDoc = null;
   loadMoreBtn.classList.add("hidden");
-  showSkeletons(PAGE_SIZE);
+  showSkeletons();
   loadVideos();
 }
 
 // ============================================
-// DATE CUTOFF HELPER
+// DATE CUTOFF
 // ============================================
 function getDateCutoff(filter) {
   const now = new Date();
@@ -230,6 +209,33 @@ function getDateCutoff(filter) {
 }
 
 // ============================================
+// BUILD FIRESTORE QUERY
+// ============================================
+function buildQuery(fetchLimit) {
+  const videosRef = collection(db, "videos");
+  const pagination = lastDoc ? [startAfter(lastDoc)] : [];
+
+  // Category takes priority
+  if (activeCategory) {
+    return query(
+      videosRef,
+      where("category", "==", activeCategory),
+      orderBy("createdAt", "desc"),
+      limit(fetchLimit),
+      ...pagination
+    );
+  }
+
+  const sortMap = {
+    views:  ["views",    "desc"],
+    rating: ["likes",    "desc"],
+    length: ["duration", "desc"],
+  };
+  const [sortField, sortDir] = sortMap[activeSort] || ["createdAt", "desc"];
+  return query(videosRef, orderBy(sortField, sortDir), limit(fetchLimit), ...pagination);
+}
+
+// ============================================
 // LOAD VIDEOS
 // ============================================
 async function loadVideos() {
@@ -237,71 +243,76 @@ async function loadVideos() {
   isLoading = true;
 
   try {
-    const videosRef  = collection(db, "videos");
-    const fetchLimit = currentSearch ? 60 : PAGE_SIZE;
-    const pagination = lastDoc ? [startAfter(lastDoc)] : [];
+    const fetchLimit = currentSearch ? 80 : PAGE_SIZE;
+    const cacheKey   = `${activeSort}-${activeDate}-${activeDuration}-${activeQuality}-${activeCategory}-${currentSearch}-${lastDoc?.id || "start"}`;
 
-    // Build query based on sort
-    const sortMap = {
-      views:  ["views",     "desc"],
-      rating: ["likes",     "desc"],
-      length: ["duration",  "desc"],
-    };
-    const [sortField, sortDir] = sortMap[activeSort] || ["createdAt", "desc"];
-    const q = query(videosRef, orderBy(sortField, sortDir), limit(fetchLimit), ...pagination);
+    let docs;
 
-    const snapshot = await getDocs(q);
-    let docs = snapshot.docs;
+    // Use cache if available
+    if (videoCache.has(cacheKey)) {
+      docs = videoCache.get(cacheKey);
+    } else {
+      const q        = buildQuery(fetchLimit);
+      const snapshot = await getDocs(q);
+      docs = snapshot.docs;
 
-    // Search filter
-    if (currentSearch) {
-      docs = docs.filter(d => {
-        const v = d.data();
-        return (
-          v.title?.toLowerCase().includes(currentSearch) ||
-          v.description?.toLowerCase().includes(currentSearch) ||
-          v.tags?.some(t => t.toLowerCase().includes(currentSearch))
-        );
-      });
+      // Store last doc for pagination before filtering
+      const rawLastDoc = snapshot.docs[snapshot.docs.length - 1];
+
+      // Client-side filters
+      if (currentSearch) {
+        docs = docs.filter(d => {
+          const v = d.data();
+          return (
+            v.title?.toLowerCase().includes(currentSearch) ||
+            v.description?.toLowerCase().includes(currentSearch) ||
+            v.tags?.some(t => t.toLowerCase().includes(currentSearch))
+          );
+        });
+      }
+
+      const cutoff = getDateCutoff(activeDate);
+      if (cutoff) {
+        docs = docs.filter(d => {
+          const created = d.data().createdAt?.toDate();
+          return created && created >= cutoff;
+        });
+      }
+
+      if (activeDuration === "short") {
+        docs = docs.filter(d => (d.data().duration || 0) < 180);
+      } else if (activeDuration === "medium") {
+        docs = docs.filter(d => { const s = d.data().duration || 0; return s >= 180 && s < 600; });
+      } else if (activeDuration === "long") {
+        docs = docs.filter(d => (d.data().duration || 0) >= 600);
+      }
+
+      if (activeQuality !== "all") {
+        docs = docs.filter(d => d.data().quality === activeQuality);
+      }
+
+      if (activeSort === "relevance") {
+        docs = [...docs].sort((a, b) => {
+          const sA = (a.data().views || 0) + (a.data().likes || 0) * 2;
+          const sB = (b.data().views || 0) + (b.data().likes || 0) * 2;
+          return sB - sA;
+        });
+      }
+
+      // Cache results
+      videoCache.set(cacheKey, docs);
+
+      // Update lastDoc for pagination
+      if (!currentSearch && docs.length === PAGE_SIZE) {
+        lastDoc = rawLastDoc;
+      }
     }
 
-    // Date filter
-    const cutoff = getDateCutoff(activeDate);
-    if (cutoff) {
-      docs = docs.filter(d => {
-        const created = d.data().createdAt?.toDate();
-        return created && created >= cutoff;
-      });
-    }
-
-    // Duration filter
-    if (activeDuration === "short") {
-      docs = docs.filter(d => (d.data().duration || 0) < 180);
-    } else if (activeDuration === "medium") {
-      docs = docs.filter(d => { const s = d.data().duration || 0; return s >= 180 && s < 600; });
-    } else if (activeDuration === "long") {
-      docs = docs.filter(d => (d.data().duration || 0) >= 600);
-    }
-
-    // Quality filter
-    if (activeQuality !== "all") {
-      docs = docs.filter(d => d.data().quality === activeQuality);
-    }
-
-    // Relevance: score by views + likes
-    if (activeSort === "relevance") {
-      docs.sort((a, b) => {
-        const sA = (a.data().views || 0) + (a.data().likes || 0) * 2;
-        const sB = (b.data().views || 0) + (b.data().likes || 0) * 2;
-        return sB - sA;
-      });
-    }
-
-    // Clear on first page
-    if (!lastDoc) videoGrid.innerHTML = "";
+    // Clear grid on first page
+    if (!lastDoc || videoCache.has(cacheKey)) videoGrid.innerHTML = "";
 
     // Empty state
-    if (docs.length === 0 && !lastDoc) {
+    if (docs.length === 0) {
       videoGrid.innerHTML = `
         <div class="empty-state">
           <i class="fas fa-video-slash"></i>
@@ -314,30 +325,40 @@ async function loadVideos() {
       return;
     }
 
-    // Render
+    // Render using fragment (fastest DOM method)
     const fragment = document.createDocumentFragment();
     docs.forEach(docSnap => fragment.appendChild(createVideoCard({ id: docSnap.id, ...docSnap.data() })));
+    videoGrid.innerHTML = "";
     videoGrid.appendChild(fragment);
 
     // Section title
     if (!currentSearch) {
-      const labels = { newest: "Latest Videos", relevance: "Most Relevant", views: "Most Viewed", rating: "Top Rated", length: "By Length" };
-      sectionTitle.textContent = labels[activeSort] || "Latest Videos";
+      const labels = {
+        newest:    "Latest Videos",
+        relevance: "Most Relevant",
+        views:     "Most Viewed",
+        rating:    "Top Rated",
+        length:    "By Length"
+      };
+      sectionTitle.textContent = activeCategory
+        ? activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)
+        : (labels[activeSort] || "Latest Videos");
     }
 
-    // Pagination
-    if (!currentSearch && docs.length === PAGE_SIZE) {
-      lastDoc = snapshot.docs[snapshot.docs.length - 1];
+    // Pagination button
+    if (!currentSearch && docs.length >= PAGE_SIZE) {
       loadMoreBtn.classList.remove("hidden");
     } else {
       loadMoreBtn.classList.add("hidden");
     }
 
-    videoCount.textContent = `${videoGrid.querySelectorAll(".video-card").length} videos`;
+    videoCount.textContent = `${docs.length} videos`;
+
+    // Lazy load images
     initLazyLoad();
 
   } catch (err) {
-    console.error("Error:", err);
+    console.error("Load error:", err);
     videoGrid.innerHTML = `
       <div class="empty-state">
         <i class="fas fa-circle-exclamation"></i>
@@ -350,18 +371,18 @@ async function loadVideos() {
 }
 
 // ============================================
-// VIDEO CARD
+// VIDEO CARD — optimized innerHTML
 // ============================================
 function createVideoCard(video) {
   const card     = document.createElement("div");
   card.className = "video-card";
 
   const thumb    = video.thumbnail || `https://archive.org/services/img/${video.archiveId}`;
-  const views    = formatNumber(video.views    || 0);
-  const likes    = formatNumber(video.likes    || 0);
+  const views    = formatNumber(video.views   || 0);
   const date     = video.createdAt ? timeAgo(video.createdAt.toDate()) : "";
-  const duration = video.duration  ? formatDuration(video.duration) : "";
+  const duration = video.duration  ? `<span class="duration-badge">${formatDuration(video.duration)}</span>` : "";
   const quality  = video.quality   ? `<span class="quality-badge">${video.quality}</span>` : "";
+  const featured = video.featured  ? `<span class="card-badge">Featured</span>` : "";
 
   card.innerHTML = `
     <div class="card-thumb">
@@ -369,59 +390,55 @@ function createVideoCard(video) {
            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3C/svg%3E"
            alt="${escapeHtml(video.title)}"
            class="lazy-img"
-           onerror="this.src='https://archive.org/services/img/${video.archiveId}'"/>
+           loading="lazy"
+           decoding="async"/>
       <div class="play-overlay"><i class="fas fa-play-circle"></i></div>
-      ${video.featured ? '<span class="card-badge">Featured</span>' : ''}
-      ${duration ? `<span class="duration-badge">${duration}</span>` : ''}
-      ${quality}
+      ${featured}${duration}${quality}
     </div>
     <div class="card-info">
       <h3>${escapeHtml(video.title)}</h3>
       <div class="card-meta">
         <span><i class="fas fa-eye"></i> ${views}</span>
-        <span><i class="fas fa-thumbs-up"></i> ${likes}</span>
         <span>${date}</span>
         <span class="card-cat-badge">${video.category || "general"}</span>
       </div>
     </div>`;
 
-  card.addEventListener("click", () => { window.location.href = `watch.html?v=${video.id}`; });
+  card.addEventListener("click", () => {
+    window.location.href = `watch.html?v=${video.id}`;
+  });
+
   return card;
 }
 
 // ============================================
-// LAZY IMAGE LOADING
+// LAZY IMAGE LOADING — single shared observer
 // ============================================
-let lazyObserver = null;
+const lazyObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const img = entry.target;
+      img.src = img.dataset.src;
+      img.classList.remove("lazy-img");
+      lazyObserver.unobserve(img);
+    }
+  });
+}, { rootMargin: "150px", threshold: 0 });
 
 function initLazyLoad() {
-  const imgs = document.querySelectorAll("img.lazy-img");
-  if ("IntersectionObserver" in window) {
-    if (!lazyObserver) {
-      lazyObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const img = entry.target;
-            img.src = img.dataset.src;
-            img.classList.remove("lazy-img");
-            lazyObserver.unobserve(img);
-          }
-        });
-      }, { rootMargin: "100px" });
-    }
-    imgs.forEach(img => lazyObserver.observe(img));
-  } else {
-    imgs.forEach(img => { img.src = img.dataset.src; });
-  }
+  document.querySelectorAll("img.lazy-img").forEach(img => lazyObserver.observe(img));
 }
 
 // ============================================
-// INFINITE SCROLL
+// INFINITE SCROLL — auto load more
 // ============================================
-new IntersectionObserver((entries) => {
-  if (entries[0].isIntersecting && !loadMoreBtn.classList.contains("hidden")) loadVideos();
-}, { rootMargin: "200px" }).observe(loadMoreBtn);
+const scrollObserver = new IntersectionObserver((entries) => {
+  if (entries[0].isIntersecting && !loadMoreBtn.classList.contains("hidden") && !isLoading) {
+    loadVideos();
+  }
+}, { rootMargin: "300px" });
 
+scrollObserver.observe(loadMoreBtn);
 loadMoreBtn?.addEventListener("click", loadVideos);
 
 // ============================================
@@ -434,7 +451,7 @@ function formatNumber(n) {
 }
 
 function formatDuration(s) {
-  const m = Math.floor(s / 60);
+  const m   = Math.floor(s / 60);
   const sec = s % 60;
   return `${m}:${sec.toString().padStart(2, "0")}`;
 }
@@ -453,94 +470,21 @@ function escapeHtml(str) {
 }
 
 // ============================================
-// CATEGORY URL PARAMETER
-// Reads ?cat= from URL and filters on load
+// URL PARAMS — category and search on load
 // ============================================
-const urlParams = new URLSearchParams(window.location.search);
-const catParam = urlParams.get("cat");
+const urlParams   = new URLSearchParams(window.location.search);
+const catParam    = urlParams.get("cat");
 const searchParam = urlParams.get("search");
 
 if (searchParam) {
-  // If coming from watch page search redirect
   searchInput.value = searchParam;
-  doSearch();
+  currentSearch = searchParam.toLowerCase();
+  sectionTitle.textContent = `Results: "${searchParam}"`;
+  loadVideos();
 } else if (catParam) {
-  // If coming from sidebar category link
-  currentSearch = "";
-  // Store category as active filter for display
-  const catLabel = catParam.charAt(0).toUpperCase() + catParam.slice(1);
-  sectionTitle.textContent = catLabel;
-
-  // Override loadVideos to filter by category
-  const videosRef = collection(db, "videos");
-
-  async function loadByCategory() {
-    if (isLoading) return;
-    isLoading = true;
-    showSkeletons(PAGE_SIZE);
-
-    try {
-      const { query: q, where, orderBy, limit, startAfter, getDocs } = await import(
-        "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
-      );
-
-      const snap = await getDocs(
-        q(videosRef,
-          where("category", "==", catParam.toLowerCase()),
-          orderBy("createdAt", "desc"),
-          limit(PAGE_SIZE),
-          ...(lastDoc ? [startAfter(lastDoc)] : [])
-        )
-      );
-
-      if (!lastDoc) videoGrid.innerHTML = "";
-
-      if (snap.empty && !lastDoc) {
-        videoGrid.innerHTML = `
-          <div class="empty-state">
-            <i class="fas fa-video-slash"></i>
-            <h3>No videos found</h3>
-            <p>No videos in "${catLabel}" yet.</p>
-          </div>`;
-        videoCount.textContent = "";
-        loadMoreBtn.classList.add("hidden");
-        isLoading = false;
-        return;
-      }
-
-      const fragment = document.createDocumentFragment();
-      snap.docs.forEach(docSnap => {
-        fragment.appendChild(createVideoCard({ id: docSnap.id, ...docSnap.data() }));
-      });
-      videoGrid.appendChild(fragment);
-
-      videoCount.textContent = `${videoGrid.querySelectorAll(".video-card").length} videos`;
-
-      if (snap.docs.length === PAGE_SIZE) {
-        lastDoc = snap.docs[snap.docs.length - 1];
-        loadMoreBtn.classList.remove("hidden");
-      } else {
-        loadMoreBtn.classList.add("hidden");
-      }
-
-      initLazyLoad();
-    } catch (err) {
-      console.error("Category load error:", err);
-      videoGrid.innerHTML = `
-        <div class="empty-state">
-          <i class="fas fa-circle-exclamation"></i>
-          <h3>Error loading videos</h3>
-          <p>Please refresh and try again.</p>
-        </div>`;
-    }
-
-    isLoading = false;
-  }
-
-  loadByCategory();
-  loadMoreBtn?.addEventListener("click", loadByCategory);
-
+  activeCategory = catParam.toLowerCase();
+  sectionTitle.textContent = catParam.charAt(0).toUpperCase() + catParam.slice(1);
+  loadVideos();
 } else {
-  // Normal homepage load
   loadVideos();
 }
