@@ -7,6 +7,95 @@
   <link rel="stylesheet" href="css/style.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- Video.js -->
+  <link href="https://vjs.zencdn.net/8.6.1/video-js.css" rel="stylesheet"/>
+  <script src="https://vjs.zencdn.net/8.6.1/video.min.js"></script>
+
+  <!-- Google IMA SDK (required for VAST ads) -->
+  <script src="https://imasdk.googleapis.com/js/sdkloader/ima3.js"></script>
+
+  <!-- VideoJS IMA Plugin -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-ads/6.9.0/videojs.ads.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-ads/6.9.0/videojs.ads.min.css" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-ima/1.10.1/videojs.ima.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/videojs-ima/1.10.1/videojs.ima.min.css" rel="stylesheet"/>
+
+  <!-- ExoClick Client Hints -->
+  <meta http-equiv="Delegate-CH" content="Sec-CH-UA https://s.magsrv.com; Sec-CH-UA-Mobile https://s.magsrv.com; Sec-CH-UA-Arch https://s.magsrv.com; Sec-CH-UA-Model https://s.magsrv.com; Sec-CH-UA-Platform https://s.magsrv.com; Sec-CH-UA-Platform-Version https://s.magsrv.com; Sec-CH-UA-Bitness https://s.magsrv.com; Sec-CH-UA-Full-Version-List https://s.magsrv.com; Sec-CH-UA-Full-Version https://s.magsrv.com;"/>
+
+  <style>
+    /* Video.js custom styling */
+    .video-wrap {
+      position: relative;
+      width: 100%;
+      background: #000;
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .video-js {
+      width: 100% !important;
+      height: 100% !important;
+      min-height: 240px;
+      border-radius: var(--radius);
+    }
+    .video-js .vjs-big-play-button {
+      background: var(--red) !important;
+      border: none !important;
+      border-radius: 50% !important;
+      width: 60px !important;
+      height: 60px !important;
+      line-height: 60px !important;
+      top: 50% !important;
+      left: 50% !important;
+      transform: translate(-50%, -50%) !important;
+      margin: 0 !important;
+    }
+    .video-js .vjs-control-bar {
+      background: linear-gradient(transparent, rgba(0,0,0,0.8)) !important;
+    }
+    .video-js .vjs-play-progress,
+    .video-js .vjs-volume-level {
+      background: var(--red) !important;
+    }
+
+    /* Fallback iframe (shown if direct MP4 fails) */
+    .archive-iframe {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%;
+      background: #000;
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: none;
+    }
+    .archive-iframe iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    /* Aspect ratio wrapper */
+    .player-outer {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%;
+      background: #000;
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .player-outer .video-wrap {
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius);
+    }
+    .player-outer video {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
 </head>
 <body>
 
@@ -29,7 +118,7 @@
       <a href="login.html" class="btn-login" id="authLink"><i class="fas fa-user"></i> Sign In</a>
       <div class="user-menu hidden" id="userMenu">
         <img src="https://api.dicebear.com/7.x/thumbs/svg?seed=user" class="avatar" id="userAvatar"/>
-        <div class="dropdown" id="userDropdown">
+        <div class="dropdown">
           <span id="userDisplayName"></span>
           <a href="admin.html"><i class="fas fa-upload"></i> Upload Video</a>
           <a href="profile.html"><i class="fas fa-circle-user"></i> My Profile</a>
@@ -59,8 +148,9 @@
         <a href="index.html?cat=kenya" class="side-link sub"><i class="fas fa-globe-africa"></i> Kenya</a>
       </div>
       <hr/>
+      <a href="history.html" class="side-link"><i class="fas fa-clock-rotate-left"></i> History</a>
       <a href="profile.html" class="side-link"><i class="fas fa-circle-user"></i> Profile</a>
-      <a href="login.html" class="side-link"><i class="fas fa-sign-in-alt"></i> Sign In</a>
+      <a href="settings.html" class="side-link"><i class="fas fa-gear"></i> Settings</a>
     </nav>
   </aside>
 
@@ -71,13 +161,27 @@
       <!-- LEFT: Player + Info -->
       <div class="watch-left">
 
-        <div class="player-wrap">
-          <iframe id="videoPlayer" src="" frameborder="0"
-            allowfullscreen webkitallowfullscreen mozallowfullscreen
-            allow="autoplay; fullscreen">
-          </iframe>
+        <!-- Video Player -->
+        <div class="player-outer">
+          <div class="video-wrap" id="videoWrap">
+            <video
+              id="myVideo"
+              class="video-js vjs-default-skin vjs-big-play-centered"
+              controls
+              preload="auto"
+              playsinline
+              crossorigin="anonymous">
+            </video>
+          </div>
         </div>
 
+        <!-- Fallback Archive iframe (used if MP4 direct link fails) -->
+        <div class="archive-iframe" id="archiveFallback">
+          <iframe id="archiveIframe" src="" allowfullscreen
+            allow="autoplay; fullscreen"></iframe>
+        </div>
+
+        <!-- Video Info -->
         <div class="video-info-box">
           <span class="video-category-badge" id="videoCategoryBadge">Category</span>
           <h1 class="video-title" id="videoTitle">Loading...</h1>
@@ -85,7 +189,6 @@
             <span><i class="fas fa-eye"></i> <span id="viewCount">0</span> views</span>
             <span><i class="fas fa-calendar"></i> <span id="videoDate"></span></span>
           </div>
-
           <div class="action-row">
             <button class="action-btn" id="likeBtn">
               <i class="fas fa-thumbs-up"></i>
@@ -98,18 +201,22 @@
               <i class="fas fa-link"></i> Copy Link
             </button>
           </div>
-
           <div class="video-description" id="videoDescription"></div>
         </div>
 
         <!-- Comments -->
         <div class="comments-section">
-          <h3><i class="fas fa-comments"></i> Comments <span id="commentCount" class="comment-count-badge">0</span></h3>
-          <div class="comment-form" id="commentForm">
-            <img src="https://api.dicebear.com/7.x/thumbs/svg?seed=guest" class="comment-avatar" id="commentUserAvatar"/>
+          <h3><i class="fas fa-comments"></i> Comments
+            <span id="commentCount" class="comment-count-badge">0</span>
+          </h3>
+          <div class="comment-form">
+            <img src="https://api.dicebear.com/7.x/thumbs/svg?seed=guest"
+                 class="comment-avatar" id="commentUserAvatar"/>
             <div class="comment-input-wrap">
-              <input type="text" id="commentInput" placeholder="Add a comment... (sign in required)"/>
-              <button class="btn-post-comment" id="postCommentBtn"><i class="fas fa-paper-plane"></i> Post</button>
+              <input type="text" id="commentInput" placeholder="Add a comment..."/>
+              <button class="btn-post-comment" id="postCommentBtn">
+                <i class="fas fa-paper-plane"></i> Post
+              </button>
             </div>
           </div>
           <div class="comments-list" id="commentsList">
@@ -136,54 +243,51 @@
       <button class="modal-close" id="closeShareModal"><i class="fas fa-times"></i></button>
       <h3>Share this video</h3>
       <div class="share-grid">
-        <a class="share-btn whatsapp" id="shareWhatsapp" target="_blank"><i class="fab fa-whatsapp"></i> WhatsApp</a>
-        <a class="share-btn facebook" id="shareFacebook" target="_blank"><i class="fab fa-facebook"></i> Facebook</a>
-        <a class="share-btn twitter" id="shareTwitter" target="_blank"><i class="fab fa-x-twitter"></i> X / Twitter</a>
-        <a class="share-btn telegram" id="shareTelegram" target="_blank"><i class="fab fa-telegram"></i> Telegram</a>
+        <a class="share-btn whatsapp" id="shareWhatsapp" target="_blank">
+          <i class="fab fa-whatsapp"></i> WhatsApp
+        </a>
+        <a class="share-btn facebook" id="shareFacebook" target="_blank">
+          <i class="fab fa-facebook"></i> Facebook
+        </a>
+        <a class="share-btn twitter" id="shareTwitter" target="_blank">
+          <i class="fab fa-x-twitter"></i> X / Twitter
+        </a>
+        <a class="share-btn telegram" id="shareTelegram" target="_blank">
+          <i class="fab fa-telegram"></i> Telegram
+        </a>
       </div>
     </div>
   </div>
 
   <script type="module" src="js/firebase.js"></script>
   <script type="module" src="js/watch.js"></script>
+
   <script>
-    // Sidebar toggle for watch page
-    const menuToggle    = document.getElementById('menuToggle');
-    const sidebar       = document.getElementById('sidebar');
-    const sidebarOverlay = document.getElementById('sidebarOverlay');
-    const categoriesToggle = document.getElementById('categoriesToggle');
-    const categoriesMenu   = document.getElementById('categoriesMenu');
-    const categoriesArrow  = document.getElementById('categoriesArrow');
+    // Sidebar
+    const menuToggle      = document.getElementById("menuToggle");
+    const sidebar         = document.getElementById("sidebar");
+    const sidebarOverlay  = document.getElementById("sidebarOverlay");
+    const catToggle       = document.getElementById("categoriesToggle");
+    const catMenu         = document.getElementById("categoriesMenu");
+    const catArrow        = document.getElementById("categoriesArrow");
 
-    menuToggle.addEventListener('click', () => {
-      sidebar.classList.toggle('open');
-      sidebarOverlay.classList.toggle('hidden');
+    menuToggle.addEventListener("click", () => {
+      sidebar.classList.toggle("open");
+      sidebarOverlay.classList.toggle("hidden");
     });
-    sidebarOverlay.addEventListener('click', () => {
-      sidebar.classList.remove('open');
-      sidebarOverlay.classList.add('hidden');
+    sidebarOverlay.addEventListener("click", () => {
+      sidebar.classList.remove("open");
+      sidebarOverlay.classList.add("hidden");
     });
-    categoriesToggle.addEventListener('click', () => {
-      const isOpen = categoriesMenu.classList.toggle('open');
-      categoriesArrow.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+    catToggle.addEventListener("click", () => {
+      const isOpen = catMenu.classList.toggle("open");
+      catArrow.style.transform = isOpen ? "rotate(180deg)" : "rotate(0deg)";
     });
-    document.querySelectorAll('.side-link').forEach(link => {
-      link.addEventListener('click', () => {
-        sidebar.classList.remove('open');
-        sidebarOverlay.classList.add('hidden');
+    document.querySelectorAll(".side-link").forEach(link => {
+      link.addEventListener("click", () => {
+        sidebar.classList.remove("open");
+        sidebarOverlay.classList.add("hidden");
       });
-    });
-
-    // Search redirect
-    document.getElementById('searchBtn').addEventListener('click', () => {
-      const q = document.getElementById('searchInput').value.trim();
-      if (q) window.location.href = `index.html?search=${encodeURIComponent(q)}`;
-    });
-    document.getElementById('searchInput').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        const q = e.target.value.trim();
-        if (q) window.location.href = `index.html?search=${encodeURIComponent(q)}`;
-      }
     });
   </script>
 
