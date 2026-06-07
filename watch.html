@@ -7,95 +7,6 @@
   <link rel="stylesheet" href="css/style.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-
-  <!-- Video.js -->
-  <link href="https://vjs.zencdn.net/8.6.1/video-js.css" rel="stylesheet"/>
-  <script src="https://vjs.zencdn.net/8.6.1/video.min.js"></script>
-
-  <!-- Google IMA SDK (required for VAST ads) -->
-  <script src="https://imasdk.googleapis.com/js/sdkloader/ima3.js"></script>
-
-  <!-- VideoJS IMA Plugin -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-ads/6.9.0/videojs.ads.min.js"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-ads/6.9.0/videojs.ads.min.css" rel="stylesheet"/>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-ima/1.10.1/videojs.ima.min.js"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/videojs-ima/1.10.1/videojs.ima.min.css" rel="stylesheet"/>
-
-  <!-- ExoClick Client Hints -->
-  <meta http-equiv="Delegate-CH" content="Sec-CH-UA https://s.magsrv.com; Sec-CH-UA-Mobile https://s.magsrv.com; Sec-CH-UA-Arch https://s.magsrv.com; Sec-CH-UA-Model https://s.magsrv.com; Sec-CH-UA-Platform https://s.magsrv.com; Sec-CH-UA-Platform-Version https://s.magsrv.com; Sec-CH-UA-Bitness https://s.magsrv.com; Sec-CH-UA-Full-Version-List https://s.magsrv.com; Sec-CH-UA-Full-Version https://s.magsrv.com;"/>
-
-  <style>
-    /* Video.js custom styling */
-    .video-wrap {
-      position: relative;
-      width: 100%;
-      background: #000;
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-    .video-js {
-      width: 100% !important;
-      height: 100% !important;
-      min-height: 240px;
-      border-radius: var(--radius);
-    }
-    .video-js .vjs-big-play-button {
-      background: var(--red) !important;
-      border: none !important;
-      border-radius: 50% !important;
-      width: 60px !important;
-      height: 60px !important;
-      line-height: 60px !important;
-      top: 50% !important;
-      left: 50% !important;
-      transform: translate(-50%, -50%) !important;
-      margin: 0 !important;
-    }
-    .video-js .vjs-control-bar {
-      background: linear-gradient(transparent, rgba(0,0,0,0.8)) !important;
-    }
-    .video-js .vjs-play-progress,
-    .video-js .vjs-volume-level {
-      background: var(--red) !important;
-    }
-
-    /* Fallback iframe (shown if direct MP4 fails) */
-    .archive-iframe {
-      position: relative;
-      width: 100%;
-      padding-top: 56.25%;
-      background: #000;
-      border-radius: var(--radius);
-      overflow: hidden;
-      display: none;
-    }
-    .archive-iframe iframe {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-
-    /* Aspect ratio wrapper */
-    .player-outer {
-      position: relative;
-      width: 100%;
-      padding-top: 56.25%;
-      background: #000;
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-    .player-outer .video-wrap {
-      position: absolute;
-      inset: 0;
-      border-radius: var(--radius);
-    }
-    .player-outer video {
-      width: 100%;
-      height: 100%;
-    }
-  </style>
 </head>
 <body>
 
@@ -161,24 +72,12 @@
       <!-- LEFT: Player + Info -->
       <div class="watch-left">
 
-        <!-- Video Player -->
-        <div class="player-outer">
-          <div class="video-wrap" id="videoWrap">
-            <video
-              id="myVideo"
-              class="video-js vjs-default-skin vjs-big-play-centered"
-              controls
-              preload="auto"
-              playsinline
-              crossorigin="anonymous">
-            </video>
-          </div>
-        </div>
-
-        <!-- Fallback Archive iframe (used if MP4 direct link fails) -->
-        <div class="archive-iframe" id="archiveFallback">
-          <iframe id="archiveIframe" src="" allowfullscreen
-            allow="autoplay; fullscreen"></iframe>
+        <!-- Archive.org iframe player -->
+        <div class="player-wrap">
+          <iframe id="videoPlayer" src="" frameborder="0"
+            allowfullscreen
+            allow="autoplay; fullscreen">
+          </iframe>
         </div>
 
         <!-- Video Info -->
@@ -206,7 +105,8 @@
 
         <!-- Comments -->
         <div class="comments-section">
-          <h3><i class="fas fa-comments"></i> Comments
+          <h3>
+            <i class="fas fa-comments"></i> Comments
             <span id="commentCount" class="comment-count-badge">0</span>
           </h3>
           <div class="comment-form">
@@ -220,7 +120,10 @@
             </div>
           </div>
           <div class="comments-list" id="commentsList">
-            <div class="loading-screen"><div class="spinner"></div><p>Loading comments...</p></div>
+            <div class="loading-screen">
+              <div class="spinner"></div>
+              <p>Loading comments...</p>
+            </div>
           </div>
         </div>
 
@@ -264,12 +167,12 @@
 
   <script>
     // Sidebar
-    const menuToggle      = document.getElementById("menuToggle");
-    const sidebar         = document.getElementById("sidebar");
-    const sidebarOverlay  = document.getElementById("sidebarOverlay");
-    const catToggle       = document.getElementById("categoriesToggle");
-    const catMenu         = document.getElementById("categoriesMenu");
-    const catArrow        = document.getElementById("categoriesArrow");
+    const menuToggle     = document.getElementById("menuToggle");
+    const sidebar        = document.getElementById("sidebar");
+    const sidebarOverlay = document.getElementById("sidebarOverlay");
+    const catToggle      = document.getElementById("categoriesToggle");
+    const catMenu        = document.getElementById("categoriesMenu");
+    const catArrow       = document.getElementById("categoriesArrow");
 
     menuToggle.addEventListener("click", () => {
       sidebar.classList.toggle("open");
