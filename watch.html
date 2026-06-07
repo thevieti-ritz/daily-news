@@ -3,19 +3,22 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Watch — Daily News UG</title>
+  <title>Watch — Leaked Archives</title>
   <link rel="stylesheet" href="css/style.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 </head>
 <body>
 
+  <!-- Sidebar Overlay -->
+  <div class="sidebar-overlay hidden" id="sidebarOverlay"></div>
+
   <!-- NAVBAR -->
   <nav class="navbar">
     <div class="nav-left">
       <button class="hamburger" id="menuToggle"><i class="fas fa-bars"></i></button>
       <a href="index.html" class="logo">
-        <span class="logo-red">DAILY</span><span class="logo-white">NEWS</span><span class="logo-tag">UG</span>
+        <span class="logo-red">LEAKED</span><span class="logo-white">ARCHIVES</span>
       </a>
     </div>
     <div class="search-bar">
@@ -29,6 +32,7 @@
         <div class="dropdown" id="userDropdown">
           <span id="userDisplayName"></span>
           <a href="admin.html"><i class="fas fa-upload"></i> Upload Video</a>
+          <a href="profile.html"><i class="fas fa-circle-user"></i> My Profile</a>
           <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
         </div>
       </div>
@@ -38,31 +42,35 @@
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
     <nav class="side-nav">
-      <a href="index.html" class="side-link"><i class="fas fa-house"></i> Home</a>
-      <a href="index.html?cat=news" class="side-link"><i class="fas fa-newspaper"></i> News</a>
-      <a href="index.html?cat=politics" class="side-link"><i class="fas fa-landmark"></i> Politics</a>
-      <a href="index.html?cat=sports" class="side-link"><i class="fas fa-futbol"></i> Sports</a>
-      <a href="index.html?cat=entertainment" class="side-link"><i class="fas fa-film"></i> Entertainment</a>
-      <a href="index.html?cat=business" class="side-link"><i class="fas fa-briefcase"></i> Business</a>
-      <a href="index.html?cat=technology" class="side-link"><i class="fas fa-microchip"></i> Technology</a>
-      <a href="index.html?cat=health" class="side-link"><i class="fas fa-heart-pulse"></i> Health</a>
-      <a href="index.html?cat=education" class="side-link"><i class="fas fa-graduation-cap"></i> Education</a>
-      <a href="index.html?cat=religion" class="side-link"><i class="fas fa-church"></i> Religion</a>
+      <button class="side-section-btn" id="categoriesToggle">
+        <i class="fas fa-th-large"></i> Categories
+        <i class="fas fa-chevron-down side-arrow" id="categoriesArrow"></i>
+      </button>
+      <div class="side-submenu" id="categoriesMenu">
+        <a href="index.html?cat=entertainment" class="side-link sub"><i class="fas fa-film"></i> Entertainment</a>
+        <a href="index.html?cat=celebrity" class="side-link sub"><i class="fas fa-star"></i> Celebrity</a>
+        <a href="index.html?cat=viral" class="side-link sub"><i class="fas fa-fire"></i> Viral</a>
+        <a href="index.html?cat=music" class="side-link sub"><i class="fas fa-music"></i> Music</a>
+        <a href="index.html?cat=sports" class="side-link sub"><i class="fas fa-futbol"></i> Sports</a>
+        <a href="index.html?cat=news" class="side-link sub"><i class="fas fa-newspaper"></i> News</a>
+        <a href="index.html?cat=comedy" class="side-link sub"><i class="fas fa-face-laugh"></i> Comedy</a>
+        <a href="index.html?cat=naija" class="side-link sub"><i class="fas fa-globe-africa"></i> Naija</a>
+        <a href="index.html?cat=uganda" class="side-link sub"><i class="fas fa-globe-africa"></i> Uganda</a>
+        <a href="index.html?cat=kenya" class="side-link sub"><i class="fas fa-globe-africa"></i> Kenya</a>
+      </div>
       <hr/>
-      <a href="about.html" class="side-link"><i class="fas fa-circle-info"></i> About</a>
-      <a href="contact.html" class="side-link"><i class="fas fa-envelope"></i> Contact</a>
+      <a href="profile.html" class="side-link"><i class="fas fa-circle-user"></i> Profile</a>
+      <a href="login.html" class="side-link"><i class="fas fa-sign-in-alt"></i> Sign In</a>
     </nav>
   </aside>
 
   <!-- MAIN -->
   <main class="main-content watch-layout" id="mainContent">
-
     <div class="watch-container">
 
       <!-- LEFT: Player + Info -->
       <div class="watch-left">
 
-        <!-- Video Player -->
         <div class="player-wrap">
           <iframe id="videoPlayer" src="" frameborder="0"
             allowfullscreen webkitallowfullscreen mozallowfullscreen
@@ -70,7 +78,6 @@
           </iframe>
         </div>
 
-        <!-- Video Info -->
         <div class="video-info-box">
           <span class="video-category-badge" id="videoCategoryBadge">Category</span>
           <h1 class="video-title" id="videoTitle">Loading...</h1>
@@ -79,7 +86,6 @@
             <span><i class="fas fa-calendar"></i> <span id="videoDate"></span></span>
           </div>
 
-          <!-- Like / Share -->
           <div class="action-row">
             <button class="action-btn" id="likeBtn">
               <i class="fas fa-thumbs-up"></i>
@@ -93,15 +99,12 @@
             </button>
           </div>
 
-          <!-- Description -->
           <div class="video-description" id="videoDescription"></div>
         </div>
 
-        <!-- Comments Section -->
+        <!-- Comments -->
         <div class="comments-section">
           <h3><i class="fas fa-comments"></i> Comments <span id="commentCount" class="comment-count-badge">0</span></h3>
-
-          <!-- Add Comment -->
           <div class="comment-form" id="commentForm">
             <img src="https://api.dicebear.com/7.x/thumbs/svg?seed=guest" class="comment-avatar" id="commentUserAvatar"/>
             <div class="comment-input-wrap">
@@ -109,8 +112,6 @@
               <button class="btn-post-comment" id="postCommentBtn"><i class="fas fa-paper-plane"></i> Post</button>
             </div>
           </div>
-
-          <!-- Comments List -->
           <div class="comments-list" id="commentsList">
             <div class="loading-screen"><div class="spinner"></div><p>Loading comments...</p></div>
           </div>
@@ -143,9 +144,48 @@
     </div>
   </div>
 
-  <div class="sidebar-overlay hidden" id="sidebarOverlay"></div>
-
   <script type="module" src="js/firebase.js"></script>
   <script type="module" src="js/watch.js"></script>
+  <script>
+    // Sidebar toggle for watch page
+    const menuToggle    = document.getElementById('menuToggle');
+    const sidebar       = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const categoriesToggle = document.getElementById('categoriesToggle');
+    const categoriesMenu   = document.getElementById('categoriesMenu');
+    const categoriesArrow  = document.getElementById('categoriesArrow');
+
+    menuToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      sidebarOverlay.classList.toggle('hidden');
+    });
+    sidebarOverlay.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      sidebarOverlay.classList.add('hidden');
+    });
+    categoriesToggle.addEventListener('click', () => {
+      const isOpen = categoriesMenu.classList.toggle('open');
+      categoriesArrow.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+    });
+    document.querySelectorAll('.side-link').forEach(link => {
+      link.addEventListener('click', () => {
+        sidebar.classList.remove('open');
+        sidebarOverlay.classList.add('hidden');
+      });
+    });
+
+    // Search redirect
+    document.getElementById('searchBtn').addEventListener('click', () => {
+      const q = document.getElementById('searchInput').value.trim();
+      if (q) window.location.href = `index.html?search=${encodeURIComponent(q)}`;
+    });
+    document.getElementById('searchInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const q = e.target.value.trim();
+        if (q) window.location.href = `index.html?search=${encodeURIComponent(q)}`;
+      }
+    });
+  </script>
+
 </body>
 </html>
