@@ -1,6 +1,6 @@
 // ============================================
 // WATCH.JS — Leaked Archives
-// Video.js player + ExoClick VAST ads
+// Clean version with Archive.org iframe player
 // ============================================
 
 import { db, auth } from "./firebase.js";
@@ -12,14 +12,12 @@ import {
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // ---- CONFIG ----
-const VAST_URL   = "https://s.magsrv.com/v1/vast.php?idz=5944360";
 const ADMIN_EMAIL = "dbernardinvestments@gmail.com";
 
 // ---- STATE ----
 let currentVideoId = null;
 let currentUser    = null;
 let hasLiked       = false;
-let player         = null; // Video.js instance
 
 // ---- GET VIDEO ID ----
 const params = new URLSearchParams(window.location.search);
@@ -27,6 +25,7 @@ currentVideoId = params.get("v");
 if (!currentVideoId) window.location.href = "index.html";
 
 // ---- DOM REFS ----
+const videoPlayer        = document.getElementById("videoPlayer");
 const videoTitle         = document.getElementById("videoTitle");
 const videoCategoryBadge = document.getElementById("videoCategoryBadge");
 const viewCount          = document.getElementById("viewCount");
@@ -49,8 +48,6 @@ const userMenu           = document.getElementById("userMenu");
 const userAvatar         = document.getElementById("userAvatar");
 const userDisplayName    = document.getElementById("userDisplayName");
 const logoutBtn          = document.getElementById("logoutBtn");
-const archiveFallback    = document.getElementById("archiveFallback");
-const archiveIframe      = document.getElementById("archiveIframe");
 
 // ---- AUTH ----
 onAuthStateChanged(auth, (user) => {
@@ -96,81 +93,6 @@ async function saveToHistory(video) {
   }
 }
 
-// ---- INIT VIDEO.JS PLAYER WITH VAST ADS ----
-function initPlayer(mp4Url, posterUrl) {
-  // Destroy existing player if any
-  if (player) {
-    try { player.dispose(); } catch(e) {}
-    player = null;
-  }
-
-  // Set video source
-  const videoEl = document.getElementById("myVideo");
-  if (!videoEl) return;
-
-  player = videojs("myVideo", {
-    controls:    true,
-    autoplay:    false,
-    preload:     "auto",
-    fluid:       true,
-    playsinline: true,
-    poster:      posterUrl || "",
-    sources: [{
-      src:  mp4Url,
-      type: "video/mp4"
-    }]
-  });
-
-  // Init ads plugin
-  player.ads();
-
-  // Init IMA plugin with ExoClick VAST
-  player.ima({
-    adTagUrl:          VAST_URL,
-    debug:             false,
-    disableFlashAds:   true,
-    vpaidMode:         google.ima.ImaSdkSettings.VpaidMode.ENABLED,
-    adLabel:           "Advertisement",
-    showCountdown:     true,
-    preventLateAdStart: false
-  });
-
-  // When ad errors out — just play the video
-  player.ima.addEventListener("adError", () => {
-    console.warn("Ad error — playing video directly");
-    player.play();
-  });
-
-  // Track view count + history after 5s of actual video play
-  let viewTracked = false;
-  player.on("timeupdate", () => {
-    if (!viewTracked && player.currentTime() >= 5) {
-      viewTracked = true;
-      trackView();
-    }
-  });
-}
-
-// ---- FALLBACK: use Archive.org iframe if MP4 fails ----
-function useFallbackIframe(archiveId) {
-  document.getElementById("videoWrap").style.display = "none";
-  archiveFallback.style.display = "block";
-  archiveIframe.src = `https://archive.org/embed/${archiveId}`;
-}
-
-// ---- TRACK VIEW + SAVE HISTORY ----
-async function trackView() {
-  try {
-    const videoRef = doc(db, "videos", currentVideoId);
-    await updateDoc(videoRef, { views: increment(1) });
-    const snap = await getDoc(videoRef);
-    viewCount.textContent = formatNumber((snap.data().views || 0));
-    saveToHistory(snap.data());
-  } catch(e) {
-    console.error("View tracking error:", e);
-  }
-}
-
 // ---- LOAD VIDEO ----
 async function loadVideo() {
   try {
@@ -187,15 +109,20 @@ async function loadVideo() {
     // Page title
     document.title = `${video.title} — Leaked Archives`;
 
+    // Set Archive.org iframe
+    videoPlayer.src = `https://archive.org/embed/${video.archiveId}`;
+
     // Info
     videoTitle.textContent         = video.title;
     videoCategoryBadge.textContent = video.category || "general";
     viewCount.textContent          = formatNumber(video.views || 0);
     likeCount.textContent          = formatNumber(video.likes || 0);
     videoDate.textContent          = video.createdAt
-      ? video.createdAt.toDate().toLocaleDateString("en-UG", { year: "numeric", month: "long", day: "numeric" })
+      ? video.createdAt.toDate().toLocaleDateString("en-UG", {
+          year: "numeric", month: "long", day: "numeric"
+        })
       : "";
-    videoDescription.textContent   = video.description || "";
+    videoDescription.textContent = video.description || "";
 
     // Check liked
     if (video.likedBy && auth.currentUser) {
@@ -211,27 +138,17 @@ async function loadVideo() {
     document.getElementById("shareTwitter").href  = `https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`;
     document.getElementById("shareTelegram").href = `https://t.me/share/url?url=${shareUrl}&text=${shareText}`;
 
-    // Build direct MP4 URL from Archive.org
-    const mp4Url  = `https://archive.org/download/${video.archiveId}/${video.archiveId}.mp4`;
-    const poster  = video.thumbnail || `https://archive.org/services/img/${video.archiveId}`;
-
-    // Try loading with Video.js + VAST ads
-    // Test if the MP4 is accessible first
-    try {
-      const test = await fetch(mp4Url, { method: "HEAD" });
-      if (test.ok) {
-        initPlayer(mp4Url, poster);
-      } else {
-        // MP4 not directly accessible — use fallback iframe
-        useFallbackIframe(video.archiveId);
-        // Still track view after 5s on fallback
-        setTimeout(() => trackView(), 5000);
+    // Track view + save history after 5 seconds
+    setTimeout(async () => {
+      try {
+        await updateDoc(videoRef, { views: increment(1) });
+        const snap = await getDoc(videoRef);
+        viewCount.textContent = formatNumber(snap.data().views || 0);
+        saveToHistory(video);
+      } catch(e) {
+        console.error("View tracking error:", e);
       }
-    } catch (fetchErr) {
-      // CORS or network issue — use fallback iframe
-      useFallbackIframe(video.archiveId);
-      setTimeout(() => trackView(), 5000);
-    }
+    }, 5000);
 
     // Load related + comments
     loadRelated(video.category, currentVideoId);
@@ -250,11 +167,17 @@ likeBtn?.addEventListener("click", async () => {
   if (hasLiked) {
     hasLiked = false;
     likeBtn.classList.remove("liked");
-    await updateDoc(videoRef, { likes: increment(-1), likedBy: arrayRemove(currentUser.uid) });
+    await updateDoc(videoRef, {
+      likes: increment(-1),
+      likedBy: arrayRemove(currentUser.uid)
+    });
   } else {
     hasLiked = true;
     likeBtn.classList.add("liked");
-    await updateDoc(videoRef, { likes: increment(1), likedBy: arrayUnion(currentUser.uid) });
+    await updateDoc(videoRef, {
+      likes: increment(1),
+      likedBy: arrayUnion(currentUser.uid)
+    });
   }
   const snap = await getDoc(videoRef);
   likeCount.textContent = formatNumber(snap.data().likes || 0);
@@ -270,7 +193,9 @@ shareModal?.addEventListener("click", (e) => {
 copyLinkBtn?.addEventListener("click", () => {
   navigator.clipboard.writeText(window.location.href).then(() => {
     copyLinkBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-    setTimeout(() => { copyLinkBtn.innerHTML = '<i class="fas fa-link"></i> Copy Link'; }, 2000);
+    setTimeout(() => {
+      copyLinkBtn.innerHTML = '<i class="fas fa-link"></i> Copy Link';
+    }, 2000);
   });
 });
 
@@ -305,8 +230,13 @@ async function loadRelated(category, excludeId) {
       count++;
     });
 
+    // If no related in same category load any videos
     if (count === 0) {
-      const q2    = query(collection(db, "videos"), orderBy("createdAt", "desc"), limit(9));
+      const q2    = query(
+        collection(db, "videos"),
+        orderBy("createdAt", "desc"),
+        limit(9)
+      );
       const snap2 = await getDocs(q2);
       snap2.docs.forEach(d => {
         if (d.id === excludeId) return;
@@ -314,7 +244,10 @@ async function loadRelated(category, excludeId) {
       });
     }
   } catch (err) {
-    relatedVideos.innerHTML = "<p style='color:var(--muted);font-size:13px;padding:8px'>Could not load related videos.</p>";
+    relatedVideos.innerHTML = `
+      <p style="color:var(--muted);font-size:13px;padding:8px">
+        Could not load related videos.
+      </p>`;
   }
 }
 
@@ -323,11 +256,15 @@ function createRelatedCard(video) {
   card.className = "related-card";
   const thumb = video.thumbnail || `https://archive.org/services/img/${video.archiveId}`;
   card.innerHTML = `
-    <img class="related-thumb" src="${thumb}" alt="${escapeHtml(video.title)}"
+    <img class="related-thumb" src="${thumb}"
+         alt="${escapeHtml(video.title)}"
          onerror="this.src='https://archive.org/services/img/${video.archiveId}'"/>
     <div class="related-info">
       <h4>${escapeHtml(video.title)}</h4>
-      <span><i class="fas fa-eye"></i> ${formatNumber(video.views || 0)} · ${video.category || ""}</span>
+      <span>
+        <i class="fas fa-eye"></i> ${formatNumber(video.views || 0)}
+        · ${video.category || ""}
+      </span>
     </div>`;
   card.addEventListener("click", () => {
     window.location.href = `watch.html?v=${video.id}`;
@@ -343,14 +280,19 @@ async function loadComments() {
       orderBy("createdAt", "desc")
     );
     const snap = await getDocs(q);
-    commentsList.innerHTML  = "";
+    commentsList.innerHTML   = "";
     commentCount.textContent = snap.size;
 
     if (snap.empty) {
-      commentsList.innerHTML = "<p style='color:var(--muted);font-size:13px;text-align:center;padding:20px'>No comments yet. Be the first!</p>";
+      commentsList.innerHTML = `
+        <p style="color:var(--muted);font-size:13px;text-align:center;padding:20px">
+          No comments yet. Be the first!
+        </p>`;
       return;
     }
-    snap.forEach(d => commentsList.appendChild(createCommentEl({ id: d.id, ...d.data() })));
+    snap.forEach(d => {
+      commentsList.appendChild(createCommentEl({ id: d.id, ...d.data() }));
+    });
   } catch (err) {
     console.error("Comments error:", err);
   }
@@ -359,18 +301,25 @@ async function loadComments() {
 function createCommentEl(comment) {
   const el      = document.createElement("div");
   el.className  = "comment-item";
-  const avatar  = comment.userPhoto || `https://api.dicebear.com/7.x/thumbs/svg?seed=${comment.userId}`;
+  const avatar  = comment.userPhoto ||
+    `https://api.dicebear.com/7.x/thumbs/svg?seed=${comment.userId}`;
   const timeStr = comment.createdAt ? timeAgo(comment.createdAt.toDate()) : "";
   const isOwner = currentUser && currentUser.uid === comment.userId;
   const isAdmin = currentUser && currentUser.email === ADMIN_EMAIL;
 
   el.innerHTML = `
-    <img class="comment-avatar" src="${avatar}" alt="${escapeHtml(comment.userName)}"/>
+    <img class="comment-avatar" src="${avatar}"
+         alt="${escapeHtml(comment.userName)}"/>
     <div class="comment-body">
-      <div class="comment-name">${escapeHtml(comment.userName)} <span>${timeStr}</span></div>
+      <div class="comment-name">
+        ${escapeHtml(comment.userName)}
+        <span>${timeStr}</span>
+      </div>
       <div class="comment-text">${escapeHtml(comment.text)}</div>
       ${(isOwner || isAdmin)
-        ? `<button class="comment-delete" data-id="${comment.id}"><i class="fas fa-trash"></i> Delete</button>`
+        ? `<button class="comment-delete" data-id="${comment.id}">
+             <i class="fas fa-trash"></i> Delete
+           </button>`
         : ""}
     </div>`;
 
@@ -378,7 +327,9 @@ function createCommentEl(comment) {
     if (confirm("Delete this comment?")) {
       await deleteDoc(doc(db, "videos", currentVideoId, "comments", comment.id));
       el.remove();
-      commentCount.textContent = Math.max(0, (parseInt(commentCount.textContent) || 0) - 1);
+      commentCount.textContent = Math.max(
+        0, (parseInt(commentCount.textContent) || 0) - 1
+      );
     }
   });
 
@@ -386,7 +337,9 @@ function createCommentEl(comment) {
 }
 
 postCommentBtn?.addEventListener("click", postComment);
-commentInput?.addEventListener("keydown", (e) => { if (e.key === "Enter") postComment(); });
+commentInput?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") postComment();
+});
 
 async function postComment() {
   if (!currentUser) { window.location.href = "login.html"; return; }
@@ -441,7 +394,10 @@ function timeAgo(date) {
 }
 
 function escapeHtml(str) {
-  return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return (str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 // ---- INIT ----
