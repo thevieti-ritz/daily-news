@@ -165,12 +165,22 @@
   <script type="module" src="js/firebase.js"></script>
   <script type="module" src="js/watch.js"></script>
 
-  <!-- ExoClick Interstitial Ad -->
+<!-- ExoClick Interstitial Ad -->
   <script async type="application/javascript" src="https://a.pemsrv.com/ad-provider.js"></script>
   <ins class="eas6a97888e33" data-zoneid="5944558"></ins>
-  <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
-
   <script>
+    (AdProvider = window.AdProvider || []).push({"serve": {}});
+
+    // Fire on related video click
+    document.addEventListener("click", function(e) {
+      const card = e.target.closest(".related-card");
+      if (card) {
+        try {
+          (AdProvider = window.AdProvider || []).push({"serve": {}});
+        } catch(err) {}
+      }
+    });
+  </script>
     // Sidebar
     const menuToggle     = document.getElementById("menuToggle");
     const sidebar        = document.getElementById("sidebar");

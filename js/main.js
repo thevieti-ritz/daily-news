@@ -404,6 +404,7 @@ function createVideoCard(video) {
       </div>
     </div>`;
 
+  card.dataset.href = `watch.html?v=${video.id}`;
   card.addEventListener("click", () => {
     window.location.href = `watch.html?v=${video.id}`;
   });

@@ -204,7 +204,29 @@
   <!-- ExoClick Interstitial Ad -->
   <script async type="application/javascript" src="https://a.pemsrv.com/ad-provider.js"></script>
   <ins class="eas6a97888e33" data-zoneid="5944558"></ins>
-  <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
+  <script>
+    (AdProvider = window.AdProvider || []).push({"serve": {}});
+
+    // Fire interstitial on video card click
+    document.addEventListener("click", function(e) {
+      const card = e.target.closest(".video-card");
+      if (card) {
+        e.preventDefault();
+        e.stopPropagation();
+        const href = card.dataset.href;
+
+        // Fire the ad
+        try {
+          (AdProvider = window.AdProvider || []).push({"serve": {}});
+        } catch(err) {}
+
+        // Redirect to watch page after short delay
+        setTimeout(() => {
+          if (href) window.location.href = href;
+        }, 300);
+      }
+    });
+  </script>
 
 </body>
 </html>
