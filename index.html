@@ -18,6 +18,43 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 <script>(function(s){s.dataset.zone='11034900',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+<style>
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 56px;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      z-index: 800;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 8px;
+    }
+    .bottom-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      text-decoration: none;
+      padding: 6px 10px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+      min-width: 48px;
+      text-align: center;
+    }
+    .bottom-nav-item i { font-size: 18px; }
+    .bottom-nav-item:active,
+    .bottom-nav-item.active { color: var(--red); }
+    @media (max-width: 768px) {
+      .bottom-nav { display: flex; }
+      .main-content { padding-bottom: 70px !important; }
+    }
+  </style>
 </head>
 <body>
 
@@ -230,5 +267,24 @@
     });
   </script>
 
+<!-- BOTTOM NAV (mobile only) -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="bottom-nav-item active">
+      <i class="fas fa-house"></i>
+      Home
+    </a>
+    <a href="history.html" class="bottom-nav-item">
+      <i class="fas fa-clock-rotate-left"></i>
+      History
+    </a>
+    <a href="profile.html" class="bottom-nav-item">
+      <i class="fas fa-circle-user"></i>
+      Profile
+    </a>
+    <a href="login.html" class="bottom-nav-item" id="bottomAuthLink">
+      <i class="fas fa-sign-in-alt"></i>
+      Sign In
+    </a>
+  </nav>
 </body>
 </html>
