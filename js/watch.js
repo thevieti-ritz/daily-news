@@ -1,6 +1,6 @@
 // ============================================
 // WATCH.JS — Leaked Archives
-// Streamtape player + history + comments
+// Cloudflare R2 player + history + comments
 // ============================================
 
 import { db, auth } from "./firebase.js";
@@ -13,11 +13,20 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 
 // ---- CONFIG ----
 const ADMIN_EMAIL = "dbernardinvestments@gmail.com";
+const R2_BASE_URL = "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev";
 
-// ---- STREAMTAPE THUMBNAIL HELPER ----
+// ---- R2 THUMBNAIL HELPER ----
+// Uses custom thumbnail URL if set, otherwise looks for filename.jpg in R2
 function getThumb(video) {
-  return video.thumbnail ||
-    `https://shadowsocks.streamtape.com/get_video?id=${video.archiveId}&expires=99999999999&ip=all&token=streamtape_thumb`;
+  if (video.thumbnail) return video.thumbnail;
+  // Strip extension from filename and append .jpg
+  const base = (video.archiveId || "").replace(/\.[^/.]+$/, "");
+  return `${R2_BASE_URL}/${base}.jpg`;
+}
+
+// ---- R2 VIDEO URL HELPER ----
+function getVideoUrl(video) {
+  return `${R2_BASE_URL}/${video.archiveId}`;
 }
 
 // ---- STATE ----
@@ -32,6 +41,7 @@ if (!currentVideoId) window.location.href = "index.html";
 
 // ---- DOM REFS ----
 const videoPlayer        = document.getElementById("videoPlayer");
+const videoSource        = document.getElementById("videoSource");
 const videoTitle         = document.getElementById("videoTitle");
 const videoCategoryBadge = document.getElementById("videoCategoryBadge");
 const viewCount          = document.getElementById("viewCount");
@@ -115,8 +125,15 @@ async function loadVideo() {
     // Page title
     document.title = `${video.title} — Leaked Archives`;
 
-    // Set Streamtape iframe
-    videoPlayer.src = `https://streamtape.com/e/${video.archiveId}/`;
+    // Set R2 video source on the <video> element
+    const videoUrl = getVideoUrl(video);
+    if (videoSource) {
+      videoSource.src = videoUrl;
+      videoPlayer.load(); // reload the video element with new source
+    } else {
+      // Fallback: set src directly if no <source> tag
+      videoPlayer.src = videoUrl;
+    }
 
     // Info
     videoTitle.textContent         = video.title;

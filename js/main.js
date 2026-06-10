@@ -377,7 +377,7 @@ function createVideoCard(video) {
   const card     = document.createElement("div");
   card.className = "video-card";
 
-const thumb = video.thumbnail || `https://shadowsocks.streamtape.com/get_video?id=${video.archiveId}&expires=99999999999&ip=all&token=streamtape_thumb`;
+const thumb = video.thumbnail || `https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/${video.archiveId}.jpg`;
   const views    = formatNumber(video.views   || 0);
   const date     = video.createdAt ? timeAgo(video.createdAt.toDate()) : "";
   const duration = video.duration  ? `<span class="duration-badge">${formatDuration(video.duration)}</span>` : "";
