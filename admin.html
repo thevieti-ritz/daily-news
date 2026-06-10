@@ -27,16 +27,20 @@
       overflow-x: hidden;
     }
 
+    /* Stats grid */
     .admin-stats {
       width: 100%;
       box-sizing: border-box;
     }
 
+    /* Upload + Manage side by side on desktop,
+       stacked on mobile */
     .admin-grid {
       width: 100%;
       box-sizing: border-box;
     }
 
+    /* Form inputs full width */
     .form-group input,
     .form-group select,
     .form-group textarea {
@@ -44,6 +48,7 @@
       box-sizing: border-box;
     }
 
+    /* Manage list items wrap nicely */
     .manage-item {
       flex-wrap: wrap;
     }
@@ -52,6 +57,7 @@
       word-break: break-word;
     }
 
+    /* Modal full screen on mobile */
     .modal-overlay { padding: 10px; }
     .modal, .modal-large { width: 100%; max-width: 100%; }
 
@@ -65,7 +71,7 @@
       .admin-nav .logo { font-size: 17px; }
       .admin-badge { font-size: 9px; padding: 2px 5px; }
       .admin-nav-right { font-size: 12px; gap: 6px; }
-      .admin-nav-right span { display: none; }
+      .admin-nav-right span { display: none; } /* hide username on mobile */
       .btn-login { padding: 6px 10px; font-size: 11px; }
 
       .admin-container { padding: 10px; }
@@ -94,7 +100,7 @@
       .form-group input,
       .form-group select,
       .form-group textarea {
-        font-size: 16px;
+        font-size: 16px; /* prevents iOS zoom */
         padding: 10px 12px;
       }
       .form-group small { font-size: 11px; }
@@ -104,6 +110,7 @@
         font-size: 14px;
       }
 
+      /* Manage list */
       .manage-list { max-height: 400px; }
       .manage-item { gap: 8px; }
       .manage-thumb { width: 80px; height: 45px; }
@@ -112,10 +119,12 @@
       .manage-actions { padding: 6px; gap: 4px; }
       .btn-edit, .btn-delete { padding: 5px 8px; font-size: 11px; }
 
+      /* Edit modal */
       .modal { padding: 16px 12px; }
       .modal h3 { font-size: 15px; margin-bottom: 14px; }
       .modal-close { top: 12px; right: 12px; }
 
+      /* Access denied box */
       .denied-box { padding: 30px 16px; }
       .denied-box h2 { font-size: 18px; }
       .denied-box p { font-size: 13px; }
@@ -190,27 +199,26 @@
         <!-- UPLOAD FORM -->
         <div class="admin-card">
           <h2><i class="fas fa-upload"></i> Upload New Video</h2>
-          <p class="admin-hint">Upload your video file to your <strong>Cloudflare R2 bucket</strong> first, then enter the exact filename below.</p>
+<p class="admin-hint">Upload your video to <a href="https://dash.cloudflare.com" target="_blank">Cloudflare R2</a> first, then paste the full video URL below.</p>
 
           <div class="admin-message hidden" id="uploadMessage"></div>
 
           <div class="form-group">
             <label>Video Title *</label>
-            <input type="text" id="videoTitle" placeholder="e.g. Latest Viral Leak 2026"/>
+            <input type="text" id="videoTitle" placeholder="e.g. Latest MILF Leak 2026"/>
           </div>
 
-          <div class="form-group">
-            <label>Video Filename *
-              <span class="hint-icon" title="The exact filename you uploaded to R2, including extension">?</span>
+<div class="form-group">
+            <label>Video File URL *
+              <span class="hint-icon" title="The full URL of your video from Cloudflare R2">?</span>
             </label>
-            <input type="text" id="archiveId" placeholder="e.g. my-video.mp4"/>
-            <small>Upload the file to R2 first, then enter its exact filename here (e.g. <strong>my-video.mp4</strong>)</small>
+            <input type="text" id="archiveId" placeholder="e.g. https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/my-video.mp4"/>
+            <small>Upload video to Cloudflare R2 first, then paste the full URL here</small>
           </div>
 
           <div class="form-group">
             <label>Thumbnail Image URL</label>
-            <input type="text" id="thumbnailUrl" placeholder="https://... (leave blank to use filename.jpg from R2)"/>
-            <small>Leave blank to auto-use <strong>filename.jpg</strong> from your R2 bucket</small>
+            <input type="text" id="thumbnailUrl" placeholder="https://... (leave blank for auto)"/>
           </div>
 
           <div class="form-group">
@@ -260,7 +268,7 @@
 
           <div class="form-group">
             <label>Tags (comma separated)</label>
-            <input type="text" id="videoTags" placeholder="e.g. leak, viral, 2026"/>
+            <input type="text" id="videoTags" placeholder="e.g. MILF, leak, viral, 2026"/>
           </div>
 
           <div class="form-group">

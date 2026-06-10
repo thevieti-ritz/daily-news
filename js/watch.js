@@ -1,6 +1,6 @@
 // ============================================
 // WATCH.JS — Leaked Archives
-// Cloudflare R2 player + history + comments
+// Cloudflare R2 HTML5 video player
 // ============================================
 
 import { db, auth } from "./firebase.js";
@@ -13,26 +13,13 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 
 // ---- CONFIG ----
 const ADMIN_EMAIL = "dbernardinvestments@gmail.com";
-const R2_BASE_URL = "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev";
-
-// ---- R2 THUMBNAIL HELPER ----
-// Uses custom thumbnail URL if set, otherwise looks for filename.jpg in R2
-function getThumb(video) {
-  if (video.thumbnail) return video.thumbnail;
-  // Strip extension from filename and append .jpg
-  const base = (video.archiveId || "").replace(/\.[^/.]+$/, "");
-  return `${R2_BASE_URL}/${base}.jpg`;
-}
-
-// ---- R2 VIDEO URL HELPER ----
-function getVideoUrl(video) {
-  return `${R2_BASE_URL}/${video.archiveId}`;
-}
+const R2_BASE     = "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/";
 
 // ---- STATE ----
 let currentVideoId = null;
 let currentUser    = null;
 let hasLiked       = false;
+let viewTracked    = false;
 
 // ---- GET VIDEO ID ----
 const params = new URLSearchParams(window.location.search);
@@ -41,7 +28,6 @@ if (!currentVideoId) window.location.href = "index.html";
 
 // ---- DOM REFS ----
 const videoPlayer        = document.getElementById("videoPlayer");
-const videoSource        = document.getElementById("videoSource");
 const videoTitle         = document.getElementById("videoTitle");
 const videoCategoryBadge = document.getElementById("videoCategoryBadge");
 const viewCount          = document.getElementById("viewCount");
@@ -64,6 +50,7 @@ const userMenu           = document.getElementById("userMenu");
 const userAvatar         = document.getElementById("userAvatar");
 const userDisplayName    = document.getElementById("userDisplayName");
 const logoutBtn          = document.getElementById("logoutBtn");
+const breadcrumbTitle    = document.getElementById("breadcrumbTitle");
 
 // ---- AUTH ----
 onAuthStateChanged(auth, (user) => {
@@ -71,10 +58,10 @@ onAuthStateChanged(auth, (user) => {
   if (user) {
     authLink.classList.add("hidden");
     userMenu.classList.remove("hidden");
-    userDisplayName.textContent   = user.displayName || user.email.split("@")[0];
-    userAvatar.src                = user.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
-    commentUserAvatar.src         = user.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
-    commentInput.placeholder      = "Add a comment...";
+    userDisplayName.textContent  = user.displayName || user.email.split("@")[0];
+    userAvatar.src               = user.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
+    commentUserAvatar.src        = user.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
+    commentInput.placeholder     = "Add a comment...";
   } else {
     authLink.classList.remove("hidden");
     userMenu.classList.add("hidden");
@@ -86,6 +73,19 @@ logoutBtn?.addEventListener("click", (e) => {
   e.preventDefault();
   signOut(auth);
 });
+
+// ---- GET VIDEO URL ----
+// archiveId can be a full URL or just a filename
+function getVideoUrl(archiveId) {
+  if (!archiveId) return "";
+  if (archiveId.startsWith("http")) return archiveId;
+  return R2_BASE + archiveId;
+}
+
+// ---- GET THUMBNAIL ----
+function getThumb(video) {
+  return video.thumbnail || "";
+}
 
 // ---- SAVE TO HISTORY ----
 async function saveToHistory(video) {
@@ -109,6 +109,20 @@ async function saveToHistory(video) {
   }
 }
 
+// ---- TRACK VIEW ----
+async function trackView(video, videoRef) {
+  if (viewTracked) return;
+  viewTracked = true;
+  try {
+    await updateDoc(videoRef, { views: increment(1) });
+    const snap = await getDoc(videoRef);
+    viewCount.textContent = formatNumber(snap.data().views || 0);
+    saveToHistory(video);
+  } catch(e) {
+    console.error("View tracking error:", e);
+  }
+}
+
 // ---- LOAD VIDEO ----
 async function loadVideo() {
   try {
@@ -122,18 +136,19 @@ async function loadVideo() {
 
     const video = { id: videoSnap.id, ...videoSnap.data() };
 
-    // Page title
+    // Page title + breadcrumb
     document.title = `${video.title} — Leaked Archives`;
+    if (breadcrumbTitle) breadcrumbTitle.textContent = video.title;
 
-    // Set R2 video source on the <video> element
-    const videoUrl = getVideoUrl(video);
-    if (videoSource) {
-      videoSource.src = videoUrl;
-      videoPlayer.load(); // reload the video element with new source
-    } else {
-      // Fallback: set src directly if no <source> tag
-      videoPlayer.src = videoUrl;
-    }
+    // Set video source
+    const videoUrl = getVideoUrl(video.archiveId);
+    videoPlayer.src = videoUrl;
+    if (video.thumbnail) videoPlayer.poster = video.thumbnail;
+
+    // Track view after 5 seconds of actual playback
+    videoPlayer.addEventListener("timeupdate", () => {
+      if (videoPlayer.currentTime >= 5) trackView(video, videoRef);
+    });
 
     // Info
     videoTitle.textContent         = video.title;
@@ -145,9 +160,9 @@ async function loadVideo() {
           year: "numeric", month: "long", day: "numeric"
         })
       : "";
-    videoDescription.textContent   = video.description || "";
+    videoDescription.textContent = video.description || "";
 
-    // Check if liked
+    // Check liked
     if (video.likedBy && auth.currentUser) {
       hasLiked = video.likedBy.includes(auth.currentUser.uid);
       if (hasLiked) likeBtn.classList.add("liked");
@@ -160,18 +175,6 @@ async function loadVideo() {
     document.getElementById("shareFacebook").href = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`;
     document.getElementById("shareTwitter").href  = `https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`;
     document.getElementById("shareTelegram").href = `https://t.me/share/url?url=${shareUrl}&text=${shareText}`;
-
-    // Track view + save history after 5 seconds
-    setTimeout(async () => {
-      try {
-        await updateDoc(videoRef, { views: increment(1) });
-        const snap = await getDoc(videoRef);
-        viewCount.textContent = formatNumber(snap.data().views || 0);
-        saveToHistory(video);
-      } catch(e) {
-        console.error("View tracking error:", e);
-      }
-    }, 5000);
 
     // Load related + comments
     loadRelated(video.category, currentVideoId);
@@ -190,17 +193,11 @@ likeBtn?.addEventListener("click", async () => {
   if (hasLiked) {
     hasLiked = false;
     likeBtn.classList.remove("liked");
-    await updateDoc(videoRef, {
-      likes:   increment(-1),
-      likedBy: arrayRemove(currentUser.uid)
-    });
+    await updateDoc(videoRef, { likes: increment(-1), likedBy: arrayRemove(currentUser.uid) });
   } else {
     hasLiked = true;
     likeBtn.classList.add("liked");
-    await updateDoc(videoRef, {
-      likes:   increment(1),
-      likedBy: arrayUnion(currentUser.uid)
-    });
+    await updateDoc(videoRef, { likes: increment(1), likedBy: arrayUnion(currentUser.uid) });
   }
   const snap = await getDoc(videoRef);
   likeCount.textContent = formatNumber(snap.data().likes || 0);
@@ -216,50 +213,24 @@ shareModal?.addEventListener("click", (e) => {
 copyLinkBtn?.addEventListener("click", () => {
   navigator.clipboard.writeText(window.location.href).then(() => {
     copyLinkBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-    setTimeout(() => {
-      copyLinkBtn.innerHTML = '<i class="fas fa-link"></i> Copy Link';
-    }, 2000);
+    setTimeout(() => { copyLinkBtn.innerHTML = '<i class="fas fa-link"></i> Copy Link'; }, 2000);
   });
-});
-
-// ---- SEARCH ----
-document.getElementById("searchBtn")?.addEventListener("click", () => {
-  const val = document.getElementById("searchInput").value.trim();
-  if (val) window.location.href = `index.html?search=${encodeURIComponent(val)}`;
-});
-document.getElementById("searchInput")?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    const val = e.target.value.trim();
-    if (val) window.location.href = `index.html?search=${encodeURIComponent(val)}`;
-  }
 });
 
 // ---- RELATED VIDEOS ----
 async function loadRelated(category, excludeId) {
   try {
-    const q    = query(
-      collection(db, "videos"),
-      where("category", "==", category),
-      orderBy("createdAt", "desc"),
-      limit(10)
-    );
+    const q    = query(collection(db, "videos"), where("category", "==", category), orderBy("createdAt", "desc"), limit(10));
     const snap = await getDocs(q);
     relatedVideos.innerHTML = "";
-
     let count = 0;
     snap.docs.forEach(d => {
       if (d.id === excludeId || count >= 8) return;
       relatedVideos.appendChild(createRelatedCard({ id: d.id, ...d.data() }));
       count++;
     });
-
-    // Fallback — load any videos if none in same category
     if (count === 0) {
-      const q2    = query(
-        collection(db, "videos"),
-        orderBy("createdAt", "desc"),
-        limit(9)
-      );
+      const q2    = query(collection(db, "videos"), orderBy("createdAt", "desc"), limit(9));
       const snap2 = await getDocs(q2);
       snap2.docs.forEach(d => {
         if (d.id === excludeId) return;
@@ -267,58 +238,38 @@ async function loadRelated(category, excludeId) {
       });
     }
   } catch (err) {
-    relatedVideos.innerHTML = `
-      <p style="color:var(--muted);font-size:13px;padding:8px">
-        Could not load related videos.
-      </p>`;
+    relatedVideos.innerHTML = "<p style='color:var(--muted);font-size:13px;padding:8px'>Could not load related videos.</p>";
   }
 }
 
 function createRelatedCard(video) {
-  const card     = document.createElement("div");
+  const card  = document.createElement("div");
   card.className = "related-card";
-  const thumb    = getThumb(video);
-
+  const thumb = getThumb(video) || "https://via.placeholder.com/120x68/1a1a1a/e63946?text=Video";
   card.innerHTML = `
-    <img class="related-thumb"
-         src="${thumb}"
+    <img class="related-thumb" src="${thumb}"
          alt="${escapeHtml(video.title)}"
          onerror="this.src='https://via.placeholder.com/120x68/1a1a1a/e63946?text=Video'"/>
     <div class="related-info">
       <h4>${escapeHtml(video.title)}</h4>
-      <span>
-        <i class="fas fa-eye"></i> ${formatNumber(video.views || 0)}
-        · ${video.category || ""}
-      </span>
+      <span><i class="fas fa-eye"></i> ${formatNumber(video.views || 0)} · ${video.category || ""}</span>
     </div>`;
-
-  card.addEventListener("click", () => {
-    window.location.href = `watch.html?v=${video.id}`;
-  });
+  card.addEventListener("click", () => { window.location.href = `watch.html?v=${video.id}`; });
   return card;
 }
 
 // ---- COMMENTS ----
 async function loadComments() {
   try {
-    const q    = query(
-      collection(db, "videos", currentVideoId, "comments"),
-      orderBy("createdAt", "desc")
-    );
+    const q    = query(collection(db, "videos", currentVideoId, "comments"), orderBy("createdAt", "desc"));
     const snap = await getDocs(q);
     commentsList.innerHTML   = "";
     commentCount.textContent = snap.size;
-
     if (snap.empty) {
-      commentsList.innerHTML = `
-        <p style="color:var(--muted);font-size:13px;text-align:center;padding:20px">
-          No comments yet. Be the first!
-        </p>`;
+      commentsList.innerHTML = "<p style='color:var(--muted);font-size:13px;text-align:center;padding:20px'>No comments yet. Be the first!</p>";
       return;
     }
-    snap.forEach(d => commentsList.appendChild(
-      createCommentEl({ id: d.id, ...d.data() })
-    ));
+    snap.forEach(d => commentsList.appendChild(createCommentEl({ id: d.id, ...d.data() })));
   } catch (err) {
     console.error("Comments error:", err);
   }
@@ -327,56 +278,40 @@ async function loadComments() {
 function createCommentEl(comment) {
   const el      = document.createElement("div");
   el.className  = "comment-item";
-  const avatar  = comment.userPhoto ||
-    `https://api.dicebear.com/7.x/thumbs/svg?seed=${comment.userId}`;
+  const avatar  = comment.userPhoto || `https://api.dicebear.com/7.x/thumbs/svg?seed=${comment.userId}`;
   const timeStr = comment.createdAt ? timeAgo(comment.createdAt.toDate()) : "";
   const isOwner = currentUser && currentUser.uid === comment.userId;
   const isAdmin = currentUser && currentUser.email === ADMIN_EMAIL;
 
   el.innerHTML = `
-    <img class="comment-avatar" src="${avatar}"
-         alt="${escapeHtml(comment.userName)}"/>
+    <img class="comment-avatar" src="${avatar}" alt="${escapeHtml(comment.userName)}"/>
     <div class="comment-body">
-      <div class="comment-name">
-        ${escapeHtml(comment.userName)}
-        <span>${timeStr}</span>
-      </div>
+      <div class="comment-name">${escapeHtml(comment.userName)} <span>${timeStr}</span></div>
       <div class="comment-text">${escapeHtml(comment.text)}</div>
       ${(isOwner || isAdmin)
-        ? `<button class="comment-delete" data-id="${comment.id}">
-             <i class="fas fa-trash"></i> Delete
-           </button>`
+        ? `<button class="comment-delete" data-id="${comment.id}"><i class="fas fa-trash"></i> Delete</button>`
         : ""}
     </div>`;
 
   el.querySelector(".comment-delete")?.addEventListener("click", async () => {
     if (confirm("Delete this comment?")) {
-      await deleteDoc(
-        doc(db, "videos", currentVideoId, "comments", comment.id)
-      );
+      await deleteDoc(doc(db, "videos", currentVideoId, "comments", comment.id));
       el.remove();
-      commentCount.textContent = Math.max(
-        0, (parseInt(commentCount.textContent) || 0) - 1
-      );
+      commentCount.textContent = Math.max(0, (parseInt(commentCount.textContent) || 0) - 1);
     }
   });
-
   return el;
 }
 
 postCommentBtn?.addEventListener("click", postComment);
-commentInput?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") postComment();
-});
+commentInput?.addEventListener("keydown", (e) => { if (e.key === "Enter") postComment(); });
 
 async function postComment() {
   if (!currentUser) { window.location.href = "login.html"; return; }
   const text = commentInput.value.trim();
   if (!text) return;
-
-  postCommentBtn.disabled  = true;
+  postCommentBtn.disabled = true;
   postCommentBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
   try {
     const commentData = {
       text,
@@ -385,22 +320,14 @@ async function postComment() {
       userPhoto: currentUser.photoURL || null,
       createdAt: serverTimestamp()
     };
-    const ref = await addDoc(
-      collection(db, "videos", currentVideoId, "comments"),
-      commentData
-    );
+    const ref = await addDoc(collection(db, "videos", currentVideoId, "comments"), commentData);
     commentInput.value = "";
     if (commentsList.querySelector("p")) commentsList.innerHTML = "";
-    commentsList.prepend(createCommentEl({
-      id: ref.id,
-      ...commentData,
-      createdAt: { toDate: () => new Date() }
-    }));
+    commentsList.prepend(createCommentEl({ id: ref.id, ...commentData, createdAt: { toDate: () => new Date() } }));
     commentCount.textContent = (parseInt(commentCount.textContent) || 0) + 1;
   } catch (err) {
     alert("Error posting comment: " + err.message);
   }
-
   postCommentBtn.disabled  = false;
   postCommentBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Post';
 }
@@ -411,7 +338,6 @@ function formatNumber(n) {
   if (n >= 1000)    return (n / 1000).toFixed(1) + "K";
   return n.toString();
 }
-
 function timeAgo(date) {
   const s = Math.floor((new Date() - date) / 1000);
   if (s < 60)      return "Just now";
@@ -420,12 +346,8 @@ function timeAgo(date) {
   if (s < 2592000) return Math.floor(s / 86400) + "d ago";
   return date.toLocaleDateString();
 }
-
 function escapeHtml(str) {
-  return (str || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 // ---- INIT ----

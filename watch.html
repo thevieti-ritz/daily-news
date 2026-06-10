@@ -8,16 +8,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <style>
-    /* Back button */
     .back-bar {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
       padding: 12px 20px;
       background: var(--bg2);
       border-bottom: 1px solid var(--border);
       flex-wrap: wrap;
-      gap: 8px;
     }
     .back-btn {
       display: flex;
@@ -37,9 +35,6 @@
     }
     .back-btn:hover,
     .back-btn:active { background: var(--red); border-color: var(--red); }
-    .back-btn i { font-size: 12px; }
-
-    /* Breadcrumb */
     .breadcrumb {
       display: flex;
       align-items: center;
@@ -48,21 +43,32 @@
       color: var(--muted);
       flex-wrap: wrap;
     }
-    .breadcrumb a {
-      color: var(--red);
-      font-weight: 700;
-      text-decoration: none;
-    }
+    .breadcrumb a { color: var(--red); font-weight: 700; text-decoration: none; }
     .breadcrumb a:hover { text-decoration: underline; }
     .breadcrumb i { font-size: 10px; }
 
-    /* Bottom nav bar for mobile */
+    /* Video player */
+    .player-wrap {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%;
+      background: #000;
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .player-wrap video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+    }
+
+    /* Bottom nav */
     .bottom-nav {
       display: none;
       position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      bottom: 0; left: 0; right: 0;
       height: 56px;
       background: var(--bg2);
       border-top: 1px solid var(--border);
@@ -102,7 +108,6 @@
 </head>
 <body>
 
-  <!-- Sidebar Overlay -->
   <div class="sidebar-overlay hidden" id="sidebarOverlay"></div>
 
   <!-- NAVBAR -->
@@ -162,7 +167,7 @@
   <!-- MAIN -->
   <main class="main-content watch-layout" id="mainContent">
 
-    <!-- Back Bar + Breadcrumb -->
+    <!-- Back Bar -->
     <div class="back-bar">
       <a href="javascript:history.back()" class="back-btn">
         <i class="fas fa-arrow-left"></i> Back
@@ -176,15 +181,17 @@
 
     <div class="watch-container">
 
-      <!-- LEFT: Player + Info -->
+      <!-- LEFT -->
       <div class="watch-left">
 
-        <!-- Video Player -->
+        <!-- Cloudflare R2 HTML5 Video Player -->
         <div class="player-wrap">
-          <iframe id="videoPlayer" src="" frameborder="0"
-            allowfullscreen
-            allow="autoplay; fullscreen">
-          </iframe>
+          <video id="videoPlayer"
+            controls
+            playsinline
+            preload="metadata">
+            Your browser does not support the video tag.
+          </video>
         </div>
 
         <!-- Video Info -->
@@ -236,7 +243,7 @@
 
       </div>
 
-      <!-- RIGHT: Related Videos -->
+      <!-- RIGHT -->
       <div class="watch-right">
         <h3 class="related-title">More Videos</h3>
         <div class="related-list" id="relatedVideos">
@@ -253,43 +260,30 @@
       <button class="modal-close" id="closeShareModal"><i class="fas fa-times"></i></button>
       <h3>Share this video</h3>
       <div class="share-grid">
-        <a class="share-btn whatsapp" id="shareWhatsapp" target="_blank">
-          <i class="fab fa-whatsapp"></i> WhatsApp
-        </a>
-        <a class="share-btn facebook" id="shareFacebook" target="_blank">
-          <i class="fab fa-facebook"></i> Facebook
-        </a>
-        <a class="share-btn twitter" id="shareTwitter" target="_blank">
-          <i class="fab fa-x-twitter"></i> X / Twitter
-        </a>
-        <a class="share-btn telegram" id="shareTelegram" target="_blank">
-          <i class="fab fa-telegram"></i> Telegram
-        </a>
+        <a class="share-btn whatsapp" id="shareWhatsapp" target="_blank"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+        <a class="share-btn facebook" id="shareFacebook" target="_blank"><i class="fab fa-facebook"></i> Facebook</a>
+        <a class="share-btn twitter" id="shareTwitter" target="_blank"><i class="fab fa-x-twitter"></i> X / Twitter</a>
+        <a class="share-btn telegram" id="shareTelegram" target="_blank"><i class="fab fa-telegram"></i> Telegram</a>
       </div>
     </div>
   </div>
 
-  <!-- BOTTOM NAV (mobile only) -->
+  <!-- BOTTOM NAV -->
   <nav class="bottom-nav">
     <a href="index.html" class="bottom-nav-item">
-      <i class="fas fa-house"></i>
-      Home
+      <i class="fas fa-house"></i> Home
     </a>
     <a href="javascript:history.back()" class="bottom-nav-item">
-      <i class="fas fa-arrow-left"></i>
-      Back
+      <i class="fas fa-arrow-left"></i> Back
     </a>
     <a href="history.html" class="bottom-nav-item">
-      <i class="fas fa-clock-rotate-left"></i>
-      History
+      <i class="fas fa-clock-rotate-left"></i> History
     </a>
     <a href="profile.html" class="bottom-nav-item">
-      <i class="fas fa-circle-user"></i>
-      Profile
+      <i class="fas fa-circle-user"></i> Profile
     </a>
     <a href="login.html" class="bottom-nav-item" id="bottomAuthLink">
-      <i class="fas fa-sign-in-alt"></i>
-      Sign In
+      <i class="fas fa-sign-in-alt"></i> Sign In
     </a>
   </nav>
 
@@ -301,20 +295,15 @@
   <ins class="eas6a97888e33" data-zoneid="5944558"></ins>
   <script>
     (AdProvider = window.AdProvider || []).push({"serve": {}});
-
-    // Fire on related video click
     document.addEventListener("click", function(e) {
-      const card = e.target.closest(".related-card");
-      if (card) {
-        try {
-          (AdProvider = window.AdProvider || []).push({"serve": {}});
-        } catch(err) {}
+      if (e.target.closest(".related-card")) {
+        try { (AdProvider = window.AdProvider || []).push({"serve": {}}); } catch(err) {}
       }
     });
   </script>
 
   <script>
-    // ---- SIDEBAR ----
+    // Sidebar
     const menuToggle     = document.getElementById("menuToggle");
     const sidebar        = document.getElementById("sidebar");
     const sidebarOverlay = document.getElementById("sidebarOverlay");
@@ -341,7 +330,7 @@
       });
     });
 
-    // ---- SEARCH ----
+    // Search
     document.getElementById("searchBtn").addEventListener("click", () => {
       const val = document.getElementById("searchInput").value.trim();
       if (val) window.location.href = `index.html?search=${encodeURIComponent(val)}`;
@@ -352,20 +341,6 @@
         if (val) window.location.href = `index.html?search=${encodeURIComponent(val)}`;
       }
     });
-
-    // ---- BOTTOM NAV AUTH STATE ----
-    // Update bottom nav sign in link based on auth
-    import("./js/firebase.js").then(({ auth }) => {
-      import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js").then(({ onAuthStateChanged }) => {
-        onAuthStateChanged(auth, (user) => {
-          const bottomAuthLink = document.getElementById("bottomAuthLink");
-          if (user && bottomAuthLink) {
-            bottomAuthLink.href = "profile.html";
-            bottomAuthLink.innerHTML = '<i class="fas fa-circle-user"></i> Profile';
-          }
-        });
-      });
-    }).catch(() => {});
   </script>
 
 </body>

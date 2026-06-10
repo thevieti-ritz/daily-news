@@ -1,8 +1,6 @@
 // ============================================
 // ADMIN.JS — Leaked Archives
-// Handles video upload, editing, deleting,
-// stats dashboard — admin only
-// Streamtape video hosting
+// Cloudflare R2 video hosting
 // ============================================
 
 import { db, auth } from "./firebase.js";
@@ -14,6 +12,7 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 
 // ---- CONFIG ----
 const ADMIN_EMAIL = "dbernardinvestments@gmail.com";
+const R2_BASE     = "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/";
 
 // ---- DOM REFS ----
 const accessDenied    = document.getElementById("accessDenied");
@@ -22,7 +21,7 @@ const adminUserName   = document.getElementById("adminUserName");
 const adminLogout     = document.getElementById("adminLogout");
 const uploadMessage   = document.getElementById("uploadMessage");
 const videoTitleInput = document.getElementById("videoTitle");
-const streamtapeInput = document.getElementById("archiveId");
+const videoUrlInput   = document.getElementById("archiveId");
 const thumbnailInput  = document.getElementById("thumbnailUrl");
 const categorySelect  = document.getElementById("videoCategory");
 const qualitySelect   = document.getElementById("videoQuality");
@@ -41,10 +40,7 @@ let allVideos = [];
 
 // ---- AUTH CHECK ----
 onAuthStateChanged(auth, (user) => {
-  if (!user) {
-    window.location.href = "login.html";
-    return;
-  }
+  if (!user) { window.location.href = "login.html"; return; }
   if (user.email !== ADMIN_EMAIL) {
     accessDenied.classList.remove("hidden");
     return;
@@ -60,36 +56,36 @@ adminLogout?.addEventListener("click", (e) => {
   signOut(auth).then(() => window.location.href = "index.html");
 });
 
-// ---- CLEAN STREAMTAPE ID ----
-// Accepts full URL or just the ID and returns clean ID
-function cleanStreamtapeId(input) {
+// ---- CLEAN VIDEO ID/URL ----
+// Accepts full R2 URL or just filename and returns clean filename
+function cleanVideoId(input) {
   let id = input.trim();
-  if (id.includes("streamtape.com")) {
-    const match = id.match(/streamtape\.com\/(?:v|e)\/([^\/]+)/);
-    if (match) id = match[1];
+  // If full R2 URL pasted, extract just the filename
+  if (id.includes("r2.dev/")) {
+    id = id.split("r2.dev/").pop();
+  }
+  // If any other full URL, extract filename
+  if (id.startsWith("http") && id.includes("/")) {
+    id = id.split("/").pop();
   }
   return id;
 }
 
-// ---- GET STREAMTAPE THUMBNAIL ----
-function getStreamtapeThumbnail(videoId) {
-  return `https://shadowsocks.streamtape.com/get_video?id=${videoId}&expires=99999999999&ip=all&token=streamtape_thumb`;
-}
-
 // ---- UPLOAD VIDEO ----
 uploadBtn?.addEventListener("click", async () => {
-  const title      = videoTitleInput.value.trim();
-  const rawId      = streamtapeInput.value.trim();
-  const category   = categorySelect.value;
+  const title    = videoTitleInput.value.trim();
+  const rawInput = videoUrlInput.value.trim();
+  const category = categorySelect.value;
 
   if (!title)    { showUploadMsg("Please enter a video title.", "error"); return; }
-  if (!rawId)    { showUploadMsg("Please enter the Streamtape video ID or URL.", "error"); return; }
+  if (!rawInput) { showUploadMsg("Please enter the video filename or URL.", "error"); return; }
   if (!category) { showUploadMsg("Please select a category.", "error"); return; }
 
-  const cleanId  = cleanStreamtapeId(rawId);
-  const thumbnail = thumbnailInput.value.trim() || getStreamtapeThumbnail(cleanId);
+  const cleanId   = cleanVideoId(rawInput);
+  const videoUrl  = cleanId.startsWith("http") ? cleanId : R2_BASE + cleanId;
+  const thumbnail = thumbnailInput.value.trim() || "";
   const tags      = tagsInput.value.split(",").map(t => t.trim().toLowerCase()).filter(Boolean);
-  const quality   = qualitySelect?.value || "";
+  const quality   = qualitySelect?.value  || "";
   const duration  = parseInt(durationInput?.value) || 0;
 
   uploadBtn.disabled = true;
@@ -98,7 +94,8 @@ uploadBtn?.addEventListener("click", async () => {
   try {
     await addDoc(collection(db, "videos"), {
       title,
-      archiveId:   cleanId,      // stored as archiveId for compatibility
+      archiveId:   cleanId,
+      videoUrl:    videoUrl,
       thumbnail,
       category,
       description: descriptionInput.value.trim(),
@@ -115,15 +112,15 @@ uploadBtn?.addEventListener("click", async () => {
     showUploadMsg(`✅ "${title}" published successfully!`, "success");
 
     // Clear form
-    videoTitleInput.value    = "";
-    streamtapeInput.value    = "";
-    thumbnailInput.value     = "";
-    categorySelect.value     = "";
-    descriptionInput.value   = "";
-    tagsInput.value          = "";
-    isFeaturedInput.checked  = false;
-    if (qualitySelect)  qualitySelect.value  = "";
-    if (durationInput)  durationInput.value  = "";
+    videoTitleInput.value   = "";
+    videoUrlInput.value     = "";
+    thumbnailInput.value    = "";
+    categorySelect.value    = "";
+    descriptionInput.value  = "";
+    tagsInput.value         = "";
+    isFeaturedInput.checked = false;
+    if (qualitySelect) qualitySelect.value = "";
+    if (durationInput) durationInput.value = "";
 
     loadDashboard();
     loadVideosForManager();
@@ -141,19 +138,15 @@ async function loadDashboard() {
   try {
     const snap = await getDocs(collection(db, "videos"));
     let totalViews = 0, totalLikes = 0, totalComments = 0;
-
     for (const d of snap.docs) {
       const data = d.data();
       totalViews += data.views || 0;
       totalLikes += data.likes || 0;
       try {
-        const commentSnap = await getCountFromServer(
-          collection(db, "videos", d.id, "comments")
-        );
-        totalComments += commentSnap.data().count || 0;
+        const cs = await getCountFromServer(collection(db, "videos", d.id, "comments"));
+        totalComments += cs.data().count || 0;
       } catch {}
     }
-
     document.getElementById("totalVideos").textContent   = snap.size;
     document.getElementById("totalViews").textContent    = formatNumber(totalViews);
     document.getElementById("totalLikes").textContent    = formatNumber(totalLikes);
@@ -165,11 +158,7 @@ async function loadDashboard() {
 
 // ---- LOAD VIDEOS FOR MANAGER ----
 async function loadVideosForManager() {
-  manageList.innerHTML = `
-    <div class="loading-screen">
-      <div class="spinner"></div>
-      <p>Loading...</p>
-    </div>`;
+  manageList.innerHTML = `<div class="loading-screen"><div class="spinner"></div><p>Loading...</p></div>`;
   try {
     const q    = query(collection(db, "videos"), orderBy("createdAt", "desc"));
     const snap = await getDocs(q);
@@ -183,19 +172,16 @@ async function loadVideosForManager() {
 function renderManageList(videos) {
   manageList.innerHTML = "";
   if (videos.length === 0) {
-    manageList.innerHTML = `
-      <p style="color:var(--muted);font-size:13px;text-align:center;padding:24px">
-        No videos found.
-      </p>`;
+    manageList.innerHTML = `<p style="color:var(--muted);font-size:13px;text-align:center;padding:24px">No videos found.</p>`;
     return;
   }
   videos.forEach(v => manageList.appendChild(createManageItem(v)));
 }
 
 function createManageItem(video) {
-  const el       = document.createElement("div");
-  el.className   = "manage-item";
-  const thumb    = video.thumbnail || getStreamtapeThumbnail(video.archiveId);
+  const el    = document.createElement("div");
+  el.className = "manage-item";
+  const thumb = video.thumbnail || "https://via.placeholder.com/120x68/1a1a1a/e63946?text=Video";
 
   el.innerHTML = `
     <img class="manage-thumb" src="${thumb}"
@@ -210,12 +196,8 @@ function createManageItem(video) {
       </span>
     </div>
     <div class="manage-actions">
-      <button class="btn-edit" data-id="${video.id}">
-        <i class="fas fa-pen"></i> Edit
-      </button>
-      <button class="btn-delete" data-id="${video.id}">
-        <i class="fas fa-trash"></i>
-      </button>
+      <button class="btn-edit"><i class="fas fa-pen"></i> Edit</button>
+      <button class="btn-delete"><i class="fas fa-trash"></i></button>
     </div>`;
 
   el.querySelector(".btn-edit").addEventListener("click", () => openEditModal(video));
@@ -226,7 +208,6 @@ function createManageItem(video) {
       loadDashboard();
     }
   });
-
   return el;
 }
 
@@ -241,13 +222,13 @@ managerSearch?.addEventListener("input", () => {
 
 // ---- EDIT MODAL ----
 function openEditModal(video) {
-  document.getElementById("editVideoId").value      = video.id;
-  document.getElementById("editTitle").value        = video.title       || "";
-  document.getElementById("editDescription").value  = video.description || "";
-  document.getElementById("editCategory").value     = video.category    || "entertainment";
-  document.getElementById("editThumbnail").value    = video.thumbnail   || "";
-  const editQuality = document.getElementById("editQuality");
-  if (editQuality) editQuality.value = video.quality || "";
+  document.getElementById("editVideoId").value     = video.id;
+  document.getElementById("editTitle").value       = video.title       || "";
+  document.getElementById("editDescription").value = video.description || "";
+  document.getElementById("editCategory").value    = video.category    || "";
+  document.getElementById("editThumbnail").value   = video.thumbnail   || "";
+  const eq = document.getElementById("editQuality");
+  if (eq) eq.value = video.quality || "";
   editModal.classList.remove("hidden");
 }
 
@@ -270,9 +251,7 @@ saveEditBtn?.addEventListener("click", async () => {
   saveEditBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
 
   try {
-    await updateDoc(doc(db, "videos", id), {
-      title, description, category, thumbnail, quality
-    });
+    await updateDoc(doc(db, "videos", id), { title, description, category, thumbnail, quality });
     editModal.classList.add("hidden");
     loadVideosForManager();
     loadDashboard();
@@ -291,16 +270,11 @@ function showUploadMsg(msg, type) {
   uploadMessage.classList.remove("hidden");
   setTimeout(() => uploadMessage.classList.add("hidden"), 5000);
 }
-
 function formatNumber(n) {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
   if (n >= 1000)    return (n / 1000).toFixed(1) + "K";
   return n.toString();
 }
-
 function escapeHtml(str) {
-  return (str || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
