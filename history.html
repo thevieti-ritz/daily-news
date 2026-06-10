@@ -470,7 +470,7 @@
       el.className = "history-item";
       el.dataset.id = item.id;
 
-      const thumb    = item.thumbnail || `https://archive.org/services/img/${item.archiveId}`;
+      const thumb = item.thumbnail || `https://shadowsocks.streamtape.com/get_video?id=${item.archiveId}&expires=99999999999&ip=all&token=streamtape_thumb`;
       const watchedAt = item.watchedAt
         ? timeAgo(item.watchedAt.toDate())
         : "Recently";

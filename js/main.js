@@ -377,7 +377,7 @@ function createVideoCard(video) {
   const card     = document.createElement("div");
   card.className = "video-card";
 
-  const thumb    = video.thumbnail || `https://archive.org/services/img/${video.archiveId}`;
+const thumb = video.thumbnail || `https://shadowsocks.streamtape.com/get_video?id=${video.archiveId}&expires=99999999999&ip=all&token=streamtape_thumb`;
   const views    = formatNumber(video.views   || 0);
   const date     = video.createdAt ? timeAgo(video.createdAt.toDate()) : "";
   const duration = video.duration  ? `<span class="duration-badge">${formatDuration(video.duration)}</span>` : "";
@@ -391,7 +391,8 @@ function createVideoCard(video) {
            alt="${escapeHtml(video.title)}"
            class="lazy-img"
            loading="lazy"
-           decoding="async"/>
+           decoding="async"
+           onerror="this.src='https://via.placeholder.com/320x180/1a1a1a/e63946?text=Leaked+Archives'"/>
       <div class="play-overlay"><i class="fas fa-play-circle"></i></div>
       ${featured}${duration}${quality}
     </div>

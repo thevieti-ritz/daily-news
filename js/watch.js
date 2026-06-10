@@ -1,6 +1,6 @@
 // ============================================
 // WATCH.JS — Leaked Archives
-// Clean version with Archive.org iframe player
+// Streamtape player + history + comments
 // ============================================
 
 import { db, auth } from "./firebase.js";
@@ -13,6 +13,12 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 
 // ---- CONFIG ----
 const ADMIN_EMAIL = "dbernardinvestments@gmail.com";
+
+// ---- STREAMTAPE THUMBNAIL HELPER ----
+function getThumb(video) {
+  return video.thumbnail ||
+    `https://shadowsocks.streamtape.com/get_video?id=${video.archiveId}&expires=99999999999&ip=all&token=streamtape_thumb`;
+}
 
 // ---- STATE ----
 let currentVideoId = null;
@@ -55,10 +61,10 @@ onAuthStateChanged(auth, (user) => {
   if (user) {
     authLink.classList.add("hidden");
     userMenu.classList.remove("hidden");
-    userDisplayName.textContent = user.displayName || user.email.split("@")[0];
-    userAvatar.src = user.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
-    commentUserAvatar.src = user.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
-    commentInput.placeholder = "Add a comment...";
+    userDisplayName.textContent   = user.displayName || user.email.split("@")[0];
+    userAvatar.src                = user.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
+    commentUserAvatar.src         = user.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
+    commentInput.placeholder      = "Add a comment...";
   } else {
     authLink.classList.remove("hidden");
     userMenu.classList.add("hidden");
@@ -80,7 +86,7 @@ async function saveToHistory(video) {
       {
         videoId:   currentVideoId,
         title:     video.title,
-        thumbnail: video.thumbnail || `https://archive.org/services/img/${video.archiveId}`,
+        thumbnail: getThumb(video),
         archiveId: video.archiveId,
         category:  video.category || "general",
         views:     video.views || 0,
@@ -109,8 +115,8 @@ async function loadVideo() {
     // Page title
     document.title = `${video.title} — Leaked Archives`;
 
-    // Set Archive.org iframe
-    videoPlayer.src = `https://archive.org/embed/${video.archiveId}`;
+    // Set Streamtape iframe
+    videoPlayer.src = `https://streamtape.com/e/${video.archiveId}/`;
 
     // Info
     videoTitle.textContent         = video.title;
@@ -122,9 +128,9 @@ async function loadVideo() {
           year: "numeric", month: "long", day: "numeric"
         })
       : "";
-    videoDescription.textContent = video.description || "";
+    videoDescription.textContent   = video.description || "";
 
-    // Check liked
+    // Check if liked
     if (video.likedBy && auth.currentUser) {
       hasLiked = video.likedBy.includes(auth.currentUser.uid);
       if (hasLiked) likeBtn.classList.add("liked");
@@ -168,14 +174,14 @@ likeBtn?.addEventListener("click", async () => {
     hasLiked = false;
     likeBtn.classList.remove("liked");
     await updateDoc(videoRef, {
-      likes: increment(-1),
+      likes:   increment(-1),
       likedBy: arrayRemove(currentUser.uid)
     });
   } else {
     hasLiked = true;
     likeBtn.classList.add("liked");
     await updateDoc(videoRef, {
-      likes: increment(1),
+      likes:   increment(1),
       likedBy: arrayUnion(currentUser.uid)
     });
   }
@@ -230,7 +236,7 @@ async function loadRelated(category, excludeId) {
       count++;
     });
 
-    // If no related in same category load any videos
+    // Fallback — load any videos if none in same category
     if (count === 0) {
       const q2    = query(
         collection(db, "videos"),
@@ -252,13 +258,15 @@ async function loadRelated(category, excludeId) {
 }
 
 function createRelatedCard(video) {
-  const card  = document.createElement("div");
+  const card     = document.createElement("div");
   card.className = "related-card";
-  const thumb = video.thumbnail || `https://archive.org/services/img/${video.archiveId}`;
+  const thumb    = getThumb(video);
+
   card.innerHTML = `
-    <img class="related-thumb" src="${thumb}"
+    <img class="related-thumb"
+         src="${thumb}"
          alt="${escapeHtml(video.title)}"
-         onerror="this.src='https://archive.org/services/img/${video.archiveId}'"/>
+         onerror="this.src='https://via.placeholder.com/120x68/1a1a1a/e63946?text=Video'"/>
     <div class="related-info">
       <h4>${escapeHtml(video.title)}</h4>
       <span>
@@ -266,6 +274,7 @@ function createRelatedCard(video) {
         · ${video.category || ""}
       </span>
     </div>`;
+
   card.addEventListener("click", () => {
     window.location.href = `watch.html?v=${video.id}`;
   });
@@ -290,9 +299,9 @@ async function loadComments() {
         </p>`;
       return;
     }
-    snap.forEach(d => {
-      commentsList.appendChild(createCommentEl({ id: d.id, ...d.data() }));
-    });
+    snap.forEach(d => commentsList.appendChild(
+      createCommentEl({ id: d.id, ...d.data() })
+    ));
   } catch (err) {
     console.error("Comments error:", err);
   }
@@ -325,7 +334,9 @@ function createCommentEl(comment) {
 
   el.querySelector(".comment-delete")?.addEventListener("click", async () => {
     if (confirm("Delete this comment?")) {
-      await deleteDoc(doc(db, "videos", currentVideoId, "comments", comment.id));
+      await deleteDoc(
+        doc(db, "videos", currentVideoId, "comments", comment.id)
+      );
       el.remove();
       commentCount.textContent = Math.max(
         0, (parseInt(commentCount.textContent) || 0) - 1
@@ -346,7 +357,7 @@ async function postComment() {
   const text = commentInput.value.trim();
   if (!text) return;
 
-  postCommentBtn.disabled = true;
+  postCommentBtn.disabled  = true;
   postCommentBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
   try {
