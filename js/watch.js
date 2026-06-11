@@ -1,6 +1,7 @@
 // ============================================
 // WATCH.JS — Leaked Archives
-// Cloudflare R2 HTML5 video player
+// Video.js + ExoClick VAST in-stream ads
+// Cloudflare R2 video hosting
 // ============================================
 
 import { db, auth } from "./firebase.js";
@@ -14,12 +15,14 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 // ---- CONFIG ----
 const ADMIN_EMAIL = "dbernardinvestments@gmail.com";
 const R2_BASE     = "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/";
+const VAST_URL    = "https://s.magsrv.com/v1/vast.php?idz=5947340&ex_av=name";
 
 // ---- STATE ----
 let currentVideoId = null;
 let currentUser    = null;
 let hasLiked       = false;
 let viewTracked    = false;
+let player         = null;
 
 // ---- GET VIDEO ID ----
 const params = new URLSearchParams(window.location.search);
@@ -27,7 +30,6 @@ currentVideoId = params.get("v");
 if (!currentVideoId) window.location.href = "index.html";
 
 // ---- DOM REFS ----
-const videoPlayer        = document.getElementById("videoPlayer");
 const videoTitle         = document.getElementById("videoTitle");
 const videoCategoryBadge = document.getElementById("videoCategoryBadge");
 const viewCount          = document.getElementById("viewCount");
@@ -58,10 +60,10 @@ onAuthStateChanged(auth, (user) => {
   if (user) {
     authLink.classList.add("hidden");
     userMenu.classList.remove("hidden");
-    userDisplayName.textContent  = user.displayName || user.email.split("@")[0];
-    userAvatar.src               = user.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
-    commentUserAvatar.src        = user.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
-    commentInput.placeholder     = "Add a comment...";
+    userDisplayName.textContent = user.displayName || user.email.split("@")[0];
+    userAvatar.src              = user.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
+    commentUserAvatar.src       = user.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
+    commentInput.placeholder    = "Add a comment...";
   } else {
     authLink.classList.remove("hidden");
     userMenu.classList.add("hidden");
@@ -75,16 +77,10 @@ logoutBtn?.addEventListener("click", (e) => {
 });
 
 // ---- GET VIDEO URL ----
-// archiveId can be a full URL or just a filename
 function getVideoUrl(archiveId) {
   if (!archiveId) return "";
   if (archiveId.startsWith("http")) return archiveId;
   return R2_BASE + archiveId;
-}
-
-// ---- GET THUMBNAIL ----
-function getThumb(video) {
-  return video.thumbnail || "";
 }
 
 // ---- SAVE TO HISTORY ----
@@ -96,7 +92,7 @@ async function saveToHistory(video) {
       {
         videoId:   currentVideoId,
         title:     video.title,
-        thumbnail: getThumb(video),
+        thumbnail: video.thumbnail || "",
         archiveId: video.archiveId,
         category:  video.category || "general",
         views:     video.views || 0,
@@ -123,6 +119,51 @@ async function trackView(video, videoRef) {
   }
 }
 
+// ---- INIT VIDEO.JS WITH VAST ADS ----
+function initPlayer(videoUrl, posterUrl, video, videoRef) {
+  // Dispose old player if exists
+  if (player) {
+    try { player.dispose(); } catch(e) {}
+    player = null;
+  }
+
+  player = videojs("myPlayer", {
+    controls:    true,
+    autoplay:    false,
+    preload:     "auto",
+    fluid:       true,
+    playsinline: true,
+    poster:      posterUrl || "",
+    sources: [{
+      src:  videoUrl,
+      type: "video/mp4"
+    }]
+  });
+
+  // Init ads
+  player.ads();
+
+  // Init IMA with ExoClick VAST
+  player.ima({
+    adTagUrl:       VAST_URL,
+    debug:          false,
+    disableFlashAds: true,
+    showCountdown:  true,
+    adLabel:        "Ad"
+  });
+
+  // If ad errors — just play video
+  player.on("adserror", () => {
+    console.warn("Ad error — playing video");
+    try { player.ads.endLinearAdMode(); } catch(e) {}
+  });
+
+  // Track view after 5 seconds of playback
+  player.on("timeupdate", () => {
+    if (player.currentTime() >= 5) trackView(video, videoRef);
+  });
+}
+
 // ---- LOAD VIDEO ----
 async function loadVideo() {
   try {
@@ -134,21 +175,13 @@ async function loadVideo() {
       return;
     }
 
-    const video = { id: videoSnap.id, ...videoSnap.data() };
+    const video   = { id: videoSnap.id, ...videoSnap.data() };
+    const videoUrl = getVideoUrl(video.archiveId);
+    const poster   = video.thumbnail || "";
 
     // Page title + breadcrumb
     document.title = `${video.title} — Leaked Archives`;
     if (breadcrumbTitle) breadcrumbTitle.textContent = video.title;
-
-    // Set video source
-    const videoUrl = getVideoUrl(video.archiveId);
-    videoPlayer.src = videoUrl;
-    if (video.thumbnail) videoPlayer.poster = video.thumbnail;
-
-    // Track view after 5 seconds of actual playback
-    videoPlayer.addEventListener("timeupdate", () => {
-      if (videoPlayer.currentTime >= 5) trackView(video, videoRef);
-    });
 
     // Info
     videoTitle.textContent         = video.title;
@@ -160,7 +193,7 @@ async function loadVideo() {
           year: "numeric", month: "long", day: "numeric"
         })
       : "";
-    videoDescription.textContent = video.description || "";
+    videoDescription.textContent   = video.description || "";
 
     // Check liked
     if (video.likedBy && auth.currentUser) {
@@ -175,6 +208,9 @@ async function loadVideo() {
     document.getElementById("shareFacebook").href = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`;
     document.getElementById("shareTwitter").href  = `https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`;
     document.getElementById("shareTelegram").href = `https://t.me/share/url?url=${shareUrl}&text=${shareText}`;
+
+    // Init player with VAST ads
+    initPlayer(videoUrl, poster, video, videoRef);
 
     // Load related + comments
     loadRelated(video.category, currentVideoId);
@@ -209,7 +245,6 @@ closeShareModal?.addEventListener("click", () => shareModal.classList.add("hidde
 shareModal?.addEventListener("click", (e) => {
   if (e.target === shareModal) shareModal.classList.add("hidden");
 });
-
 copyLinkBtn?.addEventListener("click", () => {
   navigator.clipboard.writeText(window.location.href).then(() => {
     copyLinkBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
@@ -245,7 +280,7 @@ async function loadRelated(category, excludeId) {
 function createRelatedCard(video) {
   const card  = document.createElement("div");
   card.className = "related-card";
-  const thumb = getThumb(video) || "https://via.placeholder.com/120x68/1a1a1a/e63946?text=Video";
+  const thumb = video.thumbnail || "https://via.placeholder.com/120x68/1a1a1a/e63946?text=Video";
   card.innerHTML = `
     <img class="related-thumb" src="${thumb}"
          alt="${escapeHtml(video.title)}"

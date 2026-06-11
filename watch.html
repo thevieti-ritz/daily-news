@@ -7,6 +7,22 @@
   <link rel="stylesheet" href="css/style.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- Video.js -->
+  <link href="https://vjs.zencdn.net/8.6.1/video-js.css" rel="stylesheet"/>
+  <script src="https://vjs.zencdn.net/8.6.1/video.min.js"></script>
+
+  <!-- Google IMA SDK -->
+  <script src="https://imasdk.googleapis.com/js/sdkloader/ima3.js"></script>
+
+  <!-- VideoJS Contrib Ads -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-ads/6.9.0/videojs.ads.min.css" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-ads/6.9.0/videojs.ads.min.js"></script>
+
+  <!-- VideoJS IMA -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/videojs-ima/1.10.1/videojs.ima.min.css" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-ima/1.10.1/videojs.ima.min.js"></script>
+
   <style>
     .back-bar {
       display: flex;
@@ -47,21 +63,44 @@
     .breadcrumb a:hover { text-decoration: underline; }
     .breadcrumb i { font-size: 10px; }
 
-    /* Video player */
+    /* Video.js player styling */
     .player-wrap {
       position: relative;
       width: 100%;
-      padding-top: 56.25%;
       background: #000;
       border-radius: var(--radius);
       overflow: hidden;
     }
-    .player-wrap video {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      background: #000;
+    .video-js {
+      width: 100% !important;
+      border-radius: var(--radius);
+    }
+    .video-js .vjs-big-play-button {
+      background: rgba(230,57,70,0.9) !important;
+      border: none !important;
+      border-radius: 50% !important;
+      width: 64px !important;
+      height: 64px !important;
+      line-height: 64px !important;
+      top: 50% !important;
+      left: 50% !important;
+      transform: translate(-50%, -50%) !important;
+      margin: 0 !important;
+      font-size: 28px !important;
+    }
+    .video-js .vjs-big-play-button:hover {
+      background: var(--red) !important;
+    }
+    .video-js .vjs-control-bar {
+      background: linear-gradient(transparent, rgba(0,0,0,0.85)) !important;
+      height: 36px !important;
+    }
+    .video-js .vjs-play-progress,
+    .video-js .vjs-volume-level {
+      background: var(--red) !important;
+    }
+    .video-js .vjs-slider {
+      background: rgba(255,255,255,0.2) !important;
     }
 
     /* Bottom nav */
@@ -102,7 +141,6 @@
       .main-content { padding-bottom: 70px; }
       .back-bar { padding: 10px 12px; }
       .back-btn { padding: 6px 12px; font-size: 12px; }
-      .breadcrumb { font-size: 11px; }
     }
   </style>
 </head>
@@ -167,7 +205,6 @@
   <!-- MAIN -->
   <main class="main-content watch-layout" id="mainContent">
 
-    <!-- Back Bar -->
     <div class="back-bar">
       <a href="javascript:history.back()" class="back-btn">
         <i class="fas fa-arrow-left"></i> Back
@@ -184,13 +221,13 @@
       <!-- LEFT -->
       <div class="watch-left">
 
-        <!-- Cloudflare R2 HTML5 Video Player -->
+        <!-- Video.js Player -->
         <div class="player-wrap">
-          <video id="videoPlayer"
+          <video id="myPlayer"
+            class="video-js vjs-default-skin vjs-big-play-centered vjs-16-9"
             controls
             playsinline
-            preload="metadata">
-            Your browser does not support the video tag.
+            preload="auto">
           </video>
         </div>
 
@@ -270,27 +307,17 @@
 
   <!-- BOTTOM NAV -->
   <nav class="bottom-nav">
-    <a href="index.html" class="bottom-nav-item">
-      <i class="fas fa-house"></i> Home
-    </a>
-    <a href="javascript:history.back()" class="bottom-nav-item">
-      <i class="fas fa-arrow-left"></i> Back
-    </a>
-    <a href="history.html" class="bottom-nav-item">
-      <i class="fas fa-clock-rotate-left"></i> History
-    </a>
-    <a href="profile.html" class="bottom-nav-item">
-      <i class="fas fa-circle-user"></i> Profile
-    </a>
-    <a href="login.html" class="bottom-nav-item" id="bottomAuthLink">
-      <i class="fas fa-sign-in-alt"></i> Sign In
-    </a>
+    <a href="index.html" class="bottom-nav-item"><i class="fas fa-house"></i> Home</a>
+    <a href="javascript:history.back()" class="bottom-nav-item"><i class="fas fa-arrow-left"></i> Back</a>
+    <a href="history.html" class="bottom-nav-item"><i class="fas fa-clock-rotate-left"></i> History</a>
+    <a href="profile.html" class="bottom-nav-item"><i class="fas fa-circle-user"></i> Profile</a>
+    <a href="login.html" class="bottom-nav-item" id="bottomAuthLink"><i class="fas fa-sign-in-alt"></i> Sign In</a>
   </nav>
 
   <script type="module" src="js/firebase.js"></script>
   <script type="module" src="js/watch.js"></script>
 
-  <!-- ExoClick Interstitial Ad -->
+  <!-- ExoClick Interstitial -->
   <script async type="application/javascript" src="https://a.pemsrv.com/ad-provider.js"></script>
   <ins class="eas6a97888e33" data-zoneid="5944558"></ins>
   <script>
