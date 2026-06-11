@@ -1,6 +1,6 @@
 // ============================================
 // WATCH.JS — Leaked Archives
-// Video.js + ExoClick VAST in-stream ads
+// Video.js + ExoClick VAST pre-roll ads
 // Cloudflare R2 video hosting
 // ============================================
 
@@ -12,24 +12,32 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// ---- CONFIG ----
+// ============================================
+// CONFIG
+// ============================================
 const ADMIN_EMAIL = "dbernardinvestments@gmail.com";
 const R2_BASE     = "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/";
-const VAST_URL    = "https://s.magsrv.com/v1/vast.php?idz=5947340&ex_av=name";
+const VAST_URL    = "https://s.magsrv.com/v1/vast.php?idz=5947340";
 
-// ---- STATE ----
+// ============================================
+// STATE
+// ============================================
 let currentVideoId = null;
 let currentUser    = null;
 let hasLiked       = false;
 let viewTracked    = false;
 let player         = null;
 
-// ---- GET VIDEO ID ----
+// ============================================
+// GET VIDEO ID FROM URL
+// ============================================
 const params = new URLSearchParams(window.location.search);
 currentVideoId = params.get("v");
 if (!currentVideoId) window.location.href = "index.html";
 
-// ---- DOM REFS ----
+// ============================================
+// DOM REFS
+// ============================================
 const videoTitle         = document.getElementById("videoTitle");
 const videoCategoryBadge = document.getElementById("videoCategoryBadge");
 const viewCount          = document.getElementById("viewCount");
@@ -54,7 +62,9 @@ const userDisplayName    = document.getElementById("userDisplayName");
 const logoutBtn          = document.getElementById("logoutBtn");
 const breadcrumbTitle    = document.getElementById("breadcrumbTitle");
 
-// ---- AUTH ----
+// ============================================
+// AUTH
+// ============================================
 onAuthStateChanged(auth, (user) => {
   currentUser = user;
   if (user) {
@@ -76,14 +86,43 @@ logoutBtn?.addEventListener("click", (e) => {
   signOut(auth);
 });
 
-// ---- GET VIDEO URL ----
+// ============================================
+// HELPERS
+// ============================================
 function getVideoUrl(archiveId) {
   if (!archiveId) return "";
   if (archiveId.startsWith("http")) return archiveId;
   return R2_BASE + archiveId;
 }
 
-// ---- SAVE TO HISTORY ----
+function getThumbnail(video) {
+  if (video.thumbnail) return video.thumbnail;
+  const base = (video.archiveId || "").replace(/\.[^/.]+$/, "");
+  return base ? `${R2_BASE}${base}.jpg` : "";
+}
+
+function formatNumber(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
+  if (n >= 1000)    return (n / 1000).toFixed(1) + "K";
+  return n.toString();
+}
+
+function timeAgo(date) {
+  const s = Math.floor((new Date() - date) / 1000);
+  if (s < 60)      return "Just now";
+  if (s < 3600)    return Math.floor(s / 60) + "m ago";
+  if (s < 86400)   return Math.floor(s / 3600) + "h ago";
+  if (s < 2592000) return Math.floor(s / 86400) + "d ago";
+  return date.toLocaleDateString();
+}
+
+function escapeHtml(str) {
+  return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// ============================================
+// SAVE TO HISTORY
+// ============================================
 async function saveToHistory(video) {
   if (!currentUser) return;
   try {
@@ -92,7 +131,7 @@ async function saveToHistory(video) {
       {
         videoId:   currentVideoId,
         title:     video.title,
-        thumbnail: video.thumbnail || "",
+        thumbnail: getThumbnail(video),
         archiveId: video.archiveId,
         category:  video.category || "general",
         views:     video.views || 0,
@@ -105,7 +144,9 @@ async function saveToHistory(video) {
   }
 }
 
-// ---- TRACK VIEW ----
+// ============================================
+// TRACK VIEW (once, after 5s of content)
+// ============================================
 async function trackView(video, videoRef) {
   if (viewTracked) return;
   viewTracked = true;
@@ -119,14 +160,18 @@ async function trackView(video, videoRef) {
   }
 }
 
-// ---- INIT VIDEO.JS WITH VAST ADS ----
+// ============================================
+// INIT VIDEO.JS PLAYER WITH EXOCLICK VAST ADS
+// ============================================
 function initPlayer(videoUrl, posterUrl, video, videoRef) {
-  // Dispose old player if exists
+
+  // Destroy old instance if exists
   if (player) {
     try { player.dispose(); } catch(e) {}
     player = null;
   }
 
+  // Create Video.js player
   player = videojs("myPlayer", {
     controls:    true,
     autoplay:    false,
@@ -140,31 +185,46 @@ function initPlayer(videoUrl, posterUrl, video, videoRef) {
     }]
   });
 
-  // Init ads
-  player.ads();
+  // Step 1: init contrib-ads FIRST
+  player.ads({
+    debug:            false,
+    liveCuePoints:    false,
+    allowVjsAutoplay: true
+  });
 
-  // Init IMA with ExoClick VAST
+  // Step 2: init IMA plugin with ExoClick VAST
   player.ima({
-    adTagUrl:       VAST_URL,
-    debug:          false,
+    adTagUrl:        VAST_URL,
+    debug:           false,
     disableFlashAds: true,
-    showCountdown:  true,
-    adLabel:        "Ad"
+    showCountdown:   true,
+    adLabel:         "Advertisement",
+    adsRenderingSettings: {
+      restoreCustomPlaybackStateOnAdBreakComplete: true,
+      enablePreloading: true
+    }
   });
 
-  // If ad errors — just play video
-  player.on("adserror", () => {
-    console.warn("Ad error — playing video");
-    try { player.ads.endLinearAdMode(); } catch(e) {}
+  // If ad fails — skip to content
+  player.on("adserror", (e) => {
+    console.warn("Ad error — skipping to content");
+    try { player.ima.getAdsManager()?.destroy(); } catch(err) {}
+    try { player.ads.endLinearAdMode(); }          catch(err) {}
   });
 
-  // Track view after 5 seconds of playback
+  // Track view after 5 seconds of content (not during ad)
   player.on("timeupdate", () => {
-    if (player.currentTime() >= 5) trackView(video, videoRef);
+    try {
+      if (!player.ads.isInAdMode() && player.currentTime() >= 5) {
+        trackView(video, videoRef);
+      }
+    } catch(e) {}
   });
 }
 
-// ---- LOAD VIDEO ----
+// ============================================
+// LOAD VIDEO FROM FIRESTORE
+// ============================================
 async function loadVideo() {
   try {
     const videoRef  = doc(db, "videos", currentVideoId);
@@ -175,15 +235,15 @@ async function loadVideo() {
       return;
     }
 
-    const video   = { id: videoSnap.id, ...videoSnap.data() };
+    const video    = { id: videoSnap.id, ...videoSnap.data() };
     const videoUrl = getVideoUrl(video.archiveId);
-    const poster   = video.thumbnail || "";
+    const poster   = getThumbnail(video);
 
-    // Page title + breadcrumb
+    // Page title
     document.title = `${video.title} — Leaked Archives`;
     if (breadcrumbTitle) breadcrumbTitle.textContent = video.title;
 
-    // Info
+    // Populate info
     videoTitle.textContent         = video.title;
     videoCategoryBadge.textContent = video.category || "general";
     viewCount.textContent          = formatNumber(video.views || 0);
@@ -195,7 +255,7 @@ async function loadVideo() {
       : "";
     videoDescription.textContent   = video.description || "";
 
-    // Check liked
+    // Check if liked
     if (video.likedBy && auth.currentUser) {
       hasLiked = video.likedBy.includes(auth.currentUser.uid);
       if (hasLiked) likeBtn.classList.add("liked");
@@ -209,10 +269,13 @@ async function loadVideo() {
     document.getElementById("shareTwitter").href  = `https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`;
     document.getElementById("shareTelegram").href = `https://t.me/share/url?url=${shareUrl}&text=${shareText}`;
 
-    // Init player with VAST ads
-    initPlayer(videoUrl, poster, video, videoRef);
+    // Init player after all external scripts are loaded
+    if (document.readyState === "complete") {
+      initPlayer(videoUrl, poster, video, videoRef);
+    } else {
+      window.addEventListener("load", () => initPlayer(videoUrl, poster, video, videoRef));
+    }
 
-    // Load related + comments
     loadRelated(video.category, currentVideoId);
     loadComments();
 
@@ -222,7 +285,9 @@ async function loadVideo() {
   }
 }
 
-// ---- LIKE ----
+// ============================================
+// LIKE
+// ============================================
 likeBtn?.addEventListener("click", async () => {
   if (!currentUser) { window.location.href = "login.html"; return; }
   const videoRef = doc(db, "videos", currentVideoId);
@@ -239,7 +304,9 @@ likeBtn?.addEventListener("click", async () => {
   likeCount.textContent = formatNumber(snap.data().likes || 0);
 });
 
-// ---- SHARE ----
+// ============================================
+// SHARE
+// ============================================
 shareBtn?.addEventListener("click", () => shareModal.classList.remove("hidden"));
 closeShareModal?.addEventListener("click", () => shareModal.classList.add("hidden"));
 shareModal?.addEventListener("click", (e) => {
@@ -252,7 +319,9 @@ copyLinkBtn?.addEventListener("click", () => {
   });
 });
 
-// ---- RELATED VIDEOS ----
+// ============================================
+// RELATED VIDEOS
+// ============================================
 async function loadRelated(category, excludeId) {
   try {
     const q    = query(collection(db, "videos"), where("category", "==", category), orderBy("createdAt", "desc"), limit(10));
@@ -280,7 +349,7 @@ async function loadRelated(category, excludeId) {
 function createRelatedCard(video) {
   const card  = document.createElement("div");
   card.className = "related-card";
-  const thumb = video.thumbnail || "https://via.placeholder.com/120x68/1a1a1a/e63946?text=Video";
+  const thumb = getThumbnail(video) || "https://via.placeholder.com/120x68/1a1a1a/e63946?text=Video";
   card.innerHTML = `
     <img class="related-thumb" src="${thumb}"
          alt="${escapeHtml(video.title)}"
@@ -293,7 +362,9 @@ function createRelatedCard(video) {
   return card;
 }
 
-// ---- COMMENTS ----
+// ============================================
+// COMMENTS
+// ============================================
 async function loadComments() {
   try {
     const q    = query(collection(db, "videos", currentVideoId, "comments"), orderBy("createdAt", "desc"));
@@ -317,7 +388,6 @@ function createCommentEl(comment) {
   const timeStr = comment.createdAt ? timeAgo(comment.createdAt.toDate()) : "";
   const isOwner = currentUser && currentUser.uid === comment.userId;
   const isAdmin = currentUser && currentUser.email === ADMIN_EMAIL;
-
   el.innerHTML = `
     <img class="comment-avatar" src="${avatar}" alt="${escapeHtml(comment.userName)}"/>
     <div class="comment-body">
@@ -327,7 +397,6 @@ function createCommentEl(comment) {
         ? `<button class="comment-delete" data-id="${comment.id}"><i class="fas fa-trash"></i> Delete</button>`
         : ""}
     </div>`;
-
   el.querySelector(".comment-delete")?.addEventListener("click", async () => {
     if (confirm("Delete this comment?")) {
       await deleteDoc(doc(db, "videos", currentVideoId, "comments", comment.id));
@@ -345,7 +414,7 @@ async function postComment() {
   if (!currentUser) { window.location.href = "login.html"; return; }
   const text = commentInput.value.trim();
   if (!text) return;
-  postCommentBtn.disabled = true;
+  postCommentBtn.disabled  = true;
   postCommentBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
   try {
     const commentData = {
@@ -367,23 +436,12 @@ async function postComment() {
   postCommentBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Post';
 }
 
-// ---- HELPERS ----
-function formatNumber(n) {
-  if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
-  if (n >= 1000)    return (n / 1000).toFixed(1) + "K";
-  return n.toString();
+// ============================================
+// INIT — wait for full page load so IMA SDK
+// and all Video.js plugins are ready
+// ============================================
+if (document.readyState === "complete") {
+  loadVideo();
+} else {
+  window.addEventListener("load", loadVideo);
 }
-function timeAgo(date) {
-  const s = Math.floor((new Date() - date) / 1000);
-  if (s < 60)      return "Just now";
-  if (s < 3600)    return Math.floor(s / 60) + "m ago";
-  if (s < 86400)   return Math.floor(s / 3600) + "h ago";
-  if (s < 2592000) return Math.floor(s / 86400) + "d ago";
-  return date.toLocaleDateString();
-}
-function escapeHtml(str) {
-  return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-// ---- INIT ----
-loadVideo();

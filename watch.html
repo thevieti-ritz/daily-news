@@ -8,18 +8,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
-  <!-- Video.js -->
+  <!-- 1. Video.js -->
   <link href="https://vjs.zencdn.net/8.6.1/video-js.css" rel="stylesheet"/>
   <script src="https://vjs.zencdn.net/8.6.1/video.min.js"></script>
 
-  <!-- Google IMA SDK -->
+  <!-- 2. Google IMA SDK (MUST come before contrib-ads) -->
   <script src="https://imasdk.googleapis.com/js/sdkloader/ima3.js"></script>
 
-  <!-- VideoJS Contrib Ads -->
+  <!-- 3. VideoJS Contrib Ads -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-ads/6.9.0/videojs.ads.min.css" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-ads/6.9.0/videojs.ads.min.js"></script>
 
-  <!-- VideoJS IMA -->
+  <!-- 4. VideoJS IMA plugin -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/videojs-ima/1.10.1/videojs.ima.min.css" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-ima/1.10.1/videojs.ima.min.js"></script>
 
@@ -63,7 +63,7 @@
     .breadcrumb a:hover { text-decoration: underline; }
     .breadcrumb i { font-size: 10px; }
 
-    /* Video.js player styling */
+    /* Player */
     .player-wrap {
       position: relative;
       width: 100%;
@@ -88,20 +88,14 @@
       margin: 0 !important;
       font-size: 28px !important;
     }
-    .video-js .vjs-big-play-button:hover {
-      background: var(--red) !important;
-    }
+    .video-js .vjs-big-play-button:hover { background: var(--red) !important; }
     .video-js .vjs-control-bar {
       background: linear-gradient(transparent, rgba(0,0,0,0.85)) !important;
       height: 36px !important;
     }
     .video-js .vjs-play-progress,
-    .video-js .vjs-volume-level {
-      background: var(--red) !important;
-    }
-    .video-js .vjs-slider {
-      background: rgba(255,255,255,0.2) !important;
-    }
+    .video-js .vjs-volume-level { background: var(--red) !important; }
+    .video-js .vjs-slider { background: rgba(255,255,255,0.2) !important; }
 
     /* Bottom nav */
     .bottom-nav {
@@ -184,15 +178,21 @@
       </button>
       <div class="side-submenu" id="categoriesMenu">
         <a href="index.html?cat=entertainment" class="side-link sub"><i class="fas fa-film"></i> Entertainment</a>
-        <a href="index.html?cat=celebrity" class="side-link sub"><i class="fas fa-star"></i> Celebrity</a>
+        <a href="index.html?cat=MILF" class="side-link sub"><i class="fas fa-star"></i> MILF</a>
         <a href="index.html?cat=viral" class="side-link sub"><i class="fas fa-fire"></i> Viral</a>
-        <a href="index.html?cat=music" class="side-link sub"><i class="fas fa-music"></i> Music</a>
-        <a href="index.html?cat=sports" class="side-link sub"><i class="fas fa-futbol"></i> Sports</a>
-        <a href="index.html?cat=news" class="side-link sub"><i class="fas fa-newspaper"></i> News</a>
-        <a href="index.html?cat=comedy" class="side-link sub"><i class="fas fa-face-laugh"></i> Comedy</a>
-        <a href="index.html?cat=naija" class="side-link sub"><i class="fas fa-globe-africa"></i> Naija</a>
-        <a href="index.html?cat=uganda" class="side-link sub"><i class="fas fa-globe-africa"></i> Uganda</a>
+        <a href="index.html?cat=Anal" class="side-link sub"><i class="fas fa-circle"></i> Anal</a>
+        <a href="index.html?cat=Lesbian" class="side-link sub"><i class="fas fa-venus-double"></i> Lesbian</a>
+        <a href="index.html?cat=Uganda" class="side-link sub"><i class="fas fa-globe-africa"></i> Local</a>
+        <a href="index.html?cat=Gay" class="side-link sub"><i class="fas fa-mars-double"></i> Gay</a>
+        <a href="index.html?cat=POV" class="side-link sub"><i class="fas fa-eye"></i> POV</a>
+        <a href="index.html?cat=Orgasm" class="side-link sub"><i class="fas fa-water"></i> Orgasm</a>
         <a href="index.html?cat=kenya" class="side-link sub"><i class="fas fa-globe-africa"></i> Kenya</a>
+        <a href="index.html?cat=Ebony" class="side-link sub"><i class="fas fa-star"></i> Ebony</a>
+        <a href="index.html?cat=Mature" class="side-link sub"><i class="fas fa-user"></i> Mature</a>
+        <a href="index.html?cat=Creampie" class="side-link sub"><i class="fas fa-circle"></i> Creampie</a>
+        <a href="index.html?cat=Squirt" class="side-link sub"><i class="fas fa-water"></i> Squirt</a>
+        <a href="index.html?cat=Doggy" class="side-link sub"><i class="fas fa-paw"></i> Doggy</a>
+        <a href="index.html?cat=Rough" class="side-link sub"><i class="fas fa-bolt"></i> Rough</a>
       </div>
       <hr/>
       <a href="index.html" class="side-link"><i class="fas fa-house"></i> Home</a>
@@ -227,7 +227,8 @@
             class="video-js vjs-default-skin vjs-big-play-centered vjs-16-9"
             controls
             playsinline
-            preload="auto">
+            preload="auto"
+            crossorigin="anonymous">
           </video>
         </div>
 
@@ -314,47 +315,49 @@
     <a href="login.html" class="bottom-nav-item" id="bottomAuthLink"><i class="fas fa-sign-in-alt"></i> Sign In</a>
   </nav>
 
+  <!-- Firebase + Watch logic (module) -->
   <script type="module" src="js/firebase.js"></script>
   <script type="module" src="js/watch.js"></script>
 
+  <!-- Sidebar + Search (plain script, runs immediately) -->
   <script>
-    // Sidebar
-    const menuToggle     = document.getElementById("menuToggle");
-    const sidebar        = document.getElementById("sidebar");
-    const sidebarOverlay = document.getElementById("sidebarOverlay");
-    const catToggle      = document.getElementById("categoriesToggle");
-    const catMenu        = document.getElementById("categoriesMenu");
-    const catArrow       = document.getElementById("categoriesArrow");
+    window.addEventListener("DOMContentLoaded", function () {
+      const menuToggle     = document.getElementById("menuToggle");
+      const sidebar        = document.getElementById("sidebar");
+      const sidebarOverlay = document.getElementById("sidebarOverlay");
+      const catToggle      = document.getElementById("categoriesToggle");
+      const catMenu        = document.getElementById("categoriesMenu");
+      const catArrow       = document.getElementById("categoriesArrow");
 
-    menuToggle.addEventListener("click", () => {
-      sidebar.classList.toggle("open");
-      sidebarOverlay.classList.toggle("hidden");
-    });
-    sidebarOverlay.addEventListener("click", () => {
-      sidebar.classList.remove("open");
-      sidebarOverlay.classList.add("hidden");
-    });
-    catToggle.addEventListener("click", () => {
-      const isOpen = catMenu.classList.toggle("open");
-      catArrow.style.transform = isOpen ? "rotate(180deg)" : "rotate(0deg)";
-    });
-    document.querySelectorAll(".side-link").forEach(link => {
-      link.addEventListener("click", () => {
+      menuToggle.addEventListener("click", () => {
+        sidebar.classList.toggle("open");
+        sidebarOverlay.classList.toggle("hidden");
+      });
+      sidebarOverlay.addEventListener("click", () => {
         sidebar.classList.remove("open");
         sidebarOverlay.classList.add("hidden");
       });
-    });
+      catToggle.addEventListener("click", () => {
+        const isOpen = catMenu.classList.toggle("open");
+        catArrow.style.transform = isOpen ? "rotate(180deg)" : "rotate(0deg)";
+      });
+      document.querySelectorAll(".side-link").forEach(link => {
+        link.addEventListener("click", () => {
+          sidebar.classList.remove("open");
+          sidebarOverlay.classList.add("hidden");
+        });
+      });
 
-    // Search
-    document.getElementById("searchBtn").addEventListener("click", () => {
-      const val = document.getElementById("searchInput").value.trim();
-      if (val) window.location.href = `index.html?search=${encodeURIComponent(val)}`;
-    });
-    document.getElementById("searchInput").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        const val = e.target.value.trim();
+      document.getElementById("searchBtn").addEventListener("click", () => {
+        const val = document.getElementById("searchInput").value.trim();
         if (val) window.location.href = `index.html?search=${encodeURIComponent(val)}`;
-      }
+      });
+      document.getElementById("searchInput").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          const val = e.target.value.trim();
+          if (val) window.location.href = `index.html?search=${encodeURIComponent(val)}`;
+        }
+      });
     });
   </script>
 
