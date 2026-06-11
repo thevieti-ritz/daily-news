@@ -160,18 +160,29 @@ async function trackView(video, videoRef) {
   }
 }
 
-// ============================================
-// INIT VIDEO.JS PLAYER WITH EXOCLICK VAST ADS
-// ============================================
+// ---- INIT VIDEO.JS WITH VAST ADS ----
 function initPlayer(videoUrl, posterUrl, video, videoRef) {
-
-  // Destroy old instance if exists
   if (player) {
     try { player.dispose(); } catch(e) {}
     player = null;
   }
 
-  // Create Video.js player
+  // Wait for Video.js to be ready
+  if (typeof videojs === "undefined") {
+    console.error("Video.js not loaded");
+    // Fallback to plain HTML5 video
+    const wrap = document.querySelector(".player-wrap");
+    wrap.innerHTML = `<video controls playsinline preload="auto"
+      src="${videoUrl}" poster="${posterUrl}"
+      style="width:100%;height:100%;background:#000;border-radius:var(--radius)">
+    </video>`;
+    const vid = wrap.querySelector("video");
+    vid.addEventListener("timeupdate", () => {
+      if (vid.currentTime >= 5) trackView(video, videoRef);
+    });
+    return;
+  }
+
   player = videojs("myPlayer", {
     controls:    true,
     autoplay:    false,
@@ -179,46 +190,44 @@ function initPlayer(videoUrl, posterUrl, video, videoRef) {
     fluid:       true,
     playsinline: true,
     poster:      posterUrl || "",
-    sources: [{
-      src:  videoUrl,
-      type: "video/mp4"
-    }]
+    sources: [{ src: videoUrl, type: "video/mp4" }]
   });
 
-  // Step 1: init contrib-ads FIRST
-  player.ads({
-    debug:            false,
-    liveCuePoints:    false,
-    allowVjsAutoplay: true
-  });
+  // Wait for player to be ready before initializing ads
+  player.ready(function() {
 
-  // Step 2: init IMA plugin with ExoClick VAST
-  player.ima({
-    adTagUrl:        VAST_URL,
-    debug:           false,
-    disableFlashAds: true,
-    showCountdown:   true,
-    adLabel:         "Advertisement",
-    adsRenderingSettings: {
-      restoreCustomPlaybackStateOnAdBreakComplete: true,
-      enablePreloading: true
-    }
-  });
+    // Only init ads if IMA plugin is available
+    if (typeof player.ima === "function") {
+      try {
+        player.ads({ debug: false });
+        player.ima({
+          adTagUrl:        VAST_URL,
+          debug:           false,
+          disableFlashAds: true,
+          showCountdown:   true,
+          adLabel:         "Ad"
+        });
 
-  // If ad fails — skip to content
-  player.on("adserror", (e) => {
-    console.warn("Ad error — skipping to content");
-    try { player.ima.getAdsManager()?.destroy(); } catch(err) {}
-    try { player.ads.endLinearAdMode(); }          catch(err) {}
-  });
+        // Handle ad errors gracefully
+        player.ima.addEventListener("adError", () => {
+          console.warn("Ad error — skipping to video");
+        });
 
-  // Track view after 5 seconds of content (not during ad)
-  player.on("timeupdate", () => {
-    try {
-      if (!player.ads.isInAdMode() && player.currentTime() >= 5) {
-        trackView(video, videoRef);
+      } catch(e) {
+        console.warn("IMA init error:", e);
       }
-    } catch(e) {}
+    }
+
+    // Track view after 5 seconds
+    player.on("timeupdate", () => {
+      if (player.currentTime() >= 5) trackView(video, videoRef);
+    });
+
+    // Handle video error
+    player.on("error", () => {
+      console.error("Video player error:", player.error());
+      videoTitle.textContent = "Error loading video — check the video URL";
+    });
   });
 }
 
