@@ -201,27 +201,21 @@ function initPlayer(videoUrl, posterUrl, video, videoRef) {
     // ---- VAST ADS via IMA plugin ----
     // Requires: videojs-contrib-ads v7+ AND videojs-ima both loaded in watch.html
     // Do NOT call player.ads() manually — IMA plugin handles it internally
-    if (typeof videojs.getPlugin("ima") === "function" && typeof videojs.getPlugin("ads") === "function") {
-      try {
-        player.ima({
-          adTagUrl:        VAST_URL,
-          debug:           false,
-          disableFlashAds: true,
-          showCountdown:   true,
-          adLabel:         "Ad"
-        });
-
-        // Ad error — player will resume the video automatically
-        player.on("ads-ad-error", (e) => {
-          console.warn("VAST ad error — skipping to video:", e);
-        });
-
-      } catch (e) {
-        console.warn("IMA init error:", e);
-      }
-    } else {
-      console.warn("IMA or contrib-ads plugin not available — ads skipped");
-    }
+try {
+  player.ima({
+    adTagUrl:        VAST_URL,
+    debug:           true,
+    disableFlashAds: true,
+    showCountdown:   true,
+    adLabel:         "Ad"
+  });
+  player.on("ads-ad-error", (e) => {
+    console.warn("VAST ad error — skipping to video:", e);
+  });
+  console.log("IMA initialized successfully");
+} catch (e) {
+  console.warn("IMA init failed:", e.message);
+}
 
     // ---- View tracking ----
     player.on("timeupdate", () => {
