@@ -1,5 +1,5 @@
 // ============================================
-// MAIN.JS — Leaked Archives (Optimized)
+// MAIN.JS — Leaked Archives
 // ============================================
 
 import { db, auth } from "./firebase.js";
@@ -12,7 +12,7 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 // ============================================
 // CONFIG & STATE
 // ============================================
-const PAGE_SIZE    = 12; // increased for better UX
+const PAGE_SIZE    = 12;
 let lastDoc        = null;
 let currentSearch  = "";
 let isLoading      = false;
@@ -22,12 +22,10 @@ let activeDate     = "all";
 let activeDuration = "all";
 let activeQuality  = "all";
 let activeCategory = null;
-
-// Simple in-memory cache to avoid refetching same data
-const videoCache = new Map();
+const videoCache   = new Map();
 
 // ============================================
-// DOM REFS — cached once, never re-queried
+// DOM REFS
 // ============================================
 const videoGrid       = document.getElementById("videoGrid");
 const loadMoreBtn     = document.getElementById("loadMoreBtn");
@@ -69,7 +67,7 @@ document.getElementById("categoriesToggle").addEventListener("click", () => {
 });
 
 // ============================================
-// AUTH — deferred so it doesn't block video load
+// AUTH
 // ============================================
 onAuthStateChanged(auth, (user) => {
   if (user) {
@@ -120,12 +118,14 @@ function setupDropdown(btnId, menuId, labelId, dataKey, onSelect) {
       const val  = opt.dataset[dataKey];
       const text = opt.textContent.trim();
       if (label) {
-        label.textContent = dataKey === "sort" ? text : (val === "all" ? "" : `: ${text}`);
+        label.textContent = dataKey === "sort"
+          ? text
+          : (val === "all" ? "" : `: ${text}`);
       }
       btn.classList.toggle("active-filter", val !== "all" && val !== "newest");
       onSelect(val);
       menu.classList.add("hidden");
-      videoCache.clear(); // clear cache on filter change
+      videoCache.clear();
       resetAndLoad();
     });
   });
@@ -152,14 +152,17 @@ searchInput?.addEventListener("input", () => {
     } else if (val.length === 0) {
       currentSearch = "";
       sectionTitle.textContent = activeCategory
-        ? activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)
+        ? capitalize(activeCategory)
         : "Latest Videos";
+      videoCache.clear();
       resetAndLoad();
     }
   }, 350);
 });
 searchBtn?.addEventListener("click", doSearch);
-searchInput?.addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(); });
+searchInput?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") doSearch();
+});
 
 function doSearch() {
   const val = searchInput.value.trim().toLowerCase();
@@ -171,16 +174,16 @@ function doSearch() {
 }
 
 // ============================================
-// SKELETON CARDS — built once as template
+// SKELETON CARDS
 // ============================================
-const skeletonHTML = `
+const skeletonHTML = Array(PAGE_SIZE).fill(`
   <div class="skeleton-card">
     <div class="skeleton-thumb"></div>
     <div class="skeleton-info">
       <div class="skeleton-line long"></div>
       <div class="skeleton-line short"></div>
     </div>
-  </div>`.repeat(PAGE_SIZE);
+  </div>`).join("");
 
 function showSkeletons() {
   videoGrid.innerHTML = skeletonHTML;
@@ -212,13 +215,12 @@ function getDateCutoff(filter) {
 // BUILD FIRESTORE QUERY
 // ============================================
 function buildQuery(fetchLimit) {
-  const videosRef = collection(db, "videos");
+  const ref        = collection(db, "videos");
   const pagination = lastDoc ? [startAfter(lastDoc)] : [];
 
-  // Category takes priority
   if (activeCategory) {
     return query(
-      videosRef,
+      ref,
       where("category", "==", activeCategory),
       orderBy("createdAt", "desc"),
       limit(fetchLimit),
@@ -231,8 +233,8 @@ function buildQuery(fetchLimit) {
     rating: ["likes",    "desc"],
     length: ["duration", "desc"],
   };
-  const [sortField, sortDir] = sortMap[activeSort] || ["createdAt", "desc"];
-  return query(videosRef, orderBy(sortField, sortDir), limit(fetchLimit), ...pagination);
+  const [field, dir] = sortMap[activeSort] || ["createdAt", "desc"];
+  return query(ref, orderBy(field, dir), limit(fetchLimit), ...pagination);
 }
 
 // ============================================
@@ -244,20 +246,21 @@ async function loadVideos() {
 
   try {
     const fetchLimit = currentSearch ? 80 : PAGE_SIZE;
-    const cacheKey   = `${activeSort}-${activeDate}-${activeDuration}-${activeQuality}-${activeCategory}-${currentSearch}-${lastDoc?.id || "start"}`;
+    const cacheKey   = [
+      activeSort, activeDate, activeDuration,
+      activeQuality, activeCategory, currentSearch,
+      lastDoc?.id || "start"
+    ].join("-");
 
     let docs;
+    let rawLastDoc;
 
-    // Use cache if available
     if (videoCache.has(cacheKey)) {
       docs = videoCache.get(cacheKey);
     } else {
-      const q        = buildQuery(fetchLimit);
-      const snapshot = await getDocs(q);
-      docs = snapshot.docs;
-
-      // Store last doc for pagination before filtering
-      const rawLastDoc = snapshot.docs[snapshot.docs.length - 1];
+      const snapshot = await getDocs(buildQuery(fetchLimit));
+      docs       = snapshot.docs;
+      rawLastDoc = snapshot.docs[snapshot.docs.length - 1];
 
       // Client-side filters
       if (currentSearch) {
@@ -274,15 +277,18 @@ async function loadVideos() {
       const cutoff = getDateCutoff(activeDate);
       if (cutoff) {
         docs = docs.filter(d => {
-          const created = d.data().createdAt?.toDate();
-          return created && created >= cutoff;
+          const c = d.data().createdAt?.toDate();
+          return c && c >= cutoff;
         });
       }
 
       if (activeDuration === "short") {
         docs = docs.filter(d => (d.data().duration || 0) < 180);
       } else if (activeDuration === "medium") {
-        docs = docs.filter(d => { const s = d.data().duration || 0; return s >= 180 && s < 600; });
+        docs = docs.filter(d => {
+          const s = d.data().duration || 0;
+          return s >= 180 && s < 600;
+        });
       } else if (activeDuration === "long") {
         docs = docs.filter(d => (d.data().duration || 0) >= 600);
       }
@@ -299,17 +305,12 @@ async function loadVideos() {
         });
       }
 
-      // Cache results
       videoCache.set(cacheKey, docs);
 
-      // Update lastDoc for pagination
-      if (!currentSearch && docs.length === PAGE_SIZE) {
+      if (!currentSearch && docs.length >= PAGE_SIZE) {
         lastDoc = rawLastDoc;
       }
     }
-
-    // Clear grid on first page
-    if (!lastDoc || videoCache.has(cacheKey)) videoGrid.innerHTML = "";
 
     // Empty state
     if (docs.length === 0) {
@@ -317,7 +318,10 @@ async function loadVideos() {
         <div class="empty-state">
           <i class="fas fa-video-slash"></i>
           <h3>No videos found</h3>
-          <p>${currentSearch ? `No results for "${currentSearch}"` : "Try adjusting your filters."}</p>
+          <p>${currentSearch
+            ? `No results for "${currentSearch}"`
+            : "Try adjusting your filters."
+          }</p>
         </div>`;
       videoCount.textContent = "";
       loadMoreBtn.classList.add("hidden");
@@ -325,9 +329,9 @@ async function loadVideos() {
       return;
     }
 
-    // Render using fragment (fastest DOM method)
+    // Render
     const fragment = document.createDocumentFragment();
-    docs.forEach(docSnap => fragment.appendChild(createVideoCard({ id: docSnap.id, ...docSnap.data() })));
+    docs.forEach(d => fragment.appendChild(createVideoCard({ id: d.id, ...d.data() })));
     videoGrid.innerHTML = "";
     videoGrid.appendChild(fragment);
 
@@ -341,20 +345,13 @@ async function loadVideos() {
         length:    "By Length"
       };
       sectionTitle.textContent = activeCategory
-        ? activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)
+        ? capitalize(activeCategory)
         : (labels[activeSort] || "Latest Videos");
     }
 
-    // Pagination button
-    if (!currentSearch && docs.length >= PAGE_SIZE) {
-      loadMoreBtn.classList.remove("hidden");
-    } else {
-      loadMoreBtn.classList.add("hidden");
-    }
-
+    // Pagination
+    loadMoreBtn.classList.toggle("hidden", !(!currentSearch && docs.length >= PAGE_SIZE));
     videoCount.textContent = `${docs.length} videos`;
-
-    // Lazy load images
     initLazyLoad();
 
   } catch (err) {
@@ -371,14 +368,14 @@ async function loadVideos() {
 }
 
 // ============================================
-// VIDEO CARD — optimized innerHTML
+// VIDEO CARD
 // ============================================
 function createVideoCard(video) {
   const card     = document.createElement("div");
   card.className = "video-card";
 
-const thumb = video.thumbnail || "https://via.placeholder.com/320x180/1a1a1a/e63946?text=Leaked+Archives";
-  const views    = formatNumber(video.views   || 0);
+  const thumb    = video.thumbnail || "https://via.placeholder.com/320x180/1a1a1a/e63946?text=Leaked+Archives";
+  const views    = formatNumber(video.views || 0);
   const date     = video.createdAt ? timeAgo(video.createdAt.toDate()) : "";
   const duration = video.duration  ? `<span class="duration-badge">${formatDuration(video.duration)}</span>` : "";
   const quality  = video.quality   ? `<span class="quality-badge">${video.quality}</span>` : "";
@@ -414,7 +411,7 @@ const thumb = video.thumbnail || "https://via.placeholder.com/320x180/1a1a1a/e63
 }
 
 // ============================================
-// LAZY IMAGE LOADING — single shared observer
+// LAZY IMAGE LOADING
 // ============================================
 const lazyObserver = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
@@ -432,15 +429,14 @@ function initLazyLoad() {
 }
 
 // ============================================
-// INFINITE SCROLL — auto load more
+// INFINITE SCROLL
 // ============================================
-const scrollObserver = new IntersectionObserver((entries) => {
+new IntersectionObserver((entries) => {
   if (entries[0].isIntersecting && !loadMoreBtn.classList.contains("hidden") && !isLoading) {
     loadVideos();
   }
-}, { rootMargin: "300px" });
+}, { rootMargin: "300px" }).observe(loadMoreBtn);
 
-scrollObserver.observe(loadMoreBtn);
 loadMoreBtn?.addEventListener("click", loadVideos);
 
 // ============================================
@@ -451,13 +447,9 @@ function formatNumber(n) {
   if (n >= 1000)    return (n / 1000).toFixed(1) + "K";
   return n.toString();
 }
-
 function formatDuration(s) {
-  const m   = Math.floor(s / 60);
-  const sec = s % 60;
-  return `${m}:${sec.toString().padStart(2, "0")}`;
+  return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 }
-
 function timeAgo(date) {
   const s = Math.floor((new Date() - date) / 1000);
   if (s < 60)      return "Just now";
@@ -466,26 +458,28 @@ function timeAgo(date) {
   if (s < 2592000) return Math.floor(s / 86400) + "d ago";
   return date.toLocaleDateString();
 }
-
+function capitalize(str) {
+  return str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
+}
 function escapeHtml(str) {
   return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 // ============================================
-// URL PARAMS — category and search on load
+// INIT — read URL params on page load
 // ============================================
 const urlParams   = new URLSearchParams(window.location.search);
 const catParam    = urlParams.get("cat");
 const searchParam = urlParams.get("search");
 
 if (searchParam) {
-  searchInput.value = searchParam;
-  currentSearch = searchParam.toLowerCase();
+  searchInput.value    = searchParam;
+  currentSearch        = searchParam.toLowerCase();
   sectionTitle.textContent = `Results: "${searchParam}"`;
   loadVideos();
 } else if (catParam) {
-  activeCategory = catParam.toLowerCase();
-  sectionTitle.textContent = catParam.charAt(0).toUpperCase() + catParam.slice(1);
+  activeCategory           = catParam.toLowerCase();
+  sectionTitle.textContent = capitalize(catParam);
   loadVideos();
 } else {
   loadVideos();
