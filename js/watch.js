@@ -201,7 +201,7 @@ function initPlayer(videoUrl, posterUrl, video, videoRef) {
     // ---- VAST ADS via IMA plugin ----
     // Requires: videojs-contrib-ads v7+ AND videojs-ima both loaded in watch.html
     // Do NOT call player.ads() manually — IMA plugin handles it internally
-    if (typeof player.ima === "function" && typeof player.ads === "function") {
+    if (player.ima && player.ads) {
       try {
         player.ima({
           adTagUrl:        VAST_URL,
