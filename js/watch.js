@@ -160,17 +160,19 @@ async function trackView(video, videoRef) {
   }
 }
 
-// ---- INIT VIDEO.JS WITH VAST ADS ----
+// ============================================
+// INIT VIDEO.JS WITH VAST ADS
+// ============================================
 function initPlayer(videoUrl, posterUrl, video, videoRef) {
+  // Dispose any existing player instance
   if (player) {
     try { player.dispose(); } catch(e) {}
     player = null;
   }
 
-  // Wait for Video.js to be ready
+  // Fallback: if Video.js failed to load, use plain HTML5
   if (typeof videojs === "undefined") {
-    console.error("Video.js not loaded");
-    // Fallback to plain HTML5 video
+    console.warn("Video.js not loaded — falling back to HTML5 player");
     const wrap = document.querySelector(".player-wrap");
     wrap.innerHTML = `<video controls playsinline preload="auto"
       src="${videoUrl}" poster="${posterUrl}"
@@ -183,6 +185,7 @@ function initPlayer(videoUrl, posterUrl, video, videoRef) {
     return;
   }
 
+  // Init Video.js player
   player = videojs("myPlayer", {
     controls:    true,
     autoplay:    false,
@@ -190,16 +193,16 @@ function initPlayer(videoUrl, posterUrl, video, videoRef) {
     fluid:       true,
     playsinline: true,
     poster:      posterUrl || "",
-    sources: [{ src: videoUrl, type: "video/mp4" }]
+    sources:     [{ src: videoUrl, type: "video/mp4" }]
   });
 
-  // Wait for player to be ready before initializing ads
-  player.ready(function() {
+  player.ready(function () {
 
-    // Only init ads if IMA plugin is available
-    if (typeof player.ima === "function") {
+    // ---- VAST ADS via IMA plugin ----
+    // Requires: videojs-contrib-ads v7+ AND videojs-ima both loaded in watch.html
+    // Do NOT call player.ads() manually — IMA plugin handles it internally
+    if (typeof player.ima === "function" && typeof player.ads === "function") {
       try {
-        player.ads({ debug: false });
         player.ima({
           adTagUrl:        VAST_URL,
           debug:           false,
@@ -208,25 +211,28 @@ function initPlayer(videoUrl, posterUrl, video, videoRef) {
           adLabel:         "Ad"
         });
 
-        // Handle ad errors gracefully
-        player.ima.addEventListener("adError", () => {
-          console.warn("Ad error — skipping to video");
+        // Ad error — player will resume the video automatically
+        player.on("ads-ad-error", (e) => {
+          console.warn("VAST ad error — skipping to video:", e);
         });
 
-      } catch(e) {
+      } catch (e) {
         console.warn("IMA init error:", e);
       }
+    } else {
+      console.warn("IMA or contrib-ads plugin not available — ads skipped");
     }
 
-    // Track view after 5 seconds
+    // ---- View tracking ----
     player.on("timeupdate", () => {
       if (player.currentTime() >= 5) trackView(video, videoRef);
     });
 
-    // Handle video error
+    // ---- Player error handler ----
     player.on("error", () => {
-      console.error("Video player error:", player.error());
-      videoTitle.textContent = "Error loading video — check the video URL";
+      const err = player.error();
+      console.error("Video player error:", err);
+      if (videoTitle) videoTitle.textContent = "Error loading video — check the video URL";
     });
   });
 }
@@ -240,7 +246,7 @@ async function loadVideo() {
     const videoSnap = await getDoc(videoRef);
 
     if (!videoSnap.exists()) {
-      videoTitle.textContent = "Video not found";
+      if (videoTitle) videoTitle.textContent = "Video not found";
       return;
     }
 
@@ -248,37 +254,41 @@ async function loadVideo() {
     const videoUrl = getVideoUrl(video.archiveId);
     const poster   = getThumbnail(video);
 
-    // Page title
+    // Page title + breadcrumb
     document.title = `${video.title} — Leaked Archives`;
     if (breadcrumbTitle) breadcrumbTitle.textContent = video.title;
 
-    // Populate info
-    videoTitle.textContent         = video.title;
-    videoCategoryBadge.textContent = video.category || "general";
-    viewCount.textContent          = formatNumber(video.views || 0);
-    likeCount.textContent          = formatNumber(video.likes || 0);
-    videoDate.textContent          = video.createdAt
+    // Populate info panel
+    if (videoTitle)         videoTitle.textContent         = video.title;
+    if (videoCategoryBadge) videoCategoryBadge.textContent = video.category || "general";
+    if (viewCount)          viewCount.textContent          = formatNumber(video.views || 0);
+    if (likeCount)          likeCount.textContent          = formatNumber(video.likes || 0);
+    if (videoDate)          videoDate.textContent          = video.createdAt
       ? video.createdAt.toDate().toLocaleDateString("en-UG", {
           year: "numeric", month: "long", day: "numeric"
         })
       : "";
-    videoDescription.textContent   = video.description || "";
+    if (videoDescription)   videoDescription.textContent   = video.description || "";
 
-    // Check if liked
+    // Like state
     if (video.likedBy && auth.currentUser) {
       hasLiked = video.likedBy.includes(auth.currentUser.uid);
-      if (hasLiked) likeBtn.classList.add("liked");
+      if (hasLiked) likeBtn?.classList.add("liked");
     }
 
     // Share links
     const shareUrl  = encodeURIComponent(window.location.href);
     const shareText = encodeURIComponent(`Watch: ${video.title}`);
-    document.getElementById("shareWhatsapp").href = `https://wa.me/?text=${shareText}%20${shareUrl}`;
-    document.getElementById("shareFacebook").href = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`;
-    document.getElementById("shareTwitter").href  = `https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`;
-    document.getElementById("shareTelegram").href = `https://t.me/share/url?url=${shareUrl}&text=${shareText}`;
+    const shareWhatsapp = document.getElementById("shareWhatsapp");
+    const shareFacebook = document.getElementById("shareFacebook");
+    const shareTwitter  = document.getElementById("shareTwitter");
+    const shareTelegram = document.getElementById("shareTelegram");
+    if (shareWhatsapp) shareWhatsapp.href = `https://wa.me/?text=${shareText}%20${shareUrl}`;
+    if (shareFacebook) shareFacebook.href = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`;
+    if (shareTwitter)  shareTwitter.href  = `https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`;
+    if (shareTelegram) shareTelegram.href = `https://t.me/share/url?url=${shareUrl}&text=${shareText}`;
 
-    // Init player after all external scripts are loaded
+    // Init player only after all scripts are fully loaded
     if (document.readyState === "complete") {
       initPlayer(videoUrl, poster, video, videoRef);
     } else {
@@ -290,7 +300,7 @@ async function loadVideo() {
 
   } catch (err) {
     console.error("Error loading video:", err);
-    videoTitle.textContent = "Error loading video";
+    if (videoTitle) videoTitle.textContent = "Error loading video";
   }
 }
 
@@ -314,10 +324,10 @@ likeBtn?.addEventListener("click", async () => {
 });
 
 // ============================================
-// SHARE
+// SHARE MODAL
 // ============================================
-shareBtn?.addEventListener("click", () => shareModal.classList.remove("hidden"));
-closeShareModal?.addEventListener("click", () => shareModal.classList.add("hidden"));
+shareBtn?.addEventListener("click", () => shareModal?.classList.remove("hidden"));
+closeShareModal?.addEventListener("click", () => shareModal?.classList.add("hidden"));
 shareModal?.addEventListener("click", (e) => {
   if (e.target === shareModal) shareModal.classList.add("hidden");
 });
@@ -333,13 +343,18 @@ copyLinkBtn?.addEventListener("click", () => {
 // ============================================
 async function loadRelated(category, excludeId) {
   try {
-    const q    = query(collection(db, "videos"), where("category", "==", category), orderBy("createdAt", "desc"), limit(10));
+    const q    = query(
+      collection(db, "videos"),
+      where("category", "==", category),
+      orderBy("createdAt", "desc"),
+      limit(10)
+    );
     const snap = await getDocs(q);
-    relatedVideos.innerHTML = "";
+    if (relatedVideos) relatedVideos.innerHTML = "";
     let count = 0;
     snap.docs.forEach(d => {
       if (d.id === excludeId || count >= 8) return;
-      relatedVideos.appendChild(createRelatedCard({ id: d.id, ...d.data() }));
+      relatedVideos?.appendChild(createRelatedCard({ id: d.id, ...d.data() }));
       count++;
     });
     if (count === 0) {
@@ -347,11 +362,13 @@ async function loadRelated(category, excludeId) {
       const snap2 = await getDocs(q2);
       snap2.docs.forEach(d => {
         if (d.id === excludeId) return;
-        relatedVideos.appendChild(createRelatedCard({ id: d.id, ...d.data() }));
+        relatedVideos?.appendChild(createRelatedCard({ id: d.id, ...d.data() }));
       });
     }
   } catch (err) {
-    relatedVideos.innerHTML = "<p style='color:var(--muted);font-size:13px;padding:8px'>Could not load related videos.</p>";
+    if (relatedVideos) {
+      relatedVideos.innerHTML = "<p style='color:var(--muted);font-size:13px;padding:8px'>Could not load related videos.</p>";
+    }
   }
 }
 
@@ -376,23 +393,26 @@ function createRelatedCard(video) {
 // ============================================
 async function loadComments() {
   try {
-    const q    = query(collection(db, "videos", currentVideoId, "comments"), orderBy("createdAt", "desc"));
+    const q    = query(
+      collection(db, "videos", currentVideoId, "comments"),
+      orderBy("createdAt", "desc")
+    );
     const snap = await getDocs(q);
-    commentsList.innerHTML   = "";
-    commentCount.textContent = snap.size;
+    if (commentsList)       commentsList.innerHTML   = "";
+    if (commentCount)       commentCount.textContent = snap.size;
     if (snap.empty) {
-      commentsList.innerHTML = "<p style='color:var(--muted);font-size:13px;text-align:center;padding:20px'>No comments yet. Be the first!</p>";
+      if (commentsList) commentsList.innerHTML = "<p style='color:var(--muted);font-size:13px;text-align:center;padding:20px'>No comments yet. Be the first!</p>";
       return;
     }
-    snap.forEach(d => commentsList.appendChild(createCommentEl({ id: d.id, ...d.data() })));
+    snap.forEach(d => commentsList?.appendChild(createCommentEl({ id: d.id, ...d.data() })));
   } catch (err) {
     console.error("Comments error:", err);
   }
 }
 
 function createCommentEl(comment) {
-  const el      = document.createElement("div");
-  el.className  = "comment-item";
+  const el     = document.createElement("div");
+  el.className = "comment-item";
   const avatar  = comment.userPhoto || `https://api.dicebear.com/7.x/thumbs/svg?seed=${comment.userId}`;
   const timeStr = comment.createdAt ? timeAgo(comment.createdAt.toDate()) : "";
   const isOwner = currentUser && currentUser.uid === comment.userId;
@@ -410,7 +430,9 @@ function createCommentEl(comment) {
     if (confirm("Delete this comment?")) {
       await deleteDoc(doc(db, "videos", currentVideoId, "comments", comment.id));
       el.remove();
-      commentCount.textContent = Math.max(0, (parseInt(commentCount.textContent) || 0) - 1);
+      if (commentCount) {
+        commentCount.textContent = Math.max(0, (parseInt(commentCount.textContent) || 0) - 1);
+      }
     }
   });
   return el;
@@ -433,11 +455,18 @@ async function postComment() {
       userPhoto: currentUser.photoURL || null,
       createdAt: serverTimestamp()
     };
-    const ref = await addDoc(collection(db, "videos", currentVideoId, "comments"), commentData);
+    const ref = await addDoc(
+      collection(db, "videos", currentVideoId, "comments"),
+      commentData
+    );
     commentInput.value = "";
-    if (commentsList.querySelector("p")) commentsList.innerHTML = "";
-    commentsList.prepend(createCommentEl({ id: ref.id, ...commentData, createdAt: { toDate: () => new Date() } }));
-    commentCount.textContent = (parseInt(commentCount.textContent) || 0) + 1;
+    if (commentsList?.querySelector("p")) commentsList.innerHTML = "";
+    commentsList?.prepend(
+      createCommentEl({ id: ref.id, ...commentData, createdAt: { toDate: () => new Date() } })
+    );
+    if (commentCount) {
+      commentCount.textContent = (parseInt(commentCount.textContent) || 0) + 1;
+    }
   } catch (err) {
     alert("Error posting comment: " + err.message);
   }
@@ -446,8 +475,8 @@ async function postComment() {
 }
 
 // ============================================
-// INIT — wait for full page load so IMA SDK
-// and all Video.js plugins are ready
+// INIT — wait for full page load so all
+// Video.js plugins and IMA SDK are ready
 // ============================================
 if (document.readyState === "complete") {
   loadVideo();
