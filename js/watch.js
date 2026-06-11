@@ -195,86 +195,41 @@ function initPlayer(videoUrl, posterUrl, video, videoRef) {
     poster:      posterUrl || "",
     sources:     [{ src: videoUrl, type: "video/mp4" }]
   });
-  
-player.ready(function () {
 
-  // ---- VAST pre-roll via native ad overlay ----
-  fetch(VAST_URL)
-    .then(r => r.text())
-    .then(xml => {
-      const parser  = new DOMParser();
-      const vast    = parser.parseFromString(xml, "text/xml");
-      const mediaEl = vast.querySelector("MediaFile");
-      const adUrl   = mediaEl ? mediaEl.textContent.trim() : null;
+  player.ready(function () {
 
-      if (!adUrl) {
-        console.warn("No ad media file found in VAST — playing video directly");
-        return;
-      }
-
-      // Build ad overlay on top of the player
-      const wrap   = document.querySelector(".player-wrap");
-      const adWrap = document.createElement("div");
-      adWrap.style.cssText = "position:absolute;inset:0;z-index:10;background:#000;";
-
-      const skipBtn = document.createElement("button");
-      skipBtn.textContent = "Skip Ad in 5s";
-      skipBtn.style.cssText = "position:absolute;bottom:16px;right:16px;z-index:11;background:rgba(0,0,0,0.7);color:#fff;border:1px solid #fff;padding:6px 14px;font-size:13px;cursor:default;border-radius:4px;";
-
-      const adVideo = document.createElement("video");
-      adVideo.src             = adUrl;
-      adVideo.autoplay        = true;
-      adVideo.playsinline     = true;
-      adVideo.style.cssText   = "width:100%;height:100%;object-fit:contain;background:#000;";
-      adVideo.muted           = false;
-
-      adWrap.appendChild(adVideo);
-      adWrap.appendChild(skipBtn);
-      wrap.style.position = "relative";
-      wrap.appendChild(adWrap);
-
-      // Countdown then enable skip
-      let secs = 5;
-      const countdown = setInterval(() => {
-        secs--;
-        if (secs <= 0) {
-          clearInterval(countdown);
-          skipBtn.textContent  = "Skip Ad ✕";
-          skipBtn.style.cursor = "pointer";
-          skipBtn.onclick      = () => {
-            adVideo.pause();
-            adWrap.remove();
-          };
-        } else {
-          skipBtn.textContent = `Skip Ad in ${secs}s`;
-        }
-      }, 1000);
-
-      // Auto-remove when ad finishes
-      adVideo.addEventListener("ended", () => {
-        clearInterval(countdown);
-        adWrap.remove();
-      });
-
-      adVideo.addEventListener("error", () => {
-        clearInterval(countdown);
-        adWrap.remove();
-        console.warn("Ad video failed to load");
-      });
-    })
-    .catch(() => console.warn("VAST fetch failed — playing video directly"));
-
-  // ---- View tracking ----
-  player.on("timeupdate", () => {
-    if (player.currentTime() >= 5) trackView(video, videoRef);
+    // ---- VAST ADS via IMA plugin ----
+    // Requires: videojs-contrib-ads v7+ AND videojs-ima both loaded in watch.html
+    // Do NOT call player.ads() manually — IMA plugin handles it internally
+try {
+  player.ima({
+    adTagUrl:        VAST_URL,
+    debug:           true,
+    disableFlashAds: true,
+    showCountdown:   true,
+    adLabel:         "Ad"
   });
-
-  // ---- Player error handler ----
-  player.on("error", () => {
-    console.error("Video player error:", player.error());
-    if (videoTitle) videoTitle.textContent = "Error loading video — check the video URL";
+  player.on("ads-ad-error", (e) => {
+    console.warn("VAST ad error — skipping to video:", e);
   });
-});
+  console.log("IMA initialized successfully");
+} catch (e) {
+  console.warn("IMA init failed:", e.message);
+}
+
+    // ---- View tracking ----
+    player.on("timeupdate", () => {
+      if (player.currentTime() >= 5) trackView(video, videoRef);
+    });
+
+    // ---- Player error handler ----
+    player.on("error", () => {
+      const err = player.error();
+      console.error("Video player error:", err);
+      if (videoTitle) videoTitle.textContent = "Error loading video — check the video URL";
+    });
+  });
+}
 
 // ============================================
 // LOAD VIDEO FROM FIRESTORE
