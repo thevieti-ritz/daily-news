@@ -476,4 +476,5 @@ if (document.readyState === "complete") {
   loadVideo();
 } else {
   window.addEventListener("load", loadVideo);
-}
+}   
+ 
