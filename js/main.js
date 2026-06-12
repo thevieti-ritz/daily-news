@@ -22,7 +22,6 @@ let activeDate     = "all";
 let activeDuration = "all";
 let activeQuality  = "all";
 let activeCategory = null;
-const videoCache   = new Map();
 
 // ============================================
 // DOM REFS
@@ -74,7 +73,8 @@ onAuthStateChanged(auth, (user) => {
     authLink.classList.add("hidden");
     userMenu.classList.remove("hidden");
     userDisplayName.textContent = user.displayName || user.email.split("@")[0];
-    userAvatar.src = user.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
+    userAvatar.src = user.photoURL ||
+      `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
   } else {
     authLink.classList.remove("hidden");
     userMenu.classList.add("hidden");
@@ -125,7 +125,6 @@ function setupDropdown(btnId, menuId, labelId, dataKey, onSelect) {
       btn.classList.toggle("active-filter", val !== "all" && val !== "newest");
       onSelect(val);
       menu.classList.add("hidden");
-      videoCache.clear();
       resetAndLoad();
     });
   });
@@ -154,7 +153,6 @@ searchInput?.addEventListener("input", () => {
       sectionTitle.textContent = activeCategory
         ? capitalize(activeCategory)
         : "Latest Videos";
-      videoCache.clear();
       resetAndLoad();
     }
   }, 350);
@@ -169,7 +167,6 @@ function doSearch() {
   if (!val) return;
   currentSearch = val;
   sectionTitle.textContent = `Results: "${searchInput.value.trim()}"`;
-  videoCache.clear();
   resetAndLoad();
 }
 
@@ -190,7 +187,7 @@ function showSkeletons() {
 }
 
 // ============================================
-// RESET & LOAD
+// RESET & LOAD — resets pagination and reloads
 // ============================================
 function resetAndLoad() {
   lastDoc = null;
@@ -238,7 +235,7 @@ function buildQuery(fetchLimit) {
 }
 
 // ============================================
-// LOAD VIDEOS
+// LOAD VIDEOS — main fetch function
 // ============================================
 async function loadVideos() {
   if (isLoading) return;
@@ -246,74 +243,63 @@ async function loadVideos() {
 
   try {
     const fetchLimit = currentSearch ? 80 : PAGE_SIZE;
-    const cacheKey   = [
-      activeSort, activeDate, activeDuration,
-      activeQuality, activeCategory, currentSearch,
-      lastDoc?.id || "start"
-    ].join("-");
+    const snapshot   = await getDocs(buildQuery(fetchLimit));
+    let docs         = snapshot.docs;
 
-    let docs;
-    let rawLastDoc;
+    // Save last document for pagination BEFORE filtering
+    const rawLastDoc = snapshot.docs[snapshot.docs.length - 1];
 
-    if (videoCache.has(cacheKey)) {
-      docs = videoCache.get(cacheKey);
-    } else {
-      const snapshot = await getDocs(buildQuery(fetchLimit));
-      docs       = snapshot.docs;
-      rawLastDoc = snapshot.docs[snapshot.docs.length - 1];
+    // ---- Client-side filters ----
 
-      // Client-side filters
-      if (currentSearch) {
-        docs = docs.filter(d => {
-          const v = d.data();
-          return (
-            v.title?.toLowerCase().includes(currentSearch) ||
-            v.description?.toLowerCase().includes(currentSearch) ||
-            v.tags?.some(t => t.toLowerCase().includes(currentSearch))
-          );
-        });
-      }
-
-      const cutoff = getDateCutoff(activeDate);
-      if (cutoff) {
-        docs = docs.filter(d => {
-          const c = d.data().createdAt?.toDate();
-          return c && c >= cutoff;
-        });
-      }
-
-      if (activeDuration === "short") {
-        docs = docs.filter(d => (d.data().duration || 0) < 180);
-      } else if (activeDuration === "medium") {
-        docs = docs.filter(d => {
-          const s = d.data().duration || 0;
-          return s >= 180 && s < 600;
-        });
-      } else if (activeDuration === "long") {
-        docs = docs.filter(d => (d.data().duration || 0) >= 600);
-      }
-
-      if (activeQuality !== "all") {
-        docs = docs.filter(d => d.data().quality === activeQuality);
-      }
-
-      if (activeSort === "relevance") {
-        docs = [...docs].sort((a, b) => {
-          const sA = (a.data().views || 0) + (a.data().likes || 0) * 2;
-          const sB = (b.data().views || 0) + (b.data().likes || 0) * 2;
-          return sB - sA;
-        });
-      }
-
-      videoCache.set(cacheKey, docs);
-
-      if (!currentSearch && docs.length >= PAGE_SIZE) {
-        lastDoc = rawLastDoc;
-      }
+    // Search
+    if (currentSearch) {
+      docs = docs.filter(d => {
+        const v = d.data();
+        return (
+          v.title?.toLowerCase().includes(currentSearch) ||
+          v.description?.toLowerCase().includes(currentSearch) ||
+          v.tags?.some(t => t.toLowerCase().includes(currentSearch))
+        );
+      });
     }
 
-    // Empty state
-    if (docs.length === 0) {
+    // Date
+    const cutoff = getDateCutoff(activeDate);
+    if (cutoff) {
+      docs = docs.filter(d => {
+        const c = d.data().createdAt?.toDate();
+        return c && c >= cutoff;
+      });
+    }
+
+    // Duration
+    if (activeDuration === "short") {
+      docs = docs.filter(d => (d.data().duration || 0) < 180);
+    } else if (activeDuration === "medium") {
+      docs = docs.filter(d => {
+        const s = d.data().duration || 0;
+        return s >= 180 && s < 600;
+      });
+    } else if (activeDuration === "long") {
+      docs = docs.filter(d => (d.data().duration || 0) >= 600);
+    }
+
+    // Quality
+    if (activeQuality !== "all") {
+      docs = docs.filter(d => d.data().quality === activeQuality);
+    }
+
+    // Relevance sort
+    if (activeSort === "relevance") {
+      docs = [...docs].sort((a, b) => {
+        const sA = (a.data().views || 0) + (a.data().likes || 0) * 2;
+        const sB = (b.data().views || 0) + (b.data().likes || 0) * 2;
+        return sB - sA;
+      });
+    }
+
+    // ---- Empty state ----
+    if (docs.length === 0 && !lastDoc) {
       videoGrid.innerHTML = `
         <div class="empty-state">
           <i class="fas fa-video-slash"></i>
@@ -329,13 +315,19 @@ async function loadVideos() {
       return;
     }
 
-    // Render
+    // ---- Clear grid only on first page ----
+    if (!lastDoc) {
+      videoGrid.innerHTML = "";
+    }
+
+    // ---- Render new cards (append, never replace) ----
     const fragment = document.createDocumentFragment();
-    docs.forEach(d => fragment.appendChild(createVideoCard({ id: d.id, ...d.data() })));
-    videoGrid.innerHTML = "";
+    docs.forEach(d => {
+      fragment.appendChild(createVideoCard({ id: d.id, ...d.data() }));
+    });
     videoGrid.appendChild(fragment);
 
-    // Section title
+    // ---- Section title ----
     if (!currentSearch) {
       const labels = {
         newest:    "Latest Videos",
@@ -349,9 +341,20 @@ async function loadVideos() {
         : (labels[activeSort] || "Latest Videos");
     }
 
-    // Pagination
-    loadMoreBtn.classList.toggle("hidden", !(!currentSearch && docs.length >= PAGE_SIZE));
-    videoCount.textContent = `${docs.length} videos`;
+    // ---- Pagination ----
+    // Update lastDoc only when we have a full page
+    if (!currentSearch && snapshot.docs.length === PAGE_SIZE) {
+      lastDoc = rawLastDoc;
+      loadMoreBtn.classList.remove("hidden");
+    } else {
+      loadMoreBtn.classList.add("hidden");
+    }
+
+    // ---- Count ----
+    const total = videoGrid.querySelectorAll(".video-card").length;
+    videoCount.textContent = `${total} video${total !== 1 ? "s" : ""}`;
+
+    // ---- Lazy load images ----
     initLazyLoad();
 
   } catch (err) {
@@ -374,12 +377,19 @@ function createVideoCard(video) {
   const card     = document.createElement("div");
   card.className = "video-card";
 
-  const thumb    = video.thumbnail || "https://via.placeholder.com/320x180/1a1a1a/e63946?text=Leaked+Archives";
+  const thumb    = video.thumbnail ||
+    "https://via.placeholder.com/320x180/1a1a1a/e63946?text=Leaked+Archives";
   const views    = formatNumber(video.views || 0);
   const date     = video.createdAt ? timeAgo(video.createdAt.toDate()) : "";
-  const duration = video.duration  ? `<span class="duration-badge">${formatDuration(video.duration)}</span>` : "";
-  const quality  = video.quality   ? `<span class="quality-badge">${video.quality}</span>` : "";
-  const featured = video.featured  ? `<span class="card-badge">Featured</span>` : "";
+  const duration = video.duration
+    ? `<span class="duration-badge">${formatDuration(video.duration)}</span>`
+    : "";
+  const quality  = video.quality
+    ? `<span class="quality-badge">${video.quality}</span>`
+    : "";
+  const featured = video.featured
+    ? `<span class="card-badge">Featured</span>`
+    : "";
 
   card.innerHTML = `
     <div class="card-thumb">
@@ -389,7 +399,7 @@ function createVideoCard(video) {
            class="lazy-img"
            loading="lazy"
            decoding="async"
-           onerror="this.src='https://via.placeholder.com/320x180/1a1a1a/e63946?text=Leaked+Archives'"/>
+           onerror="this.src='https://via.placeholder.com/320x180/1a1a1a/e63946?text=Video'"/>
       <div class="play-overlay"><i class="fas fa-play-circle"></i></div>
       ${featured}${duration}${quality}
     </div>
@@ -402,7 +412,6 @@ function createVideoCard(video) {
       </div>
     </div>`;
 
-  card.dataset.href = `watch.html?v=${video.id}`;
   card.addEventListener("click", () => {
     window.location.href = `watch.html?v=${video.id}`;
   });
@@ -429,10 +438,14 @@ function initLazyLoad() {
 }
 
 // ============================================
-// INFINITE SCROLL
+// INFINITE SCROLL — auto load more
 // ============================================
 new IntersectionObserver((entries) => {
-  if (entries[0].isIntersecting && !loadMoreBtn.classList.contains("hidden") && !isLoading) {
+  if (
+    entries[0].isIntersecting &&
+    !loadMoreBtn.classList.contains("hidden") &&
+    !isLoading
+  ) {
     loadVideos();
   }
 }, { rootMargin: "300px" }).observe(loadMoreBtn);
@@ -462,7 +475,10 @@ function capitalize(str) {
   return str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
 }
 function escapeHtml(str) {
-  return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return (str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 // ============================================
@@ -473,12 +489,12 @@ const catParam    = urlParams.get("cat");
 const searchParam = urlParams.get("search");
 
 if (searchParam) {
-  searchInput.value    = searchParam;
-  currentSearch        = searchParam.toLowerCase();
+  searchInput.value        = searchParam;
+  currentSearch            = searchParam.toLowerCase();
   sectionTitle.textContent = `Results: "${searchParam}"`;
   loadVideos();
 } else if (catParam) {
-  activeCategory           = catParam.toLowerCase();
+  activeCategory           = catParam;
   sectionTitle.textContent = capitalize(catParam);
   loadVideos();
 } else {
