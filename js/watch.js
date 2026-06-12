@@ -164,19 +164,18 @@ async function trackView(video, videoRef) {
 // INIT VIDEO.JS WITH VAST ADS
 // ============================================
 function initPlayer(videoUrl, posterUrl, video, videoRef) {
-  // Dispose any existing player instance
   if (player) {
     try { player.dispose(); } catch(e) {}
     player = null;
   }
 
-  // Fallback: if Video.js failed to load, use plain HTML5
+  // Fallback if Video.js not loaded
   if (typeof videojs === "undefined") {
-    console.warn("Video.js not loaded — falling back to HTML5 player");
+    console.warn("Video.js not loaded — using HTML5 fallback");
     const wrap = document.querySelector(".player-wrap");
     wrap.innerHTML = `<video controls playsinline preload="auto"
       src="${videoUrl}" poster="${posterUrl}"
-      style="width:100%;height:100%;background:#000;border-radius:var(--radius)">
+      style="width:100%;height:100%;background:#000;border-radius:10px">
     </video>`;
     const vid = wrap.querySelector("video");
     vid.addEventListener("timeupdate", () => {
@@ -185,7 +184,13 @@ function initPlayer(videoUrl, posterUrl, video, videoRef) {
     return;
   }
 
-  // Init Video.js player
+  // Create fresh video element to avoid stale state
+  const wrap = document.querySelector(".player-wrap");
+  wrap.innerHTML = `<video id="myPlayer"
+    class="video-js vjs-default-skin vjs-big-play-centered vjs-16-9"
+    controls playsinline preload="auto">
+  </video>`;
+
   player = videojs("myPlayer", {
     controls:    true,
     autoplay:    false,
@@ -196,43 +201,49 @@ function initPlayer(videoUrl, posterUrl, video, videoRef) {
     sources:     [{ src: videoUrl, type: "video/mp4" }]
   });
 
-  player.ready(function () {
+  player.ready(function() {
+    console.log("Player ready. IMA available:", typeof player.ima);
+    console.log("Ads available:", typeof player.ads);
 
-    // ---- VAST ADS via IMA plugin ----
-    // Requires: videojs-contrib-ads v7+ AND videojs-ima both loaded in watch.html
-    // Do NOT call player.ads() manually — IMA plugin handles it internally
-    if (typeof player.ima === "function" && typeof player.ads === "function") {
+    // Initialize IMA ads
+    if (typeof player.ima === "function") {
       try {
         player.ima({
           adTagUrl:        VAST_URL,
-          debug:           false,
+          debug:           true,
           disableFlashAds: true,
           showCountdown:   true,
-          adLabel:         "Ad"
+          adLabel:         "Advertisement",
+          adsManagerLoadedCallback: function() {
+            console.log("Ads Manager loaded successfully");
+          }
         });
 
-        // Ad error — player will resume the video automatically
         player.on("ads-ad-error", (e) => {
-          console.warn("VAST ad error — skipping to video:", e);
+          console.warn("Ad error:", e);
         });
 
-      } catch (e) {
-        console.warn("IMA init error:", e);
+        player.on("adserror", (e) => {
+          console.warn("Ads error:", e);
+        });
+
+        console.log("IMA plugin initialized successfully");
+
+      } catch(e) {
+        console.error("IMA init failed:", e);
       }
     } else {
-      console.warn("IMA or contrib-ads plugin not available — ads skipped");
+      console.error("IMA plugin not found on player");
     }
 
-    // ---- View tracking ----
+    // Track view after 5 seconds
     player.on("timeupdate", () => {
       if (player.currentTime() >= 5) trackView(video, videoRef);
     });
 
-    // ---- Player error handler ----
+    // Player error
     player.on("error", () => {
-      const err = player.error();
-      console.error("Video player error:", err);
-      if (videoTitle) videoTitle.textContent = "Error loading video — check the video URL";
+      console.error("Player error:", player.error());
     });
   });
 }
