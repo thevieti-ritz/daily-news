@@ -377,8 +377,8 @@ function createVideoCard(video) {
   const card     = document.createElement("div");
   card.className = "video-card";
 
-  const thumb    = video.thumbnail ||
-    "https://via.placeholder.com/320x180/1a1a1a/e63946?text=Leaked+Archives";
+  const thumb = video.thumbnail ||
+    "https://placehold.co/320x180/1a1a1a/e63946?text=No+Thumbnail";
   const views    = formatNumber(video.views || 0);
   const date     = video.createdAt ? timeAgo(video.createdAt.toDate()) : "";
   const duration = video.duration

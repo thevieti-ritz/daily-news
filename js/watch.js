@@ -96,9 +96,7 @@ function getVideoUrl(archiveId) {
 }
 
 function getThumbnail(video) {
-  if (video.thumbnail) return video.thumbnail;
-  const base = (video.archiveId || "").replace(/\.[^/.]+$/, "");
-  return base ? `${R2_BASE}${base}.jpg` : "";
+  return video.thumbnail || "";
 }
 
 function formatNumber(n) {
