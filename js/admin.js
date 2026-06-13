@@ -1,6 +1,7 @@
 // ============================================
 // ADMIN.JS — Leaked Archives
 // Cloudflare R2 video hosting
+// Auto thumbnail generation
 // ============================================
 
 import { db, auth } from "./firebase.js";
@@ -10,11 +11,15 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// ---- CONFIG ----
+// ============================================
+// CONFIG
+// ============================================
 const ADMIN_EMAIL = "dbernardinvestments@gmail.com";
 const R2_BASE     = "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/";
 
-// ---- DOM REFS ----
+// ============================================
+// DOM REFS
+// ============================================
 const accessDenied    = document.getElementById("accessDenied");
 const adminWrap       = document.getElementById("adminWrap");
 const adminUserName   = document.getElementById("adminUserName");
@@ -38,7 +43,9 @@ const saveEditBtn     = document.getElementById("saveEditBtn");
 
 let allVideos = [];
 
-// ---- AUTH CHECK ----
+// ============================================
+// AUTH CHECK
+// ============================================
 onAuthStateChanged(auth, (user) => {
   if (!user) { window.location.href = "login.html"; return; }
   if (user.email !== ADMIN_EMAIL) {
@@ -56,22 +63,69 @@ adminLogout?.addEventListener("click", (e) => {
   signOut(auth).then(() => window.location.href = "index.html");
 });
 
-// ---- CLEAN VIDEO ID/URL ----
-// Accepts full R2 URL or just filename and returns clean filename
+// ============================================
+// CLEAN VIDEO ID
+// Accepts full URL or filename, returns filename only
+// ============================================
 function cleanVideoId(input) {
   let id = input.trim();
-  // If full R2 URL pasted, extract just the filename
-  if (id.includes("r2.dev/")) {
-    id = id.split("r2.dev/").pop();
-  }
-  // If any other full URL, extract filename
-  if (id.startsWith("http") && id.includes("/")) {
-    id = id.split("/").pop();
-  }
+  if (id.includes("r2.dev/")) id = id.split("r2.dev/").pop();
+  else if (id.startsWith("http") && id.includes("/")) id = id.split("/").pop();
   return id;
 }
 
-// ---- UPLOAD VIDEO ----
+// ============================================
+// AUTO GENERATE THUMBNAIL FROM VIDEO
+// Captures frame at 3 seconds using canvas
+// ============================================
+function generateThumbnail(videoUrl) {
+  return new Promise((resolve) => {
+    try {
+      const video       = document.createElement("video");
+      video.crossOrigin = "anonymous";
+      video.preload     = "metadata";
+      video.muted       = true;
+      video.src         = videoUrl;
+
+      const cleanup = () => { video.src = ""; };
+      const timeout = setTimeout(() => { cleanup(); resolve(""); }, 15000);
+
+      video.addEventListener("loadedmetadata", () => {
+        video.currentTime = Math.min(3, video.duration * 0.1 || 3);
+      });
+
+      video.addEventListener("seeked", () => {
+        try {
+          const canvas    = document.createElement("canvas");
+          canvas.width    = 640;
+          canvas.height   = 360;
+          canvas.getContext("2d").drawImage(video, 0, 0, 640, 360);
+          const dataUrl   = canvas.toDataURL("image/jpeg", 0.85);
+          clearTimeout(timeout);
+          cleanup();
+          resolve(dataUrl);
+        } catch(e) {
+          clearTimeout(timeout);
+          cleanup();
+          resolve("");
+        }
+      });
+
+      video.addEventListener("error", () => {
+        clearTimeout(timeout);
+        cleanup();
+        resolve("");
+      });
+
+    } catch(e) {
+      resolve("");
+    }
+  });
+}
+
+// ============================================
+// UPLOAD VIDEO
+// ============================================
 uploadBtn?.addEventListener("click", async () => {
   const title    = videoTitleInput.value.trim();
   const rawInput = videoUrlInput.value.trim();
@@ -81,21 +135,30 @@ uploadBtn?.addEventListener("click", async () => {
   if (!rawInput) { showUploadMsg("Please enter the video filename or URL.", "error"); return; }
   if (!category) { showUploadMsg("Please select a category.", "error"); return; }
 
-  const cleanId   = cleanVideoId(rawInput);
-  const videoUrl  = cleanId.startsWith("http") ? cleanId : R2_BASE + cleanId;
-  const thumbnail = thumbnailInput.value.trim() || "";
-  const tags      = tagsInput.value.split(",").map(t => t.trim().toLowerCase()).filter(Boolean);
-  const quality   = qualitySelect?.value  || "";
-  const duration  = parseInt(durationInput?.value) || 0;
+  const cleanId  = cleanVideoId(rawInput);
+  const videoUrl = cleanId.startsWith("http") ? cleanId : R2_BASE + cleanId;
+  const tags     = tagsInput.value.split(",").map(t => t.trim().toLowerCase()).filter(Boolean);
+  const quality  = qualitySelect?.value || "";
+  const duration = parseInt(durationInput?.value) || 0;
 
   uploadBtn.disabled = true;
   uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
+
+  // Auto generate thumbnail if none provided
+  let thumbnail = thumbnailInput.value.trim();
+  if (!thumbnail) {
+    showUploadMsg("Generating thumbnail from video...", "success");
+    thumbnail = await generateThumbnail(videoUrl);
+    if (thumbnail) {
+      showUploadMsg("Thumbnail generated! Saving video...", "success");
+    }
+  }
 
   try {
     await addDoc(collection(db, "videos"), {
       title,
       archiveId:   cleanId,
-      videoUrl:    videoUrl,
+      videoUrl,
       thumbnail,
       category,
       description: descriptionInput.value.trim(),
@@ -133,7 +196,9 @@ uploadBtn?.addEventListener("click", async () => {
   uploadBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Publish Video';
 });
 
-// ---- DASHBOARD STATS ----
+// ============================================
+// DASHBOARD STATS
+// ============================================
 async function loadDashboard() {
   try {
     const snap = await getDocs(collection(db, "videos"));
@@ -143,7 +208,9 @@ async function loadDashboard() {
       totalViews += data.views || 0;
       totalLikes += data.likes || 0;
       try {
-        const cs = await getCountFromServer(collection(db, "videos", d.id, "comments"));
+        const cs = await getCountFromServer(
+          collection(db, "videos", d.id, "comments")
+        );
         totalComments += cs.data().count || 0;
       } catch {}
     }
@@ -156,9 +223,14 @@ async function loadDashboard() {
   }
 }
 
-// ---- LOAD VIDEOS FOR MANAGER ----
+// ============================================
+// VIDEO MANAGER
+// ============================================
 async function loadVideosForManager() {
-  manageList.innerHTML = `<div class="loading-screen"><div class="spinner"></div><p>Loading...</p></div>`;
+  manageList.innerHTML = `
+    <div class="loading-screen">
+      <div class="spinner"></div><p>Loading...</p>
+    </div>`;
   try {
     const q    = query(collection(db, "videos"), orderBy("createdAt", "desc"));
     const snap = await getDocs(q);
@@ -172,21 +244,34 @@ async function loadVideosForManager() {
 function renderManageList(videos) {
   manageList.innerHTML = "";
   if (videos.length === 0) {
-    manageList.innerHTML = `<p style="color:var(--muted);font-size:13px;text-align:center;padding:24px">No videos found.</p>`;
+    manageList.innerHTML = `
+      <p style="color:var(--muted);font-size:13px;text-align:center;padding:24px">
+        No videos found.
+      </p>`;
     return;
   }
   videos.forEach(v => manageList.appendChild(createManageItem(v)));
 }
 
 function createManageItem(video) {
-  const el    = document.createElement("div");
+  const el     = document.createElement("div");
   el.className = "manage-item";
-  const thumb = video.thumbnail || "https://via.placeholder.com/120x68/1a1a1a/e63946?text=Video";
+
+  // Show thumbnail or video frame
+  const thumbHtml = video.thumbnail
+    ? `<img class="manage-thumb" src="${video.thumbnail}"
+           alt="${escapeHtml(video.title)}"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
+       <video class="manage-thumb" style="display:none;" muted preload="metadata"
+           src="${(video.archiveId?.startsWith('http') ? video.archiveId : R2_BASE + (video.archiveId || ''))}#t=3">
+       </video>`
+    : `<video class="manage-thumb" muted preload="metadata"
+           src="${(video.archiveId?.startsWith('http') ? video.archiveId : R2_BASE + (video.archiveId || ''))}#t=3"
+           onerror="this.style.background='#333'">
+       </video>`;
 
   el.innerHTML = `
-    <img class="manage-thumb" src="${thumb}"
-         alt="${escapeHtml(video.title)}"
-         onerror="this.src='https://via.placeholder.com/120x68/1a1a1a/e63946?text=Video'"/>
+    ${thumbHtml}
     <div class="manage-info">
       <h4>${escapeHtml(video.title)}</h4>
       <span>
@@ -211,7 +296,9 @@ function createManageItem(video) {
   return el;
 }
 
-// ---- MANAGER SEARCH ----
+// ============================================
+// MANAGER SEARCH
+// ============================================
 managerSearch?.addEventListener("input", () => {
   const q = managerSearch.value.toLowerCase();
   renderManageList(allVideos.filter(v =>
@@ -220,7 +307,9 @@ managerSearch?.addEventListener("input", () => {
   ));
 });
 
-// ---- EDIT MODAL ----
+// ============================================
+// EDIT MODAL
+// ============================================
 function openEditModal(video) {
   document.getElementById("editVideoId").value     = video.id;
   document.getElementById("editTitle").value       = video.title       || "";
@@ -247,11 +336,13 @@ saveEditBtn?.addEventListener("click", async () => {
 
   if (!title) { alert("Title cannot be empty."); return; }
 
-  saveEditBtn.disabled = true;
+  saveEditBtn.disabled  = true;
   saveEditBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
 
   try {
-    await updateDoc(doc(db, "videos", id), { title, description, category, thumbnail, quality });
+    await updateDoc(doc(db, "videos", id), {
+      title, description, category, thumbnail, quality
+    });
     editModal.classList.add("hidden");
     loadVideosForManager();
     loadDashboard();
@@ -263,12 +354,16 @@ saveEditBtn?.addEventListener("click", async () => {
   saveEditBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
 });
 
-// ---- HELPERS ----
+// ============================================
+// HELPERS
+// ============================================
 function showUploadMsg(msg, type) {
   uploadMessage.textContent = msg;
   uploadMessage.className   = `admin-message ${type}`;
   uploadMessage.classList.remove("hidden");
-  setTimeout(() => uploadMessage.classList.add("hidden"), 5000);
+  if (type !== "success" || msg.includes("✅")) {
+    setTimeout(() => uploadMessage.classList.add("hidden"), 5000);
+  }
 }
 function formatNumber(n) {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";

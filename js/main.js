@@ -13,6 +13,7 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 // CONFIG & STATE
 // ============================================
 const PAGE_SIZE    = 12;
+const R2_BASE      = "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/";
 let lastDoc        = null;
 let currentSearch  = "";
 let isLoading      = false;
@@ -187,7 +188,7 @@ function showSkeletons() {
 }
 
 // ============================================
-// RESET & LOAD — resets pagination and reloads
+// RESET & LOAD
 // ============================================
 function resetAndLoad() {
   lastDoc = null;
@@ -235,7 +236,16 @@ function buildQuery(fetchLimit) {
 }
 
 // ============================================
-// LOAD VIDEOS — main fetch function
+// GET VIDEO URL
+// ============================================
+function getVideoUrl(archiveId) {
+  if (!archiveId) return "";
+  if (archiveId.startsWith("http")) return archiveId;
+  return R2_BASE + archiveId;
+}
+
+// ============================================
+// LOAD VIDEOS
 // ============================================
 async function loadVideos() {
   if (isLoading) return;
@@ -245,13 +255,9 @@ async function loadVideos() {
     const fetchLimit = currentSearch ? 80 : PAGE_SIZE;
     const snapshot   = await getDocs(buildQuery(fetchLimit));
     let docs         = snapshot.docs;
-
-    // Save last document for pagination BEFORE filtering
     const rawLastDoc = snapshot.docs[snapshot.docs.length - 1];
 
-    // ---- Client-side filters ----
-
-    // Search
+    // Search filter
     if (currentSearch) {
       docs = docs.filter(d => {
         const v = d.data();
@@ -263,7 +269,7 @@ async function loadVideos() {
       });
     }
 
-    // Date
+    // Date filter
     const cutoff = getDateCutoff(activeDate);
     if (cutoff) {
       docs = docs.filter(d => {
@@ -272,7 +278,7 @@ async function loadVideos() {
       });
     }
 
-    // Duration
+    // Duration filter
     if (activeDuration === "short") {
       docs = docs.filter(d => (d.data().duration || 0) < 180);
     } else if (activeDuration === "medium") {
@@ -284,7 +290,7 @@ async function loadVideos() {
       docs = docs.filter(d => (d.data().duration || 0) >= 600);
     }
 
-    // Quality
+    // Quality filter
     if (activeQuality !== "all") {
       docs = docs.filter(d => d.data().quality === activeQuality);
     }
@@ -298,7 +304,7 @@ async function loadVideos() {
       });
     }
 
-    // ---- Empty state ----
+    // Empty state
     if (docs.length === 0 && !lastDoc) {
       videoGrid.innerHTML = `
         <div class="empty-state">
@@ -315,19 +321,17 @@ async function loadVideos() {
       return;
     }
 
-    // ---- Clear grid only on first page ----
-    if (!lastDoc) {
-      videoGrid.innerHTML = "";
-    }
+    // Clear grid on first page only
+    if (!lastDoc) videoGrid.innerHTML = "";
 
-    // ---- Render new cards (append, never replace) ----
+    // Render cards
     const fragment = document.createDocumentFragment();
     docs.forEach(d => {
       fragment.appendChild(createVideoCard({ id: d.id, ...d.data() }));
     });
     videoGrid.appendChild(fragment);
 
-    // ---- Section title ----
+    // Section title
     if (!currentSearch) {
       const labels = {
         newest:    "Latest Videos",
@@ -341,8 +345,7 @@ async function loadVideos() {
         : (labels[activeSort] || "Latest Videos");
     }
 
-    // ---- Pagination ----
-    // Update lastDoc only when we have a full page
+    // Pagination
     if (!currentSearch && snapshot.docs.length === PAGE_SIZE) {
       lastDoc = rawLastDoc;
       loadMoreBtn.classList.remove("hidden");
@@ -350,12 +353,12 @@ async function loadVideos() {
       loadMoreBtn.classList.add("hidden");
     }
 
-    // ---- Count ----
     const total = videoGrid.querySelectorAll(".video-card").length;
     videoCount.textContent = `${total} video${total !== 1 ? "s" : ""}`;
 
-    // ---- Lazy load images ----
+    // Init lazy load and auto thumbnails
     initLazyLoad();
+    initVideoThumbnails();
 
   } catch (err) {
     console.error("Load error:", err);
@@ -377,8 +380,8 @@ function createVideoCard(video) {
   const card     = document.createElement("div");
   card.className = "video-card";
 
-  const thumb = video.thumbnail ||
-    "https://placehold.co/320x180/1a1a1a/e63946?text=No+Thumbnail";
+  const videoUrl = getVideoUrl(video.archiveId);
+  const hasThumbnail = !!video.thumbnail;
   const views    = formatNumber(video.views || 0);
   const date     = video.createdAt ? timeAgo(video.createdAt.toDate()) : "";
   const duration = video.duration
@@ -391,15 +394,29 @@ function createVideoCard(video) {
     ? `<span class="card-badge">Featured</span>`
     : "";
 
+  // If thumbnail exists use lazy image
+  // If no thumbnail use video element with #t=3 to show frame at 3 seconds
+  const mediaHtml = hasThumbnail
+    ? `<img
+         data-src="${video.thumbnail}"
+         src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3C/svg%3E"
+         alt="${escapeHtml(video.title)}"
+         class="lazy-img card-thumb-img"
+         loading="lazy"
+         decoding="async"/>`
+    : `<video
+         class="card-thumb-video"
+         data-src="${videoUrl}#t=3"
+         preload="none"
+         muted
+         playsinline
+         crossorigin="anonymous"
+         style="width:100%;height:100%;object-fit:cover;display:block;">
+       </video>`;
+
   card.innerHTML = `
     <div class="card-thumb">
-      <img data-src="${thumb}"
-           src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3C/svg%3E"
-           alt="${escapeHtml(video.title)}"
-           class="lazy-img"
-           loading="lazy"
-           decoding="async"
-           onerror="this.src='https://via.placeholder.com/320x180/1a1a1a/e63946?text=Video'"/>
+      ${mediaHtml}
       <div class="play-overlay"><i class="fas fa-play-circle"></i></div>
       ${featured}${duration}${quality}
     </div>
@@ -438,7 +455,34 @@ function initLazyLoad() {
 }
 
 // ============================================
-// INFINITE SCROLL — auto load more
+// AUTO VIDEO THUMBNAILS
+// For videos with no thumbnail, load the video
+// element when it scrolls into view so browser
+// shows the frame at t=3 seconds as preview
+// ============================================
+const videoThumbObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const vid = entry.target;
+      if (vid.dataset.src) {
+        vid.src = vid.dataset.src;
+        vid.removeAttribute("data-src");
+        // Load enough to show the poster frame
+        vid.load();
+      }
+      videoThumbObserver.unobserve(vid);
+    }
+  });
+}, { rootMargin: "100px", threshold: 0 });
+
+function initVideoThumbnails() {
+  document.querySelectorAll("video.card-thumb-video").forEach(vid => {
+    videoThumbObserver.observe(vid);
+  });
+}
+
+// ============================================
+// INFINITE SCROLL
 // ============================================
 new IntersectionObserver((entries) => {
   if (
@@ -482,7 +526,7 @@ function escapeHtml(str) {
 }
 
 // ============================================
-// INIT — read URL params on page load
+// INIT
 // ============================================
 const urlParams   = new URLSearchParams(window.location.search);
 const catParam    = urlParams.get("cat");
