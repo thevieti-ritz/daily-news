@@ -256,38 +256,5 @@
       Sign In
     </a>
   </nav>
-  <div id="adblock-msg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:#181818;border:1px solid #333;border-radius:16px;padding:32px;max-width:420px;text-align:center;">
-    <i class="fas fa-circle-exclamation" style="font-size:48px;color:#e63946;margin-bottom:16px;display:block;"></i>
-    <h2 style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#f1f1f1;margin-bottom:10px;">Ad Blocker Detected</h2>
-    <p style="color:#aaa;font-size:14px;margin-bottom:24px;">
-      Leaked Archives is free because of ads. Please disable your ad blocker to continue watching videos.
-    </p>
-    <button onclick="document.getElementById('adblock-msg').style.display='none'"
-      style="background:#e63946;color:white;border:none;padding:12px 32px;border-radius:20px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;">
-      I've Disabled My Ad Blocker
-    </button>
-  </div>
-</div>
-
-<script>
-  // Detect ad blocker
-  window.addEventListener("load", function() {
-    setTimeout(function() {
-      const testAd = document.createElement("div");
-      testAd.innerHTML = "&nbsp;";
-      testAd.className = "eas6a97888e33 ad ads adsbox doubleclick ad-placement";
-      testAd.style.cssText = "position:absolute;top:-999px;left:-999px;width:1px;height:1px;";
-      document.body.appendChild(testAd);
-      
-      setTimeout(function() {
-        if (testAd.offsetHeight === 0 || testAd.offsetParent === null) {
-          document.getElementById("adblock-msg").style.display = "flex";
-        }
-        document.body.removeChild(testAd);
-      }, 200);
-    }, 1000);
-  });
-</script>
 </body>
 </html>
