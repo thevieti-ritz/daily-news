@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Upload Video — Leaked Archives</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    .upload-page {
+      margin-top: var(--nav-h);
+      padding: 32px 20px 80px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+      box-sizing: border-box;
+      width: 100%;
+    }
+    .upload-header {
+      margin-bottom: 24px;
+    }
+    .upload-header h1 {
+      font-family: var(--font-display);
+      font-size: 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+    .upload-header h1 i { color: var(--red); }
+    .upload-header p { color: var(--muted); font-size: 14px; }
+
+    .upload-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+
+    /* Drop zone */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--transition);
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .drop-zone:hover,
+    .drop-zone.drag-over {
+      border-color: var(--red);
+      background: rgba(230,57,70,0.05);
+    }
+    .drop-zone i {
+      font-size: 48px;
+      color: var(--red);
+      margin-bottom: 16px;
+      display: block;
+    }
+    .drop-zone h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+      color: var(--white);
+    }
+    .drop-zone p { color: var(--muted); font-size: 13px; }
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* File preview */
+    .file-preview {
+      display: none;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      align-items: center;
+      gap: 12px;
+    }
+    .file-preview.show { display: flex; }
+    .file-preview i { color: var(--red); font-size: 24px; flex-shrink: 0; }
+    .file-preview-info { flex: 1; min-width: 0; }
+    .file-preview-info h4 { font-size: 13px; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-preview-info span { font-size: 12px; color: var(--muted); }
+    .file-remove { color: var(--red); cursor: pointer; font-size: 16px; flex-shrink: 0; }
+
+    /* Progress bar */
+    .progress-wrap {
+      display: none;
+      margin-bottom: 20px;
+    }
+    .progress-wrap.show { display: block; }
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .progress-bar-bg {
+      background: var(--bg4);
+      border-radius: 10px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      background: var(--red);
+      height: 100%;
+      border-radius: 10px;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* Upload status */
+    .upload-status {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .upload-status.show { display: block; }
+    .upload-status.success { background: rgba(40,200,80,0.15); color: #4cdb7a; border: 1px solid rgba(40,200,80,0.3); }
+    .upload-status.error { background: rgba(230,57,70,0.15); color: var(--red); border: 1px solid rgba(230,57,70,0.3); }
+    .upload-status.info { background: rgba(100,100,255,0.1); color: #88aaff; border: 1px solid rgba(100,100,255,0.3); }
+
+    /* Form fields */
+    .upload-form { display: flex; flex-direction: column; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 13px; font-weight: 700; color: var(--muted); }
+    .form-group select,
+    .form-group input,
+    .form-group textarea { font-size: 15px; }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+
+    /* Submit button */
+    .btn-submit-upload {
+      background: var(--red);
+      color: white;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      transition: background var(--transition);
+      cursor: pointer;
+      border: none;
+      font-family: var(--font-body);
+    }
+    .btn-submit-upload:hover { background: var(--red-dark); }
+    .btn-submit-upload:disabled { background: var(--bg4); color: var(--muted); cursor: not-allowed; }
+
+    /* Sign in prompt */
+    .signin-prompt {
+      text-align: center;
+      padding: 60px 20px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .signin-prompt i { font-size: 48px; color: var(--red); margin-bottom: 16px; display: block; }
+    .signin-prompt h2 { font-size: 22px; margin-bottom: 8px; }
+    .signin-prompt p { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+    .btn-signin {
+      background: var(--red);
+      color: white;
+      padding: 12px 32px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Guidelines */
+    .guidelines {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+    }
+    .guidelines h3 {
+      font-size: 15px;
+      font-weight: 800;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .guidelines h3 i { color: var(--red); }
+    .guidelines ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .guidelines ul li {
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .guidelines ul li i { color: var(--red); margin-top: 2px; flex-shrink: 0; }
+
+    /* Bottom nav */
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 56px;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      z-index: 800;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 8px;
+    }
+    .bottom-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      text-decoration: none;
+      padding: 6px 10px;
+      border-radius: 8px;
+      -webkit-tap-highlight-color: transparent;
+      min-width: 48px;
+      text-align: center;
+    }
+    .bottom-nav-item i { font-size: 18px; }
+    .bottom-nav-item:active { color: var(--red); }
+
+    @media (max-width: 768px) {
+      .bottom-nav { display: flex; }
+      .upload-page { padding: 20px 12px 80px; }
+      .upload-card { padding: 18px 14px; }
+      .drop-zone { padding: 32px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar-overlay hidden" id="sidebarOverlay"></div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <button class="hamburger" id="menuToggle"><i class="fas fa-bars"></i></button>
+      <a href="index.html" class="logo">
+        <span class="logo-red">LEAKED</span><span class="logo-white">ARCHIVES</span>
+      </a>
+    </div>
+    <div class="nav-right">
+      <a href="login.html" class="btn-login" id="authLink"><i class="fas fa-user"></i> Sign In</a>
+      <div class="user-menu hidden" id="userMenu">
+        <img src="https://api.dicebear.com/7.x/thumbs/svg?seed=user" class="avatar" id="userAvatar"/>
+        <div class="dropdown">
+          <span id="userDisplayName"></span>
+          <a href="profile.html"><i class="fas fa-circle-user"></i> My Profile</a>
+          <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <nav class="side-nav">
+      <button class="side-section-btn" id="categoriesToggle">
+        <i class="fas fa-th-large"></i> Categories
+        <i class="fas fa-chevron-down side-arrow" id="categoriesArrow"></i>
+      </button>
+      <div class="side-submenu" id="categoriesMenu">
+        <a href="index.html?cat=entertainment" class="side-link sub"><i class="fas fa-film"></i> Entertainment</a>
+        <a href="index.html?cat=viral" class="side-link sub"><i class="fas fa-fire"></i> Viral</a>
+        <a href="index.html?cat=music" class="side-link sub"><i class="fas fa-music"></i> Music</a>
+        <a href="index.html?cat=sports" class="side-link sub"><i class="fas fa-futbol"></i> Sports</a>
+        <a href="index.html?cat=news" class="side-link sub"><i class="fas fa-newspaper"></i> News</a>
+        <a href="index.html?cat=comedy" class="side-link sub"><i class="fas fa-face-laugh"></i> Comedy</a>
+        <a href="index.html?cat=naija" class="side-link sub"><i class="fas fa-globe-africa"></i> Naija</a>
+        <a href="index.html?cat=uganda" class="side-link sub"><i class="fas fa-globe-africa"></i> Uganda</a>
+        <a href="index.html?cat=kenya" class="side-link sub"><i class="fas fa-globe-africa"></i> Kenya</a>
+      </div>
+      <hr/>
+      <a href="index.html" class="side-link"><i class="fas fa-house"></i> Home</a>
+      <a href="upload.html" class="side-link active"><i class="fas fa-upload"></i> Upload</a>
+      <a href="history.html" class="side-link"><i class="fas fa-clock-rotate-left"></i> History</a>
+      <a href="profile.html" class="side-link"><i class="fas fa-circle-user"></i> Profile</a>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+    <div class="upload-page">
+
+      <div class="upload-header">
+        <h1><i class="fas fa-upload"></i> Upload Video</h1>
+        <p>Share your videos with the Leaked Archives community</p>
+      </div>
+
+      <!-- Sign in required -->
+      <div class="signin-prompt hidden" id="signinPrompt">
+        <i class="fas fa-lock"></i>
+        <h2>Sign In Required</h2>
+        <p>You need to be signed in to upload videos.</p>
+        <a href="login.html" class="btn-signin">
+          <i class="fas fa-sign-in-alt"></i> Sign In
+        </a>
+      </div>
+
+      <!-- Upload form — shown when signed in -->
+      <div id="uploadSection" class="hidden">
+
+        <div class="upload-card">
+
+          <!-- Status message -->
+          <div class="upload-status" id="uploadStatus"></div>
+
+          <!-- Drop zone -->
+          <div class="drop-zone" id="dropZone">
+            <input type="file" id="videoFile" accept="video/*"/>
+            <i class="fas fa-cloud-upload-alt"></i>
+            <h3>Drop your video here</h3>
+            <p>or click to browse · MP4, MOV, AVI, MKV · Max 500MB</p>
+          </div>
+
+          <!-- File preview -->
+          <div class="file-preview" id="filePreview">
+            <i class="fas fa-film"></i>
+            <div class="file-preview-info">
+              <h4 id="fileName">filename.mp4</h4>
+              <span id="fileSize">0 MB</span>
+            </div>
+            <i class="fas fa-times file-remove" id="fileRemove"></i>
+          </div>
+
+          <!-- Progress bar -->
+          <div class="progress-wrap" id="progressWrap">
+            <div class="progress-label">
+              <span id="progressText">Uploading...</span>
+              <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="progressBar"></div>
+            </div>
+          </div>
+
+          <!-- Form fields -->
+          <div class="upload-form">
+            <div class="form-group">
+              <label>Video Title *</label>
+              <input type="text" id="uploadTitle" placeholder="Give your video a title..."/>
+            </div>
+            <div class="form-group">
+              <label>Category *</label>
+              <select id="uploadCategory">
+                <option value="">-- Select Category --</option>
+                <option value="entertainment">Entertainment</option>
+                <option value="viral">Viral</option>
+                <option value="music">Music</option>
+                <option value="sports">Sports</option>
+                <option value="news">News</option>
+                <option value="comedy">Comedy</option>
+                <option value="naija">Naija</option>
+                <option value="uganda">Uganda</option>
+                <option value="kenya">Kenya</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <textarea id="uploadDescription" placeholder="Describe your video..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Tags (comma separated)</label>
+              <input type="text" id="uploadTags" placeholder="e.g. funny, viral, 2026"/>
+            </div>
+
+            <button class="btn-submit-upload" id="submitUploadBtn" disabled>
+              <i class="fas fa-cloud-upload-alt"></i> Upload Video
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Guidelines -->
+        <div class="guidelines">
+          <h3><i class="fas fa-circle-info"></i> Upload Guidelines</h3>
+          <ul>
+            <li><i class="fas fa-check"></i> Videos must be your own content or content you have rights to share</li>
+            <li><i class="fas fa-check"></i> Maximum file size is 500MB</li>
+            <li><i class="fas fa-check"></i> Supported formats: MP4, MOV, AVI, MKV, WebM</li>
+            <li><i class="fas fa-check"></i> Videos go through a review before appearing publicly</li>
+            <li><i class="fas fa-times" style="color:var(--red)"></i> No copyrighted content without permission</li>
+            <li><i class="fas fa-times" style="color:var(--red)"></i> No spam or misleading content</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="bottom-nav-item"><i class="fas fa-house"></i> Home</a>
+    <a href="upload.html" class="bottom-nav-item active"><i class="fas fa-upload"></i> Upload</a>
+    <a href="history.html" class="bottom-nav-item"><i class="fas fa-clock-rotate-left"></i> History</a>
+    <a href="profile.html" class="bottom-nav-item"><i class="fas fa-circle-user"></i> Profile</a>
+    <a href="login.html" class="bottom-nav-item" id="bottomAuthLink"><i class="fas fa-sign-in-alt"></i> Sign In</a>
+  </nav>
+
+  <script type="module" src="js/firebase.js"></script>
+  <script type="module">
+    import { auth, db } from "./js/firebase.js";
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // ---- CONFIG ----
+    const WORKER_URL = "https://daily-news.dbernardinvestments.workers.dev";
+    const R2_BASE    = "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/";
+    const MAX_SIZE   = 500 * 1024 * 1024; // 500MB
+
+    // ---- DOM ----
+    const signinPrompt   = document.getElementById("signinPrompt");
+    const uploadSection  = document.getElementById("uploadSection");
+    const authLink       = document.getElementById("authLink");
+    const userMenu       = document.getElementById("userMenu");
+    const userAvatar     = document.getElementById("userAvatar");
+    const userDisplayName= document.getElementById("userDisplayName");
+    const logoutBtn      = document.getElementById("logoutBtn");
+    const dropZone       = document.getElementById("dropZone");
+    const videoFile      = document.getElementById("videoFile");
+    const filePreview    = document.getElementById("filePreview");
+    const fileName       = document.getElementById("fileName");
+    const fileSize       = document.getElementById("fileSize");
+    const fileRemove     = document.getElementById("fileRemove");
+    const progressWrap   = document.getElementById("progressWrap");
+    const progressBar    = document.getElementById("progressBar");
+    const progressPercent= document.getElementById("progressPercent");
+    const progressText   = document.getElementById("progressText");
+    const uploadStatus   = document.getElementById("uploadStatus");
+    const submitBtn      = document.getElementById("submitUploadBtn");
+    const menuToggle     = document.getElementById("menuToggle");
+    const sidebar        = document.getElementById("sidebar");
+    const sidebarOverlay = document.getElementById("sidebarOverlay");
+
+    let currentUser = null;
+    let selectedFile = null;
+
+    // ---- SIDEBAR ----
+    menuToggle.addEventListener("click", () => {
+      sidebar.classList.toggle("open");
+      sidebarOverlay.classList.toggle("hidden");
+    });
+    sidebarOverlay.addEventListener("click", () => {
+      sidebar.classList.remove("open");
+      sidebarOverlay.classList.add("hidden");
+    });
+    document.getElementById("categoriesToggle").addEventListener("click", () => {
+      const menu  = document.getElementById("categoriesMenu");
+      const arrow = document.getElementById("categoriesArrow");
+      const isOpen = menu.classList.toggle("open");
+      arrow.style.transform = isOpen ? "rotate(180deg)" : "rotate(0deg)";
+    });
+
+    // ---- AUTH ----
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      if (user) {
+        authLink.classList.add("hidden");
+        userMenu.classList.remove("hidden");
+        userDisplayName.textContent = user.displayName || user.email.split("@")[0];
+        userAvatar.src = user.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
+        signinPrompt.classList.add("hidden");
+        uploadSection.classList.remove("hidden");
+        const bottomAuthLink = document.getElementById("bottomAuthLink");
+        if (bottomAuthLink) {
+          bottomAuthLink.href = "profile.html";
+          bottomAuthLink.innerHTML = '<i class="fas fa-circle-user"></i> Profile';
+        }
+      } else {
+        authLink.classList.remove("hidden");
+        userMenu.classList.add("hidden");
+        signinPrompt.classList.remove("hidden");
+        uploadSection.classList.add("hidden");
+      }
+    });
+
+    logoutBtn?.addEventListener("click", (e) => {
+      e.preventDefault();
+      signOut(auth).then(() => window.location.href = "index.html");
+    });
+
+    // ---- FILE SELECTION ----
+    videoFile.addEventListener("change", () => handleFile(videoFile.files[0]));
+
+    // Drag and drop
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("drag-over");
+    });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag-over"));
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("drag-over");
+      const file = e.dataTransfer.files[0];
+      if (file) handleFile(file);
+    });
+
+    function handleFile(file) {
+      if (!file) return;
+
+      // Check file type
+      if (!file.type.startsWith("video/")) {
+        showStatus("Please select a video file.", "error");
+        return;
+      }
+
+      // Check file size
+      if (file.size > MAX_SIZE) {
+        showStatus("File is too large. Maximum size is 500MB.", "error");
+        return;
+      }
+
+      selectedFile = file;
+      fileName.textContent = file.name;
+      fileSize.textContent = formatBytes(file.size);
+      filePreview.classList.add("show");
+      submitBtn.disabled = false;
+      showStatus("", "");
+    }
+
+    // Remove selected file
+    fileRemove.addEventListener("click", () => {
+      selectedFile = null;
+      videoFile.value = "";
+      filePreview.classList.remove("show");
+      submitBtn.disabled = true;
+    });
+
+    // ---- UPLOAD ----
+    submitBtn.addEventListener("click", async () => {
+      if (!currentUser) {
+        showStatus("Please sign in to upload.", "error");
+        return;
+      }
+      if (!selectedFile) {
+        showStatus("Please select a video file.", "error");
+        return;
+      }
+
+      const title    = document.getElementById("uploadTitle").value.trim();
+      const category = document.getElementById("uploadCategory").value;
+
+      if (!title)    { showStatus("Please enter a video title.", "error"); return; }
+      if (!category) { showStatus("Please select a category.", "error"); return; }
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+
+      try {
+        // Step 1 — Get upload URL from Worker
+        showStatus("Preparing upload...", "info");
+
+        const urlResponse = await fetch(`${WORKER_URL}/get-upload-url`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            filename: selectedFile.name,
+            fileType: selectedFile.type
+          })
+        });
+
+        const { uploadUrl, publicUrl, filename } = await urlResponse.json();
+
+        // Step 2 — Upload file directly to R2 via Worker
+        showStatus("Uploading video...", "info");
+        progressWrap.classList.add("show");
+
+        await uploadWithProgress(uploadUrl, selectedFile, (percent) => {
+          progressBar.style.width = percent + "%";
+          progressPercent.textContent = percent + "%";
+          progressText.textContent = percent < 100 ? "Uploading..." : "Processing...";
+        });
+
+        // Step 3 — Save video to Firebase
+        showStatus("Saving video details...", "info");
+
+        const tags = document.getElementById("uploadTags").value
+          .split(",").map(t => t.trim().toLowerCase()).filter(Boolean);
+
+        await addDoc(collection(db, "videos"), {
+          title,
+          archiveId:   filename,
+          videoUrl:    publicUrl,
+          thumbnail:   "",
+          category,
+          description: document.getElementById("uploadDescription").value.trim(),
+          tags,
+          quality:     "",
+          duration:    0,
+          featured:    false,
+          views:       0,
+          likes:       0,
+          likedBy:     [],
+          uploadedBy:  currentUser.uid,
+          uploaderName: currentUser.displayName || currentUser.email.split("@")[0],
+          status:      "pending", // pending review before public
+          createdAt:   serverTimestamp()
+        });
+
+        // Success
+        progressWrap.classList.remove("show");
+        showStatus("✅ Video uploaded successfully! It will appear after review.", "success");
+
+        // Reset form
+        selectedFile = null;
+        videoFile.value = "";
+        filePreview.classList.remove("show");
+        document.getElementById("uploadTitle").value = "";
+        document.getElementById("uploadCategory").value = "";
+        document.getElementById("uploadDescription").value = "";
+        document.getElementById("uploadTags").value = "";
+
+      } catch(err) {
+        console.error("Upload error:", err);
+        showStatus("Upload failed: " + err.message, "error");
+        progressWrap.classList.remove("show");
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Upload Video';
+    });
+
+    // ---- UPLOAD WITH PROGRESS ----
+    function uploadWithProgress(url, file, onProgress) {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", url);
+        xhr.setRequestHeader("Content-Type", file.type);
+
+        xhr.upload.addEventListener("progress", (e) => {
+          if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            onProgress(percent);
+          }
+        });
+
+        xhr.addEventListener("load", () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            onProgress(100);
+            resolve();
+          } else {
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+          }
+        });
+
+        xhr.addEventListener("error", () => reject(new Error("Network error during upload")));
+        xhr.send(file);
+      });
+    }
+
+    // ---- HELPERS ----
+    function showStatus(msg, type) {
+      uploadStatus.textContent = msg;
+      uploadStatus.className = `upload-status${msg ? " show" : ""} ${type}`;
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+      return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    }
+  </script>
+
+</body>
+</html>
