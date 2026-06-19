@@ -281,6 +281,11 @@ function createManageItem(video) {
       </span>
     </div>
     <div class="manage-actions">
+      ${video.status === "pending"
+        ? `<button class="btn-approve" style="background:rgba(40,200,80,0.15);color:#4cdb7a;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:4px;">
+             <i class="fas fa-check"></i> Approve
+           </button>`
+        : ""}
       <button class="btn-edit"><i class="fas fa-pen"></i> Edit</button>
       <button class="btn-delete"><i class="fas fa-trash"></i></button>
     </div>`;
@@ -295,6 +300,12 @@ function createManageItem(video) {
   });
   return el;
 }
+el.querySelector(".btn-approve")?.addEventListener("click", async () => {
+    await updateDoc(doc(db, "videos", video.id), { status: "approved" });
+    el.querySelector(".btn-approve").remove();
+    showUploadMsg(`✅ "${video.title}" approved and is now public!`, "success");
+    loadDashboard();
+  });
 
 // ============================================
 // MANAGER SEARCH
