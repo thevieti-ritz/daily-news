@@ -233,6 +233,7 @@
       </div>
       <p class="footer-copy">&copy; 2026 Leaked Archives. All rights reserved.</p>
     </div>
+    <a href="affiliate-dashboard.html">Affiliate Program</a>
   </footer>
 
   <!-- ===== ALL SCRIPTS — only ONE place, no duplicates ===== -->
@@ -262,5 +263,73 @@
       Affiliate
     </a>
   </nav>
+  <script type="module">
+  // Track referral clicks
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, doc, getDoc, updateDoc, increment,
+           addDoc, collection, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC4U6MWTPKDQZ_oICtSLdfnFP3a-HFILb4",
+    authDomain: "daily-news-a8c64.firebaseapp.com",
+    projectId: "daily-news-a8c64",
+    storageBucket: "daily-news-a8c64.firebasestorage.app",
+    messagingSenderId: "75335342698",
+    appId: "1:75335342698:web:3e65f3d773eca7730b4813"
+  };
+
+  const app = initializeApp(firebaseConfig, "referral-tracker");
+  const db  = getFirestore(app);
+
+  async function trackReferral() {
+    const params = new URLSearchParams(window.location.search);
+    const ref    = params.get("ref");
+    if (!ref) return;
+
+    // Don't count same visitor twice in same session
+    const sessionKey = `ref_counted_${ref}`;
+    if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, "1");
+
+    try {
+      const affRef  = doc(db, "affiliates", ref);
+      const affSnap = await getDoc(affRef);
+      if (!affSnap.exists()) return;
+
+      const data    = affSnap.data();
+      const pending = (data.pendingUsers || 0) + 1;
+      const earned  = Math.floor(pending / 20); // $1 per 20 users
+      const newPend = pending % 20;
+
+      const updates = {
+        clicks:       increment(1),
+        pendingUsers: newPend,
+        referrals:    increment(1)
+      };
+
+      if (earned > 0) {
+        updates.balance     = (data.balance || 0) + earned;
+        updates.totalEarned = (data.totalEarned || 0) + earned;
+
+        // Log earning activity
+        await addDoc(collection(db, "affiliates", ref, "activity"), {
+          event:     "20 Users Milestone",
+          users:     20,
+          earning:   earned,
+          status:    "earned",
+          createdAt: serverTimestamp()
+        });
+      }
+
+      await updateDoc(affRef, updates);
+
+    } catch(e) {
+      console.log("Referral tracking:", e.message);
+    }
+  }
+
+  trackReferral();
+</script>
 </body>
 </html>
