@@ -736,12 +736,12 @@
       <!-- Payout section -->
       <div class="section-card">
         <h3><i class="fas fa-wallet"></i> Request Payout</h3>
-        <p>Minimum withdrawal is <strong style="color:var(--gold)">$2,000</strong>. Choose your preferred payment method below.</p>
+        <p>Minimum withdrawal is <strong style="color:var(--gold)">$200</strong>. Choose your preferred payment method below.</p>
 
         <div class="min-note" style="margin-bottom:16px;">
           <i class="fas fa-circle-info"></i>
           Your current balance is <strong id="payoutBalance">$0.00</strong>.
-          You need <strong id="payoutNeeded">$2,000.00</strong> more to request a withdrawal.
+          You need <strong id="payoutNeeded">$200.00</strong> more to request a withdrawal.
         </div>
 
         <div class="payout-grid">
@@ -769,7 +769,7 @@
 
         <div class="payout-form">
           <input class="payout-input" type="number" id="payoutAmount"
-            placeholder="Amount to withdraw (min $2,000)" min="2000"/>
+            placeholder="Amount to withdraw (min $200)" min="2000"/>
           <input class="payout-input" type="text" id="payoutDetails"
             placeholder="Payment details (e.g. PayPal email / bank account number)"/>
           <button class="payout-btn" id="payoutBtn" onclick="requestPayout()" disabled>
@@ -981,7 +981,7 @@
       const bal  = snap.data().balance || 0;
 
       if (!selectedPayMethod) { showNotif("Please select a payment method", true); return; }
-      if (!amount || amount < 2000) { showNotif("Minimum withdrawal is $2,000", true); return; }
+      if (!amount || amount < 2000) { showNotif("Minimum withdrawal is $200", true); return; }
       if (amount > bal) { showNotif("Insufficient balance", true); return; }
       if (!details) { showNotif("Please enter your payment details", true); return; }
 
