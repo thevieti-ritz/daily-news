@@ -681,16 +681,49 @@
 
       <!-- Referral link -->
       <div class="section-card">
-        <h3><i class="fas fa-link"></i> Your Referral Link</h3>
-        <p>Share this link anywhere. Every visitor who clicks it is tracked to your account automatically.</p>
+        <h3><i class="fas fa-link"></i> Your Unique Referral Link</h3>
+        <p>This link is unique to your account. Share it anywhere — every visitor tracked to you earns you money.</p>
 
-        <div class="link-box">
-          <input type="text" id="refLink" readonly/>
-          <button class="copy-btn" id="copyBtn" onclick="copyLink()">
-            <i class="fas fa-copy"></i> Copy
-          </button>
+        <!-- Short code badge -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+          <div style="background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.3);border-radius:8px;padding:8px 16px;display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-fingerprint" style="color:var(--red);"></i>
+            <span style="font-size:12px;color:var(--muted);font-weight:700;">Your Affiliate Code:</span>
+            <span id="shortCode" style="font-size:14px;color:var(--red);font-weight:800;font-family:monospace;letter-spacing:1px;">Loading...</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);">
+            <i class="fas fa-circle-info"></i>
+            Unique to you — cannot be changed
+          </div>
         </div>
 
+        <!-- Full link box -->
+        <div style="margin-bottom:6px;">
+          <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px;">
+            <i class="fas fa-link"></i> Full Referral Link:
+          </div>
+          <div class="link-box">
+            <input type="text" id="refLink" readonly
+              style="font-size:12px;word-break:break-all;"/>
+            <button class="copy-btn" id="copyBtn" onclick="copyLink()">
+              <i class="fas fa-copy"></i> Copy
+            </button>
+          </div>
+        </div>
+
+        <!-- How it works mini guide -->
+        <div style="background:var(--dark3);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.8;">
+          <i class="fas fa-circle-info" style="color:var(--red);margin-right:6px;"></i>
+          <strong style="color:var(--white);">How tracking works:</strong>
+          When someone clicks your link, they land on Leaked Archives homepage.
+          Their visit is recorded to your account. Every <strong style="color:var(--gold);">20 unique visitors</strong>
+          = <strong style="color:var(--green);">$1 credited</strong> to your balance automatically.
+        </div>
+
+        <!-- Share buttons -->
+        <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:8px;">
+          <i class="fas fa-share-nodes"></i> Share directly:
+        </div>
         <div class="share-btns">
           <button class="share-btn wa" onclick="shareLink('whatsapp')">
             <i class="fab fa-whatsapp"></i> WhatsApp
@@ -813,7 +846,7 @@
     const auth     = getAuth(app);
     const provider = new GoogleAuthProvider();
 
-    const BASE_URL = "https://www.dailynewsug.online";
+    const BASE_URL = "https://www.dailynewsug.online/index.html";
     let currentUser = null;
     let selectedPayMethod = null;
 
@@ -854,7 +887,7 @@
     }
 
     // ---- LOAD DASHBOARD ----
-    async function loadDashboard(user) {
+async function loadDashboard(user) {
       const ref  = doc(db, "affiliates", user.uid);
       const snap = await getDoc(ref);
       if (!snap.exists()) return;
@@ -871,9 +904,9 @@
       document.getElementById("statReferrals").textContent = referrals;
       document.getElementById("statClicks").textContent    = clicks;
       document.getElementById("statTotal").textContent     = `$${totalEarned.toFixed(2)}`;
-      document.getElementById("statPending").textContent   = pending;
+      document.getElementById("statPending").textContent   = pending % 20;
 
-      // Progress bar (pending users out of 20)
+      // Progress bar
       const cycleProgress = pending % 20;
       const pct = (cycleProgress / 20) * 100;
       document.getElementById("progressFill").style.width  = pct + "%";
@@ -881,18 +914,30 @@
       document.getElementById("progressNote").innerHTML    =
         `<span>${20 - cycleProgress} more users needed</span>`;
 
-      // Referral link
-      const link = `${BASE_URL}?ref=${user.uid}`;
-      document.getElementById("refLink").value = link;
+      // ---- REFERRAL LINK ----
+      // Generate unique short code from uid (first 8 chars)
+      const shortCode = user.uid.substring(0, 8);
+      const fullLink  = `${BASE_URL}?ref=${user.uid}`;
+
+      // Set the link in the input box
+      const refInput = document.getElementById("refLink");
+      if (refInput) {
+        refInput.value = fullLink;
+        refInput.style.fontSize = "12px";
+      }
+
+      // Also show short code separately
+      const shortEl = document.getElementById("shortCode");
+      if (shortEl) shortEl.textContent = shortCode;
 
       // Payout info
       document.getElementById("payoutBalance").textContent = `$${balance.toFixed(2)}`;
       const needed = Math.max(0, 2000 - balance);
       document.getElementById("payoutNeeded").textContent  = `$${needed.toFixed(2)}`;
 
-      // Enable payout button if balance >= 2000
+      // Enable payout button only if balance >= 2000
       const payoutBtn = document.getElementById("payoutBtn");
-      payoutBtn.disabled = balance < 2000;
+      if (payoutBtn) payoutBtn.disabled = balance < 2000;
 
       // Load activity log
       await loadActivity(user.uid);
