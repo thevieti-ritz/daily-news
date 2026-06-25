@@ -9,21 +9,16 @@
   <link rel="stylesheet" href="css/style.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-<!-- Video.js 7 — more stable with IMA plugin -->
   <link href="https://vjs.zencdn.net/7.21.5/video-js.css" rel="stylesheet"/>
   <script src="https://vjs.zencdn.net/7.21.5/video.min.js"></script>
-
-  <!-- Google IMA SDK -->
-  <script src="https://imasdk.googleapis.com/js/sdkloader/ima3.js"></script>
-
-  <!-- Contrib Ads -->
+  <script src="https://imasdk.googleapis.com/js/sdkloader/ima3.js" onerror="window.imaFailed=true"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-ads/6.9.0/videojs.ads.min.css" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-ads/6.9.0/videojs.ads.min.js"></script>
-
-  <!-- IMA Plugin -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/videojs-ima/1.10.1/videojs.ima.min.css" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-ima/1.10.1/videojs.ima.min.js"></script>
+
   <style>
+    /* ---- Back bar ---- */
     .back-bar {
       display: flex;
       align-items: center;
@@ -34,7 +29,7 @@
       flex-wrap: wrap;
     }
     .back-btn {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 6px;
       background: var(--bg3);
@@ -45,12 +40,13 @@
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
-      transition: all var(--transition);
       text-decoration: none;
+      transition: all 0.2s;
       -webkit-tap-highlight-color: transparent;
     }
     .back-btn:hover,
     .back-btn:active { background: var(--red); border-color: var(--red); }
+
     .breadcrumb {
       display: flex;
       align-items: center;
@@ -63,17 +59,16 @@
     .breadcrumb a:hover { text-decoration: underline; }
     .breadcrumb i { font-size: 10px; }
 
-    /* Player */
+    /* ---- Video.js player ---- */
     .player-wrap {
       position: relative;
       width: 100%;
       background: #000;
-      border-radius: var(--radius);
+      border-radius: var(--radius, 12px);
       overflow: hidden;
     }
     .video-js {
       width: 100% !important;
-      border-radius: var(--radius);
     }
     .video-js .vjs-big-play-button {
       background: rgba(230,57,70,0.9) !important;
@@ -88,16 +83,66 @@
       margin: 0 !important;
       font-size: 28px !important;
     }
-    .video-js .vjs-big-play-button:hover { background: var(--red) !important; }
+    .video-js .vjs-big-play-button:hover { background: #e63946 !important; }
     .video-js .vjs-control-bar {
       background: linear-gradient(transparent, rgba(0,0,0,0.85)) !important;
       height: 36px !important;
     }
     .video-js .vjs-play-progress,
-    .video-js .vjs-volume-level { background: var(--red) !important; }
+    .video-js .vjs-volume-level { background: #e63946 !important; }
     .video-js .vjs-slider { background: rgba(255,255,255,0.2) !important; }
 
-    /* Bottom nav */
+    /* ---- Related videos ---- */
+    .related-card {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 8px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s;
+      text-decoration: none;
+      color: inherit;
+    }
+    .related-card:hover { background: rgba(255,255,255,0.05); }
+
+    .related-thumb-wrap {
+      flex-shrink: 0;
+      width: 120px;
+      height: 68px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #111;
+      position: relative;
+    }
+    .related-thumb-wrap img,
+    .related-thumb-wrap video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .related-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .related-info h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--white, #fff);
+      margin-bottom: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.4;
+    }
+    .related-info span {
+      font-size: 11px;
+      color: var(--muted, #888);
+    }
+
+    /* ---- Bottom nav ---- */
     .bottom-nav {
       display: none;
       position: fixed;
@@ -108,25 +153,25 @@
       z-index: 800;
       align-items: center;
       justify-content: space-around;
-      padding: 0 8px;
+      padding: 0 4px;
     }
     .bottom-nav-item {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 3px;
+      gap: 2px;
       color: var(--muted);
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 700;
       text-decoration: none;
-      padding: 6px 10px;
+      padding: 5px 8px;
       border-radius: 8px;
-      transition: all var(--transition);
+      transition: color 0.2s;
       -webkit-tap-highlight-color: transparent;
-      min-width: 48px;
+      min-width: 44px;
       text-align: center;
     }
-    .bottom-nav-item i { font-size: 18px; }
+    .bottom-nav-item i { font-size: 17px; }
     .bottom-nav-item:active,
     .bottom-nav-item.active { color: var(--red); }
 
@@ -135,6 +180,7 @@
       .main-content { padding-bottom: 70px; }
       .back-bar { padding: 10px 12px; }
       .back-btn { padding: 6px 12px; font-size: 12px; }
+      .related-thumb-wrap { width: 100px; height: 56px; }
     }
   </style>
 </head>
@@ -155,12 +201,18 @@
       <button id="searchBtn"><i class="fas fa-search"></i></button>
     </div>
     <div class="nav-right">
+      <a href="affiliate-dashboard.html"
+        style="background:linear-gradient(135deg,#e63946,#f4a522);color:white;border:none;display:inline-flex;align-items:center;gap:6px;font-weight:800;padding:8px 12px;border-radius:8px;font-size:13px;text-decoration:none;margin-right:6px;">
+        <i class="fas fa-handshake"></i>
+        <span class="earn-label" style="display:none;">Earn</span>
+      </a>
       <a href="login.html" class="btn-login" id="authLink"><i class="fas fa-user"></i> Sign In</a>
       <div class="user-menu hidden" id="userMenu">
         <img src="https://api.dicebear.com/7.x/thumbs/svg?seed=user" class="avatar" id="userAvatar"/>
         <div class="dropdown">
           <span id="userDisplayName"></span>
-          <a href="admin.html"><i class="fas fa-upload"></i> Upload Video</a>
+          <a href="affiliate-dashboard.html"><i class="fas fa-handshake"></i> Affiliate Dashboard</a>
+          <a href="upload.html"><i class="fas fa-upload"></i> Upload Video</a>
           <a href="profile.html"><i class="fas fa-circle-user"></i> My Profile</a>
           <a href="history.html"><i class="fas fa-clock-rotate-left"></i> History</a>
           <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
@@ -196,8 +248,13 @@
       </div>
       <hr/>
       <a href="index.html" class="side-link"><i class="fas fa-house"></i> Home</a>
+      <a href="upload.html" class="side-link"><i class="fas fa-upload"></i> Upload Video</a>
       <a href="history.html" class="side-link"><i class="fas fa-clock-rotate-left"></i> History</a>
       <a href="profile.html" class="side-link"><i class="fas fa-circle-user"></i> Profile</a>
+      <a href="affiliate-dashboard.html" class="side-link"
+        style="color:#f4a522;font-weight:800;background:rgba(244,165,34,0.06);border:1px solid rgba(244,165,34,0.2);border-radius:8px;margin-top:4px;">
+        <i class="fas fa-handshake"></i> Earn Money
+      </a>
       <a href="settings.html" class="side-link"><i class="fas fa-gear"></i> Settings</a>
     </nav>
   </aside>
@@ -221,14 +278,10 @@
       <!-- LEFT -->
       <div class="watch-left">
 
-        <!-- Video.js Player -->
         <div class="player-wrap">
           <video id="myPlayer"
             class="video-js vjs-default-skin vjs-big-play-centered vjs-16-9"
-            controls
-            playsinline
-            preload="auto"
-            crossorigin="anonymous">
+            controls playsinline preload="auto">
           </video>
         </div>
 
@@ -308,20 +361,19 @@
 
   <!-- BOTTOM NAV -->
   <nav class="bottom-nav">
-    <a href="index.html" class="bottom-nav-item"><i class="fas fa-house"></i> Home</a>
-    <a href="javascript:history.back()" class="bottom-nav-item"><i class="fas fa-arrow-left"></i> Back</a>
-    <a href="history.html" class="bottom-nav-item"><i class="fas fa-clock-rotate-left"></i> History</a>
-    <a href="profile.html" class="bottom-nav-item"><i class="fas fa-circle-user"></i> Profile</a>
-    <a href="login.html" class="bottom-nav-item" id="bottomAuthLink"><i class="fas fa-sign-in-alt"></i> Sign In</a>
+    <a href="index.html" class="bottom-nav-item"><i class="fas fa-house"></i><span>Home</span></a>
+    <a href="javascript:history.back()" class="bottom-nav-item"><i class="fas fa-arrow-left"></i><span>Back</span></a>
+    <a href="affiliate-dashboard.html" class="bottom-nav-item" style="color:#f4a522;"><i class="fas fa-handshake"></i><span>Earn</span></a>
+    <a href="history.html" class="bottom-nav-item"><i class="fas fa-clock-rotate-left"></i><span>History</span></a>
+    <a href="profile.html" class="bottom-nav-item"><i class="fas fa-circle-user"></i><span>Profile</span></a>
   </nav>
 
-  <!-- Firebase + Watch logic (module) -->
   <script type="module" src="js/firebase.js"></script>
   <script type="module" src="js/watch.js"></script>
 
-  <!-- Sidebar + Search (plain script, runs immediately) -->
   <script>
-    window.addEventListener("DOMContentLoaded", function () {
+    window.addEventListener("DOMContentLoaded", function() {
+      // Sidebar
       const menuToggle     = document.getElementById("menuToggle");
       const sidebar        = document.getElementById("sidebar");
       const sidebarOverlay = document.getElementById("sidebarOverlay");
@@ -348,6 +400,7 @@
         });
       });
 
+      // Search
       document.getElementById("searchBtn").addEventListener("click", () => {
         const val = document.getElementById("searchInput").value.trim();
         if (val) window.location.href = `index.html?search=${encodeURIComponent(val)}`;
@@ -360,9 +413,11 @@
       });
     });
   </script>
-  <script async type="application/javascript" src="https://src="https://ads.dailynewsug.online/ad-provider.js"/ad-provider.js"></script> 
- <ins class="eas6a97888e33" data-zoneid="5944558"></ins> 
- <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
+
+  <!-- ExoClick interstitial -->
+  <script async src="https://a.pemsrv.com/ad-provider.js"></script>
+  <ins class="eas6a97888e33" data-zoneid="5944558"></ins>
+  <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
 
 </body>
 </html>
