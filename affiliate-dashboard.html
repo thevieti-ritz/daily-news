@@ -858,6 +858,18 @@
         document.getElementById("dashboard").style.display  = "block";
         document.getElementById("dashUserName").textContent =
           user.displayName || user.email.split("@")[0];
+
+        // Set referral link immediately using uid — no need to wait for Firestore
+        const fullLink = `https://www.dailynewsug.online/index.html?ref=${user.uid}`;
+        const shortCode = user.uid.substring(0, 8).toUpperCase();
+
+        const refInput = document.getElementById("refLink");
+        if (refInput) refInput.value = fullLink;
+
+        const shortEl = document.getElementById("shortCode");
+        if (shortEl) shortEl.textContent = shortCode;
+
+        // Then load rest of dashboard from Firestore
         await ensureAffiliate(user);
         await loadDashboard(user);
       } else {
@@ -981,13 +993,14 @@ async function loadDashboard(user) {
     }
 
     // ---- COPY LINK ----
-    window.copyLink = function() {
+window.copyLink = function() {
       const link = document.getElementById("refLink").value;
+      if (!link) { showNotif("Link not ready yet", true); return; }
       navigator.clipboard.writeText(link).then(() => {
         const btn = document.getElementById("copyBtn");
         btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
         btn.classList.add("copied");
-        showNotif("Link copied to clipboard!");
+        showNotif("Referral link copied!");
         setTimeout(() => {
           btn.innerHTML = '<i class="fas fa-copy"></i> Copy';
           btn.classList.remove("copied");
@@ -996,14 +1009,16 @@ async function loadDashboard(user) {
     };
 
     // ---- SHARE LINK ----
-    window.shareLink = function(platform) {
-      const link = encodeURIComponent(document.getElementById("refLink").value);
-      const text = encodeURIComponent("Watch the hottest leaked videos on Leaked Archives 🔥");
+window.shareLink = function(platform) {
+      const link = document.getElementById("refLink").value;
+      if (!link) { showNotif("Link not ready yet", true); return; }
+      const encoded = encodeURIComponent(link);
+      const text    = encodeURIComponent("Watch the hottest leaked videos on Leaked Archives 🔥");
       const urls = {
-        whatsapp: `https://wa.me/?text=${text}%20${link}`,
-        facebook: `https://www.facebook.com/sharer/sharer.php?u=${link}`,
-        telegram: `https://t.me/share/url?url=${link}&text=${text}`,
-        twitter:  `https://twitter.com/intent/tweet?text=${text}&url=${link}`
+        whatsapp: `https://wa.me/?text=${text}%20${encoded}`,
+        facebook: `https://www.facebook.com/sharer/sharer.php?u=${encoded}`,
+        telegram: `https://t.me/share/url?url=${encoded}&text=${text}`,
+        twitter:  `https://twitter.com/intent/tweet?text=${text}&url=${encoded}`
       };
       window.open(urls[platform], "_blank");
     };
