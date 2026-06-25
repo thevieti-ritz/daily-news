@@ -823,12 +823,15 @@
   <!-- Firebase -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, doc, setDoc, serverTimestamp }
-    from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-  import { getAuth, createUserWithEmailAndPassword,
-           signInWithEmailAndPassword, updateProfile }
-    from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc, updateDoc, collection,
+           addDoc, getDocs, query, orderBy, increment, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+           signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged,
+           updateProfile
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+  // ---- Firebase config ---- SAME config as landing page
   const firebaseConfig = {
     apiKey: "AIzaSyC4U6MWTPKDQZ_oICtSLdfnFP3a-HFILb4",
     authDomain: "daily-news-a8c64.firebaseapp.com",
@@ -838,111 +841,59 @@
     appId: "1:75335342698:web:3e65f3d773eca7730b4813"
   };
 
-  const app  = initializeApp(firebaseConfig);
-  const db   = getFirestore(app);
-  const auth = getAuth(app);
+  // Use a named app to avoid conflicts
+  let app;
+  try {
+    app = initializeApp(firebaseConfig, "affiliate-dashboard");
+  } catch(e) {
+    // Already initialized
+    const { getApp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js");
+    app = getApp("affiliate-dashboard");
+  }
 
-  // FAQ toggle
-  window.toggleFaq = function(btn) {
-    const answer = btn.nextElementSibling;
-    const isOpen = answer.classList.contains("open");
-    document.querySelectorAll(".faq-a").forEach(a => a.classList.remove("open"));
-    document.querySelectorAll(".faq-q").forEach(q => q.classList.remove("open"));
-    if (!isOpen) {
-      answer.classList.add("open");
-      btn.classList.add("open");
+  const db       = getFirestore(app);
+  const auth     = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  const BASE_URL = "https://www.dailynewsug.online/index.html";
+  let currentUser    = null;
+  let selectedPayMethod = null;
+
+  // ---- AUTH STATE ----
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      currentUser = user;
+      document.getElementById("authScreen").style.display = "none";
+      document.getElementById("dashboard").style.display  = "block";
+      document.getElementById("dashUserName").textContent =
+        user.displayName || user.email.split("@")[0];
+
+      // Set referral link immediately
+      const fullLink  = `${BASE_URL}?ref=${user.uid}`;
+      const shortCode = user.uid.substring(0, 8).toUpperCase();
+      const refInput  = document.getElementById("refLink");
+      if (refInput) refInput.value = fullLink;
+      const shortEl = document.getElementById("shortCode");
+      if (shortEl) shortEl.textContent = shortCode;
+
+      await ensureAffiliate(user);
+      await loadDashboard(user);
+    } else {
+      currentUser = null;
+      document.getElementById("authScreen").style.display = "flex";
+      document.getElementById("dashboard").style.display  = "none";
     }
-  };
-
-  // Smooth nav highlight
-  const sections = document.querySelectorAll("section[id]");
-  const navLinks  = document.querySelectorAll(".nav-links a");
-  window.addEventListener("scroll", () => {
-    let current = "";
-    sections.forEach(s => {
-      if (window.scrollY >= s.offsetTop - 80) current = s.id || "";
-    });
-    navLinks.forEach(link => {
-      link.style.color = link.getAttribute("href") === "#" + current
-        ? "var(--white)" : "";
-    });
   });
 
-  // ---- SUBMIT APPLICATION ----
-  window.submitForm = async function() {
-    const fname   = document.getElementById("fname").value.trim();
-    const lname   = document.getElementById("lname").value.trim();
-    const email   = document.getElementById("email").value.trim();
-    const phone   = document.getElementById("phone").value.trim();
-    const channel = document.getElementById("channel").value;
-    const model   = document.getElementById("model").value;
-    const audience= document.getElementById("audience").value.trim();
-
-    // Validation
-    if (!fname || !lname || !email || !phone || !channel || !model) {
-      showFormMsg("Please fill in all required fields.", "error");
-      return;
-    }
-    if (!email.includes("@")) {
-      showFormMsg("Please enter a valid email address.", "error");
-      return;
-    }
-
-    // Show password field if not already shown
-    const passSection = document.getElementById("passwordSection");
-    if (passSection.style.display === "none" || passSection.style.display === "") {
-      passSection.style.display = "block";
-      showFormMsg("Almost done! Create a password to access your dashboard.", "info");
-      document.getElementById("fname").scrollIntoView({ behavior: "smooth" });
-      return;
-    }
-
-    const password = document.getElementById("appPassword").value;
-    const confirm  = document.getElementById("appPasswordConfirm").value;
-
-    if (!password || password.length < 6) {
-      showFormMsg("Password must be at least 6 characters.", "error");
-      return;
-    }
-    if (password !== confirm) {
-      showFormMsg("Passwords do not match.", "error");
-      return;
-    }
-
-    // Disable button
-    const btn = document.querySelector(".btn-submit");
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating your account...';
-
-    try {
-      // Create Firebase account
-      let userCred;
-      try {
-        userCred = await createUserWithEmailAndPassword(auth, email, password);
-      } catch(e) {
-        if (e.code === "auth/email-already-in-use") {
-          // Try signing in instead
-          userCred = await signInWithEmailAndPassword(auth, email, password);
-        } else {
-          throw e;
-        }
-      }
-
-      const user = userCred.user;
-      const fullName = `${fname} ${lname}`;
-
-      // Set display name
-      await updateProfile(user, { displayName: fullName });
-
-      // Save affiliate profile to Firestore
-      await setDoc(doc(db, "affiliates", user.uid), {
+  // ---- ENSURE AFFILIATE DOC ----
+  async function ensureAffiliate(user) {
+    const ref  = doc(db, "affiliates", user.uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      await setDoc(ref, {
         uid:          user.uid,
-        name:         fullName,
-        email:        email,
-        phone:        phone,
-        channel:      channel,
-        model:        model,
-        audience:     audience,
+        name:         user.displayName || user.email.split("@")[0],
+        email:        user.email,
         balance:      0,
         totalEarned:  0,
         clicks:       0,
@@ -950,55 +901,246 @@
         pendingUsers: 0,
         status:       "active",
         joinedAt:     serverTimestamp()
-      }, { merge: true });
+      });
+    }
+  }
 
-      // Show success and redirect
-      showFormMsg("✅ Account created! Redirecting to your dashboard...", "success");
-      btn.innerHTML = '<i class="fas fa-check"></i> Account Created!';
-      btn.style.background = "#22c55e";
+  // ---- LOAD DASHBOARD ----
+  async function loadDashboard(user) {
+    try {
+      const ref  = doc(db, "affiliates", user.uid);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) return;
+      const data = snap.data();
 
-      setTimeout(() => {
-        window.location.href = "affiliate-dashboard.html";
-      }, 2000);
+      const balance     = data.balance     || 0;
+      const totalEarned = data.totalEarned || 0;
+      const clicks      = data.clicks      || 0;
+      const referrals   = data.referrals   || 0;
+      const pending     = data.pendingUsers || 0;
 
+      document.getElementById("statBalance").textContent   = `$${balance.toFixed(2)}`;
+      document.getElementById("statReferrals").textContent = referrals;
+      document.getElementById("statClicks").textContent    = clicks;
+      document.getElementById("statTotal").textContent     = `$${totalEarned.toFixed(2)}`;
+      document.getElementById("statPending").textContent   = pending % 20;
+
+      // Progress bar
+      const cycleProgress = pending % 20;
+      const pct = (cycleProgress / 20) * 100;
+      document.getElementById("progressFill").style.width  = pct + "%";
+      document.getElementById("progressLabel").textContent = `${cycleProgress} / 20 new users`;
+      document.getElementById("progressNote").innerHTML    =
+        `<span>${20 - cycleProgress} more users needed</span>`;
+
+      // Payout info
+      document.getElementById("payoutBalance").textContent = `$${balance.toFixed(2)}`;
+      const needed = Math.max(0, 2000 - balance);
+      document.getElementById("payoutNeeded").textContent  = `$${needed.toFixed(2)}`;
+      const payoutBtn = document.getElementById("payoutBtn");
+      if (payoutBtn) payoutBtn.disabled = balance < 2000;
+
+      await loadActivity(user.uid);
     } catch(e) {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application';
+      console.error("Dashboard load error:", e);
+    }
+  }
 
-      if (e.code === "auth/email-already-in-use") {
-        showFormMsg("This email is already registered. Redirecting to dashboard...", "info");
-        setTimeout(() => { window.location.href = "affiliate-dashboard.html"; }, 2000);
-      } else if (e.code === "auth/wrong-password") {
-        showFormMsg("Wrong password for this email. Go to dashboard to sign in.", "error");
-      } else {
-        showFormMsg("Error: " + e.message, "error");
-      }
+  // ---- LOAD ACTIVITY ----
+  async function loadActivity(uid) {
+    const tbody = document.getElementById("activityLog");
+    try {
+      const q    = query(
+        collection(db, "affiliates", uid, "activity"),
+        orderBy("createdAt", "desc")
+      );
+      const snap = await getDocs(q);
+      if (snap.empty) return;
+      tbody.innerHTML = "";
+      snap.docs.slice(0, 20).forEach(d => {
+        const a    = d.data();
+        const date = a.createdAt?.toDate().toLocaleDateString("en-UG", {
+          day: "numeric", month: "short", year: "numeric"
+        }) || "Recent";
+        tbody.innerHTML += `
+          <tr>
+            <td>${date}</td>
+            <td>${a.event || "Referral"}</td>
+            <td>${a.users || 0}</td>
+            <td style="color:var(--green);font-weight:700;">
+              ${a.earning ? `+$${a.earning.toFixed(2)}` : "—"}
+            </td>
+            <td>
+              <span class="${a.status === 'earned' ? 'badge-earned' : 'badge-pending'}">
+                ${a.status === 'earned' ? 'Earned' : 'Pending'}
+              </span>
+            </td>
+          </tr>`;
+      });
+    } catch(e) {
+      console.error("Activity error:", e);
+    }
+  }
+
+  // ---- COPY LINK ----
+  window.copyLink = function() {
+    const link = document.getElementById("refLink").value;
+    if (!link) { showNotif("Link not ready yet", true); return; }
+    navigator.clipboard.writeText(link).then(() => {
+      const btn = document.getElementById("copyBtn");
+      btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+      btn.classList.add("copied");
+      showNotif("Referral link copied!");
+      setTimeout(() => {
+        btn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+        btn.classList.remove("copied");
+      }, 2500);
+    });
+  };
+
+  // ---- SHARE LINK ----
+  window.shareLink = function(platform) {
+    const link = document.getElementById("refLink").value;
+    if (!link) { showNotif("Link not ready yet", true); return; }
+    const encoded = encodeURIComponent(link);
+    const text    = encodeURIComponent("Watch the hottest leaked videos on Leaked Archives 🔥");
+    const urls = {
+      whatsapp: `https://wa.me/?text=${text}%20${encoded}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encoded}`,
+      telegram: `https://t.me/share/url?url=${encoded}&text=${text}`,
+      twitter:  `https://twitter.com/intent/tweet?text=${text}&url=${encoded}`
+    };
+    window.open(urls[platform], "_blank");
+  };
+
+  // ---- SELECT PAYOUT METHOD ----
+  window.selectMethod = function(el, method) {
+    document.querySelectorAll(".payout-method").forEach(m => m.classList.remove("selected"));
+    el.classList.add("selected");
+    selectedPayMethod = method;
+  };
+
+  // ---- REQUEST PAYOUT ----
+  window.requestPayout = async function() {
+    if (!currentUser) return;
+    const amount  = parseFloat(document.getElementById("payoutAmount").value);
+    const details = document.getElementById("payoutDetails").value.trim();
+    const ref     = doc(db, "affiliates", currentUser.uid);
+    const snap    = await getDoc(ref);
+    const bal     = snap.data().balance || 0;
+
+    if (!selectedPayMethod) { showNotif("Please select a payment method", true); return; }
+    if (!amount || amount < 2000) { showNotif("Minimum withdrawal is $2,000", true); return; }
+    if (amount > bal) { showNotif("Insufficient balance", true); return; }
+    if (!details) { showNotif("Please enter your payment details", true); return; }
+
+    const payoutBtn = document.getElementById("payoutBtn");
+    payoutBtn.disabled  = true;
+    payoutBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+    try {
+      await addDoc(collection(db, "payoutRequests"), {
+        uid:       currentUser.uid,
+        name:      currentUser.displayName || currentUser.email,
+        email:     currentUser.email,
+        amount,
+        method:    selectedPayMethod,
+        details,
+        status:    "pending",
+        createdAt: serverTimestamp()
+      });
+      await updateDoc(ref, { balance: increment(-amount) });
+      await addDoc(collection(db, "affiliates", currentUser.uid, "activity"), {
+        event:     "Payout Requested",
+        users:     0,
+        earning:   -amount,
+        status:    "pending",
+        createdAt: serverTimestamp()
+      });
+      showNotif(`Payout of $${amount.toFixed(2)} requested!`);
+      await loadDashboard(currentUser);
+    } catch(e) {
+      showNotif("Error: " + e.message, true);
+    }
+
+    payoutBtn.disabled  = false;
+    payoutBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Request Payout';
+  };
+
+  // ---- AUTH FUNCTIONS ----
+  window.switchTab = function(tab) {
+    document.getElementById("loginForm").style.display    = tab === "login"    ? "flex" : "none";
+    document.getElementById("registerForm").style.display = tab === "register" ? "flex" : "none";
+    document.getElementById("tabLogin").classList.toggle("active",    tab === "login");
+    document.getElementById("tabRegister").classList.toggle("active", tab === "register");
+    const msg = document.getElementById("authMsg");
+    msg.className   = "auth-msg";
+    msg.textContent = "";
+  };
+
+  function showAuthMsg(msg, type) {
+    const el = document.getElementById("authMsg");
+    el.textContent = msg;
+    el.className   = `auth-msg ${type}`;
+  }
+
+  window.doLogin = async function() {
+    const email = document.getElementById("loginEmail").value.trim();
+    const pass  = document.getElementById("loginPassword").value;
+    if (!email || !pass) { showAuthMsg("Please fill in all fields.", "error"); return; }
+    try {
+      showAuthMsg("Signing in...", "success");
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch(e) {
+      showAuthMsg(
+        e.code === "auth/wrong-password"  ? "Incorrect password." :
+        e.code === "auth/user-not-found"  ? "No account found with this email." :
+        e.code === "auth/invalid-email"   ? "Invalid email address." :
+        e.code === "auth/too-many-requests" ? "Too many attempts. Try again later." :
+        e.message, "error"
+      );
     }
   };
 
-  function showFormMsg(msg, type) {
-    const el = document.getElementById("successMsg");
-    el.style.display = "block";
-    el.style.background = type === "error"
-      ? "rgba(230,57,70,0.1)"
-      : type === "info"
-      ? "rgba(100,100,255,0.1)"
-      : "rgba(34,197,94,0.1)";
-    el.style.color = type === "error"
-      ? "#e63946"
-      : type === "info"
-      ? "#88aaff"
-      : "#4ade80";
-    el.style.border = `1px solid ${
-      type === "error" ? "rgba(230,57,70,0.3)"
-      : type === "info" ? "rgba(100,100,255,0.3)"
-      : "rgba(34,197,94,0.3)"}`;
-    el.innerHTML = `<i class="fas fa-${
-      type === "error" ? "circle-exclamation"
-      : type === "info" ? "circle-info"
-      : "check-circle"}"></i> ${msg}`;
-    el.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }
+  window.doRegister = async function() {
+    const name  = document.getElementById("regName").value.trim();
+    const email = document.getElementById("regEmail").value.trim();
+    const pass  = document.getElementById("regPassword").value;
+    if (!name || !email || !pass) { showAuthMsg("Please fill in all fields.", "error"); return; }
+    if (pass.length < 6) { showAuthMsg("Password must be at least 6 characters.", "error"); return; }
+    try {
+      showAuthMsg("Creating account...", "success");
+      const result = await createUserWithEmailAndPassword(auth, email, pass);
+      await updateProfile(result.user, { displayName: name });
+    } catch(e) {
+      showAuthMsg(
+        e.code === "auth/email-already-in-use" ?
+        "Email already registered. Try signing in instead." : e.message, "error"
+      );
+    }
+  };
+
+  window.doGoogle = async function() {
+    try {
+      await signInWithPopup(auth, provider);
+    } catch(e) {
+      showAuthMsg(e.message, "error");
+    }
+  };
+
+  window.doLogout = async function() {
+    await signOut(auth);
+  };
+
+  // ---- NOTIFICATION ----
+  window.showNotif = function(msg, isError = false) {
+    const el = document.getElementById("notif");
+    document.getElementById("notifText").textContent = msg;
+    el.querySelector("i").style.color = isError ? "var(--red)" : "var(--green)";
+    el.classList.add("show");
+    setTimeout(() => el.classList.remove("show"), 3500);
+  };
+
 </script>
 
 </body>
