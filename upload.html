@@ -588,28 +588,43 @@
       submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
 
       try {
-        // Step 1 — Get upload URL from Worker
+// Step 1 — Get upload URL from Worker
         showStatus("Preparing upload...", "info");
 
-        const urlResponse = await fetch(`${WORKER_URL}/get-upload-url`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            filename: selectedFile.name,
-            fileType: selectedFile.type
-          })
-        });
+        let uploadUrl, publicUrl, filename;
 
-        const { uploadUrl, publicUrl, filename } = await urlResponse.json();
+        try {
+          const urlRes = await fetch(`${WORKER_URL}/get-upload-url`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              filename: selectedFile.name,
+              fileType: selectedFile.type || "video/mp4"
+            })
+          });
 
-        // Step 2 — Upload file directly to R2 via Worker
+          if (!urlRes.ok) {
+            const err = await urlRes.json().catch(() => ({}));
+            throw new Error(err.error || `Server error ${urlRes.status}`);
+          }
+
+          const urlData = await urlRes.json();
+          uploadUrl  = urlData.uploadUrl;
+          publicUrl  = urlData.publicUrl;
+          filename   = urlData.filename;
+
+        } catch(fetchErr) {
+          throw new Error("Could not reach upload server: " + fetchErr.message);
+        }
+
+        // Step 2 — Upload file directly to R2
         showStatus("Uploading video...", "info");
         progressWrap.classList.add("show");
 
         await uploadWithProgress(uploadUrl, selectedFile, (percent) => {
-          progressBar.style.width = percent + "%";
+          progressBar.style.width    = percent + "%";
           progressPercent.textContent = percent + "%";
-          progressText.textContent = percent < 100 ? "Uploading..." : "Processing...";
+          progressText.textContent   = percent < 100 ? `Uploading... ${percent}%` : "Saving...";
         });
 
         // Step 3 — Save video to Firebase
