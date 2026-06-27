@@ -446,6 +446,62 @@
 
     trackReferral();
   </script>
+<script>
+  // ---- Fire vignette ad on any meaningful user interaction ----
+  let lastAdTime = 0;
+  const AD_COOLDOWN = 3000; // 3 seconds between ads to avoid spam
 
+  function fireAd() {
+    const now = Date.now();
+    if (now - lastAdTime < AD_COOLDOWN) return;
+    lastAdTime = now;
+    try {
+      // Monetag vignette zones
+      const zones = ['11034900', '11035918', '11046408'];
+      zones.forEach((zone, i) => {
+        setTimeout(() => {
+          try {
+            (function(s) {
+              s.dataset.zone = zone;
+              s.src = zone === '11046408'
+                ? 'https://al5sm.com/tag.min.js'
+                : 'https://n6wxm.com/vignette.min.js';
+              document.body.appendChild(s);
+            })(document.createElement('script'));
+          } catch(e) {}
+        }, i * 500);
+      });
+    } catch(e) {}
+  }
+
+  // Fire on any click anywhere on page
+  document.addEventListener("click", fireAd, { passive: true });
+
+  // Fire on any navigation link click
+  document.querySelectorAll("a").forEach(a => {
+    a.addEventListener("click", fireAd, { passive: true });
+  });
+
+  // Fire on video card click specifically
+  document.addEventListener("click", (e) => {
+    if (e.target.closest(".video-card") ||
+        e.target.closest(".related-card") ||
+        e.target.closest(".side-link") ||
+        e.target.closest(".filter-option") ||
+        e.target.closest("#loadMoreBtn")) {
+      fireAd();
+    }
+  }, { passive: true });
+
+  // Fire on scroll past halfway (engagement signal)
+  let scrollFired = false;
+  window.addEventListener("scroll", () => {
+    if (!scrollFired && window.scrollY > document.body.scrollHeight * 0.4) {
+      scrollFired = true;
+      fireAd();
+      setTimeout(() => { scrollFired = false; }, 30000);
+    }
+  }, { passive: true });
+</script>
 </body>
 </html>
