@@ -24,7 +24,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-ima/1.10.1/videojs.ima.min.js"></script>
 
   <style>
-    /* ---- Back bar ---- */
     .back-bar {
       display: flex;
       align-items: center;
@@ -52,7 +51,6 @@
     }
     .back-btn:hover,
     .back-btn:active { background: var(--red); border-color: var(--red); }
-
     .breadcrumb {
       display: flex;
       align-items: center;
@@ -65,7 +63,6 @@
     .breadcrumb a:hover { text-decoration: underline; }
     .breadcrumb i { font-size: 10px; }
 
-    /* ---- Video.js player ---- */
     .player-wrap {
       position: relative;
       width: 100%;
@@ -73,9 +70,7 @@
       border-radius: var(--radius, 12px);
       overflow: hidden;
     }
-    .video-js {
-      width: 100% !important;
-    }
+    .video-js { width: 100% !important; }
     .video-js .vjs-big-play-button {
       background: rgba(230,57,70,0.9) !important;
       border: none !important;
@@ -98,7 +93,6 @@
     .video-js .vjs-volume-level { background: #e63946 !important; }
     .video-js .vjs-slider { background: rgba(255,255,255,0.2) !important; }
 
-    /* ---- Related videos ---- */
     .related-card {
       display: flex;
       gap: 10px;
@@ -107,11 +101,8 @@
       border-radius: 10px;
       cursor: pointer;
       transition: background 0.2s;
-      text-decoration: none;
-      color: inherit;
     }
     .related-card:hover { background: rgba(255,255,255,0.05); }
-
     .related-thumb-wrap {
       flex-shrink: 0;
       width: 120px;
@@ -119,7 +110,6 @@
       border-radius: 8px;
       overflow: hidden;
       background: #111;
-      position: relative;
     }
     .related-thumb-wrap img,
     .related-thumb-wrap video {
@@ -128,10 +118,7 @@
       object-fit: cover;
       display: block;
     }
-    .related-info {
-      flex: 1;
-      min-width: 0;
-    }
+    .related-info { flex: 1; min-width: 0; }
     .related-info h4 {
       font-size: 13px;
       font-weight: 700;
@@ -143,12 +130,8 @@
       overflow: hidden;
       line-height: 1.4;
     }
-    .related-info span {
-      font-size: 11px;
-      color: var(--muted, #888);
-    }
+    .related-info span { font-size: 11px; color: var(--muted, #888); }
 
-    /* ---- Bottom nav ---- */
     .bottom-nav {
       display: none;
       position: fixed;
@@ -210,9 +193,11 @@
       <a href="affiliate-dashboard.html"
         style="background:linear-gradient(135deg,#e63946,#f4a522);color:white;border:none;display:inline-flex;align-items:center;gap:6px;font-weight:800;padding:8px 12px;border-radius:8px;font-size:13px;text-decoration:none;margin-right:6px;">
         <i class="fas fa-handshake"></i>
-        <span class="earn-label" style="display:none;">Earn</span>
+        <span style="display:none;" class="earn-label">Earn</span>
       </a>
-      <a href="login.html" class="btn-login" id="authLink"><i class="fas fa-user"></i> Sign In</a>
+      <a href="login.html" class="btn-login" id="authLink">
+        <i class="fas fa-user"></i> Sign In
+      </a>
       <div class="user-menu hidden" id="userMenu">
         <img src="https://api.dicebear.com/7.x/thumbs/svg?seed=user" class="avatar" id="userAvatar"/>
         <div class="dropdown">
@@ -369,7 +354,9 @@
   <nav class="bottom-nav">
     <a href="index.html" class="bottom-nav-item"><i class="fas fa-house"></i><span>Home</span></a>
     <a href="javascript:history.back()" class="bottom-nav-item"><i class="fas fa-arrow-left"></i><span>Back</span></a>
-    <a href="affiliate-dashboard.html" class="bottom-nav-item" style="color:#f4a522;"><i class="fas fa-handshake"></i><span>Earn</span></a>
+    <a href="affiliate-dashboard.html" class="bottom-nav-item" style="color:#f4a522;">
+      <i class="fas fa-handshake"></i><span>Earn</span>
+    </a>
     <a href="history.html" class="bottom-nav-item"><i class="fas fa-clock-rotate-left"></i><span>History</span></a>
     <a href="profile.html" class="bottom-nav-item"><i class="fas fa-circle-user"></i><span>Profile</span></a>
   </nav>
@@ -379,7 +366,7 @@
 
   <script>
     window.addEventListener("DOMContentLoaded", function() {
-      // Sidebar
+      // ---- Sidebar ----
       const menuToggle     = document.getElementById("menuToggle");
       const sidebar        = document.getElementById("sidebar");
       const sidebarOverlay = document.getElementById("sidebarOverlay");
@@ -406,7 +393,7 @@
         });
       });
 
-      // Search
+      // ---- Search ----
       document.getElementById("searchBtn").addEventListener("click", () => {
         const val = document.getElementById("searchInput").value.trim();
         if (val) window.location.href = `index.html?search=${encodeURIComponent(val)}`;
@@ -417,52 +404,51 @@
           if (val) window.location.href = `index.html?search=${encodeURIComponent(val)}`;
         }
       });
+
+      // ---- Vignette ads on user interaction ----
+      let lastAdTime = 0;
+      const AD_COOLDOWN = 5000; // 5 seconds between ad fires
+
+      function fireAd() {
+        const now = Date.now();
+        if (now - lastAdTime < AD_COOLDOWN) return;
+        lastAdTime = now;
+        try {
+          const zones = [
+            { zone: '11046408', src: 'https://al5sm.com/tag.min.js' },
+            { zone: '11035918', src: 'https://n6wxm.com/vignette.min.js' }
+          ];
+          zones.forEach((ad, i) => {
+            setTimeout(() => {
+              try {
+                const s = document.createElement('script');
+                s.dataset.zone = ad.zone;
+                s.src = ad.src;
+                document.body.appendChild(s);
+              } catch(e) {}
+            }, i * 800);
+          });
+        } catch(e) {}
+      }
+
+      // Fire on any click on the page
+      document.addEventListener("click", fireAd, { passive: true });
+
+      // Fire specifically on these elements
+      document.addEventListener("click", (e) => {
+        if (
+          e.target.closest(".related-card") ||
+          e.target.closest(".action-btn")   ||
+          e.target.closest(".back-btn")     ||
+          e.target.closest(".side-link")    ||
+          e.target.closest(".bottom-nav-item")
+        ) {
+          fireAd();
+        }
+      }, { passive: true });
+
     });
   </script>
 
-  <!-- ExoClick interstitial -->
-  <script async src="https://a.pemsrv.com/ad-provider.js"></script>
-  <ins class="eas6a97888e33" data-zoneid="5944558"></ins>
-  <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
-
-  <script>
-  let lastAdTime = 0;
-  const AD_COOLDOWN = 3000;
-
-  function fireAd() {
-    const now = Date.now();
-    if (now - lastAdTime < AD_COOLDOWN) return;
-    lastAdTime = now;
-    try {
-      const zones = ['11034900', '11035918', '11046408'];
-      zones.forEach((zone, i) => {
-        setTimeout(() => {
-          try {
-            (function(s) {
-              s.dataset.zone = zone;
-              s.src = zone === '11046408'
-                ? 'https://al5sm.com/tag.min.js'
-                : 'https://n6wxm.com/vignette.min.js';
-              document.body.appendChild(s);
-            })(document.createElement('script'));
-          } catch(e) {}
-        }, i * 500);
-      });
-    } catch(e) {}
-  }
-
-  // Fire on any click
-  document.addEventListener("click", fireAd, { passive: true });
-
-  // Fire on video card / related card clicks
-  document.addEventListener("click", (e) => {
-    if (e.target.closest(".related-card") ||
-        e.target.closest(".action-btn") ||
-        e.target.closest(".back-btn") ||
-        e.target.closest(".side-link")) {
-      fireAd();
-    }
-  }, { passive: true });
-</script>
 </body>
 </html>
