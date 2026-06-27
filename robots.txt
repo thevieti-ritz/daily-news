@@ -3,6 +3,5 @@ Allow: /
 
 Sitemap: https://www.dailynewsug.online/sitemap.xml
 
-# Block admin pages from search engines
 Disallow: /admin.html
-Disallow: /login.html
+Disallow: /js/firebase.js
