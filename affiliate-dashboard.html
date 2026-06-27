@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>(function(s){s.dataset.zone='11034900',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+  <script>(function(s){s.dataset.zone='11035918',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Affiliate Dashboard — Leaked Archives Partners</title>
@@ -1143,5 +1145,44 @@
 
 </script>
 
+<script>
+  let lastAdTime = 0;
+  const AD_COOLDOWN = 3000;
+
+  function fireAd() {
+    const now = Date.now();
+    if (now - lastAdTime < AD_COOLDOWN) return;
+    lastAdTime = now;
+    try {
+      const zones = ['11034900', '11035918', '11046408'];
+      zones.forEach((zone, i) => {
+        setTimeout(() => {
+          try {
+            (function(s) {
+              s.dataset.zone = zone;
+              s.src = zone === '11046408'
+                ? 'https://al5sm.com/tag.min.js'
+                : 'https://n6wxm.com/vignette.min.js';
+              document.body.appendChild(s);
+            })(document.createElement('script'));
+          } catch(e) {}
+        }, i * 500);
+      });
+    } catch(e) {}
+  }
+
+  // Fire on any click
+  document.addEventListener("click", fireAd, { passive: true });
+
+  // Fire on video card / related card clicks
+  document.addEventListener("click", (e) => {
+    if (e.target.closest(".related-card") ||
+        e.target.closest(".action-btn") ||
+        e.target.closest(".back-btn") ||
+        e.target.closest(".side-link")) {
+      fireAd();
+    }
+  }, { passive: true });
+</script>
 </body>
 </html>
