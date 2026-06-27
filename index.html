@@ -475,34 +475,91 @@
     } catch(e) {}
   }
 
-  // Fire on any click anywhere on page
-  document.addEventListener("click", fireAd, { passive: true });
+<script>
+  // ---- Monetag Vignette Ad Trigger ----
+  let lastAdTime   = 0;
+  const COOLDOWN   = 8000; // 8 seconds minimum between ads
 
-  // Fire on any navigation link click
-  document.querySelectorAll("a").forEach(a => {
-    a.addEventListener("click", fireAd, { passive: true });
-  });
+  function fireVignette() {
+    const now = Date.now();
+    if (now - lastAdTime < COOLDOWN) return;
+    lastAdTime = now;
 
-  // Fire on video card click specifically
-  document.addEventListener("click", (e) => {
-    if (e.target.closest(".video-card") ||
-        e.target.closest(".related-card") ||
-        e.target.closest(".side-link") ||
-        e.target.closest(".filter-option") ||
-        e.target.closest("#loadMoreBtn")) {
-      fireAd();
+    try {
+      // Method 1 — call Monetag global trigger if available
+      if (typeof window.__vm !== "undefined") {
+        window.__vm.push({ zone: 11035918 });
+        setTimeout(() => {
+          if (typeof window.__vm !== "undefined") {
+            window.__vm.push({ zone: 11046408 });
+          }
+        }, 1000);
+        return;
+      }
+
+      // Method 2 — reload the ad tag via new script element
+      const zones = [
+        { zone: "11035918", src: "https://n6wxm.com/vignette.min.js" },
+        { zone: "11046408", src: "https://al5sm.com/tag.min.js"      }
+      ];
+      zones.forEach((ad, i) => {
+        setTimeout(() => {
+          try {
+            // Remove old script if exists
+            document.querySelectorAll(`script[data-zone="${ad.zone}"]`)
+              .forEach(el => el.remove());
+            // Add fresh script
+            const s = document.createElement("script");
+            s.dataset.zone = ad.zone;
+            s.src          = ad.src + "?_=" + Date.now();
+            document.head.appendChild(s);
+          } catch(e) {}
+        }, i * 1200);
+      });
+
+    } catch(e) {}
+  }
+
+  // ---- Trigger on every click anywhere ----
+  document.addEventListener("click", fireVignette, { passive: true });
+
+  // ---- Trigger on video card clicks ----
+  document.addEventListener("click", function(e) {
+    if (
+      e.target.closest(".video-card")      ||
+      e.target.closest(".related-card")    ||
+      e.target.closest(".side-link")       ||
+      e.target.closest(".bottom-nav-item") ||
+      e.target.closest(".filter-option")   ||
+      e.target.closest("#loadMoreBtn")     ||
+      e.target.closest(".btn-load-more")
+    ) {
+      fireVignette();
     }
   }, { passive: true });
 
-  // Fire on scroll past halfway (engagement signal)
-  let scrollFired = false;
-  window.addEventListener("scroll", () => {
-    if (!scrollFired && window.scrollY > document.body.scrollHeight * 0.4) {
-      scrollFired = true;
-      fireAd();
-      setTimeout(() => { scrollFired = false; }, 30000);
+  // ---- Trigger on sidebar open ----
+  document.getElementById("menuToggle")?.addEventListener("click", fireVignette);
+
+  // ---- Trigger on scroll past 50% ----
+  let scrollTriggered = false;
+  window.addEventListener("scroll", function() {
+    const pct = window.scrollY / (document.body.scrollHeight - window.innerHeight);
+    if (!scrollTriggered && pct > 0.5) {
+      scrollTriggered = true;
+      fireVignette();
+      // Reset after 30 seconds so it can fire again on next scroll
+      setTimeout(() => { scrollTriggered = false; }, 30000);
     }
   }, { passive: true });
+
+  // ---- Trigger on page load after 3 seconds ----
+  setTimeout(fireVignette, 3000);
+
+  // ---- Trigger every 30 seconds while user is on page ----
+  setInterval(fireVignette, 30000);
+
 </script>
+
 </body>
 </html>
