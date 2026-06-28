@@ -1,32 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Monetag Vignette Ads -->
+<head>
+  <!-- Monetag Vignette Ads — loads first for maximum speed -->
   <script>
-    (function() {
-      var zones = [
-        { zone: '11035918', src: 'https://mon.dailynewsug.online/vignette.min.js' },
-        { zone: '11034900', src: 'https://mon.dailynewsug.online/vignette.min.js' },
-        { zone: '11028744', src: 'https://mon.dailynewsug.online/vignette.min.js' },
-        { zone: '11209621', src: 'https://mon.dailynewsug.online/vignette.min.js' }
+    (function(){
+      var zones = ['11035918','11034900','11028744','11209621'];
+      var srcs  = [
+        'https://n6wxm.com/vignette.min.js',
+        'https://n6wxm.com/vignette.min.js',
+        'https://n6wxm.com/vignette.min.js',
+        'https://n6wxm.com/vignette.min.js'
       ];
-      zones.forEach(function(ad, i) {
-        setTimeout(function() {
-          try {
-            var s = document.createElement('script');
-            s.dataset.zone = ad.zone;
-            s.async = true;
-            s.onerror = function() {
-              var fallback = document.createElement('script');
-              fallback.dataset.zone = ad.zone;
-              fallback.async = true;
-              fallback.src = 'https://n6wxm.com/vignette.min.js';
-              document.head.appendChild(fallback);
-            };
-            s.src = ad.src;
-            document.head.appendChild(s);
-          } catch(e) {}
-        }, i * 300);
+      // Fire immediately — no delay
+      zones.forEach(function(zone, i) {
+        var s = document.createElement('script');
+        s.dataset.zone = zone;
+        s.src = srcs[i];
+        // Insert before any other element for fastest load
+        var target = document.documentElement || document.head || document.body;
+        target.appendChild(s);
       });
     })();
   </script>
@@ -433,5 +426,34 @@
         }
       });
 
+  <!-- Re-fire vignette ads on page visibility -->
+  <script>
+    // Re-fire when user returns to tab
+    document.addEventListener("visibilitychange", function() {
+      if (document.visibilityState === "visible") {
+        var zones = ['11035918','11034900','11028744','11209621'];
+        zones.forEach(function(zone) {
+          var s = document.createElement('script');
+          s.dataset.zone = zone;
+          s.src = 'https://n6wxm.com/vignette.min.js?_=' + Date.now();
+          document.head.appendChild(s);
+        });
+      }
+    });
+
+    // Re-fire on page show (back/forward navigation)
+    window.addEventListener("pageshow", function(e) {
+      if (e.persisted) {
+        var zones = ['11035918','11034900','11028744','11209621'];
+        zones.forEach(function(zone) {
+          var s = document.createElement('script');
+          s.dataset.zone = zone;
+          s.src = 'https://n6wxm.com/vignette.min.js?_=' + Date.now();
+          document.head.appendChild(s);
+        });
+      }
+    });
+  </script>
+  
   </body>
 </html>
