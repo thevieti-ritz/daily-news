@@ -470,22 +470,5 @@
         });
     </script>
 
-    // ---- Vignette ads on user interaction ---- let lastAdTime = 0; const
-    AD_COOLDOWN = 5000; let adCount = 0; function fireAd() { const now =
-    Date.now(); if (now - lastAdTime < AD_COOLDOWN) return; lastAdTime = now;
-    adCount++; try { // Method 1 — iframe trigger (most reliable) const iframe =
-    document.createElement("iframe"); iframe.style.cssText =
-    "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:0;";
-    iframe.src = `https://n6wxm.com/vignette.min.js?zone=11035918&t=${adCount}`;
-    document.body.appendChild(iframe); setTimeout(() => { try {
-    document.body.removeChild(iframe); } catch(e) {} }, 3000); } catch(e) {} try
-    { // Method 2 — direct script injection with unique timestamp setTimeout(()
-    => { const s = document.createElement("script"); s.dataset.zone =
-    "11046408"; s.src = `https://al5sm.com/tag.min.js?t=${adCount}`;
-    document.body.appendChild(s); }, 500); } catch(e) {} try { // Method 3 —
-    second vignette zone setTimeout(() => { const s =
-    document.createElement("script"); s.dataset.zone = "11035918"; s.src =
-    `https://n6wxm.com/vignette.min.js?t=${adCount}`;
-    document.body.appendChild(s); }, 1000); } catch(e) {} }
   </body>
 </html>
