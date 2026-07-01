@@ -1,29 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<head>
-  <!-- Monetag Vignette Ads — loads first for maximum speed -->
-  <script>
-    (function(){
-      var zones = ['11035918','11034900','11028744','11209621'];
-      var srcs  = [
-        'https://n6wxm.com/vignette.min.js',
-        'https://n6wxm.com/vignette.min.js',
-        'https://n6wxm.com/vignette.min.js',
-        'https://n6wxm.com/vignette.min.js'
-      ];
-      // Fire immediately — no delay
-      zones.forEach(function(zone, i) {
-        var s = document.createElement('script');
-        s.dataset.zone = zone;
-        s.src = srcs[i];
-        // Insert before any other element for fastest load
-        var target = document.documentElement || document.head || document.body;
-        target.appendChild(s);
-      });
-    })();
-  </script>
-  <meta charset="UTF-8"/>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Watch — Leaked Archives</title>
@@ -33,9 +10,17 @@
   <meta property="og:type" content="video.other"/>
   <meta name="theme-color" content="#e63946"/>
   <link rel="canonical" href="https://www.dailynewsug.online/"/>
+
+  <link rel="preconnect" href="https://firestore.googleapis.com">
+  <link rel="preconnect" href="https://pub-947189f89d8c4deba38620dab133e00a.r2.dev">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
   <link rel="stylesheet" href="css/style.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- Video.js + IMA (VAST ads) -->
   <link href="https://vjs.zencdn.net/7.21.5/video-js.css" rel="stylesheet"/>
   <script src="https://vjs.zencdn.net/7.21.5/video.min.js"></script>
   <script src="https://imasdk.googleapis.com/js/sdkloader/ima3.js" onerror="window.imaFailed=true"></script>
@@ -131,6 +116,7 @@
       border-radius: 8px;
       overflow: hidden;
       background: #111;
+      position: relative;
     }
     .related-thumb-wrap img,
     .related-thumb-wrap video {
@@ -193,6 +179,20 @@
       .related-thumb-wrap { width: 100px; height: 56px; }
     }
   </style>
+
+  <!-- Monetag Vignette Ads — fires first for speed -->
+  <script>
+    (function(){
+      var zones = ['11035918','11034900','11028744','11209621'];
+      zones.forEach(function(zone) {
+        var s = document.createElement('script');
+        s.dataset.zone = zone;
+        s.src = 'https://n6wxm.com/vignette.min.js';
+        s.async = true;
+        document.head.appendChild(s);
+      });
+    })();
+  </script>
 </head>
 <body>
 
@@ -214,7 +214,7 @@
       <a href="affiliate-dashboard.html"
         style="background:linear-gradient(135deg,#e63946,#f4a522);color:white;border:none;display:inline-flex;align-items:center;gap:6px;font-weight:800;padding:8px 12px;border-radius:8px;font-size:13px;text-decoration:none;margin-right:6px;">
         <i class="fas fa-handshake"></i>
-        <span style="display:none;" class="earn-label">Earn</span>
+        <span class="earn-label" style="display:none;">Earn</span>
       </a>
       <a href="login.html" class="btn-login" id="authLink">
         <i class="fas fa-user"></i> Sign In
@@ -297,7 +297,6 @@
           </video>
         </div>
 
-        <!-- Video Info -->
         <div class="video-info-box">
           <span class="video-category-badge" id="videoCategoryBadge">Category</span>
           <h1 class="video-title" id="videoTitle">Loading...</h1>
@@ -320,7 +319,6 @@
           <div class="video-description" id="videoDescription"></div>
         </div>
 
-        <!-- Comments -->
         <div class="comments-section">
           <h3>
             <i class="fas fa-comments"></i> Comments
@@ -425,35 +423,28 @@
           if (val) window.location.href = `index.html?search=${encodeURIComponent(val)}`;
         }
       });
-
-  <!-- Re-fire vignette ads on page visibility -->
-  <script>
-    // Re-fire when user returns to tab
-    document.addEventListener("visibilitychange", function() {
-      if (document.visibilityState === "visible") {
-        var zones = ['11035918','11034900','11028744','11209621'];
-        zones.forEach(function(zone) {
-          var s = document.createElement('script');
-          s.dataset.zone = zone;
-          s.src = 'https://n6wxm.com/vignette.min.js?_=' + Date.now();
-          document.head.appendChild(s);
-        });
-      }
-    });
-
-    // Re-fire on page show (back/forward navigation)
-    window.addEventListener("pageshow", function(e) {
-      if (e.persisted) {
-        var zones = ['11035918','11034900','11028744','11209621'];
-        zones.forEach(function(zone) {
-          var s = document.createElement('script');
-          s.dataset.zone = zone;
-          s.src = 'https://n6wxm.com/vignette.min.js?_=' + Date.now();
-          document.head.appendChild(s);
-        });
-      }
     });
   </script>
-  
-  </body>
+
+  <!-- Re-fire vignette ads on tab return / back-forward navigation -->
+  <script>
+    function refireVignettes() {
+      var zones = ['11035918','11034900','11028744','11209621'];
+      zones.forEach(function(zone) {
+        var s = document.createElement('script');
+        s.dataset.zone = zone;
+        s.src = 'https://n6wxm.com/vignette.min.js?_=' + Date.now();
+        s.async = true;
+        document.head.appendChild(s);
+      });
+    }
+    document.addEventListener("visibilitychange", function() {
+      if (document.visibilityState === "visible") refireVignettes();
+    });
+    window.addEventListener("pageshow", function(e) {
+      if (e.persisted) refireVignettes();
+    });
+  </script>
+
+</body>
 </html>
