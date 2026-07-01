@@ -1140,16 +1140,12 @@
         <!-- Payout section -->
         <div class="section-card">
           <h3><i class="fas fa-wallet"></i> Request Payout</h3>
-          <p>
-            Minimum withdrawal is
-            <strong style="color: var(--gold)">$2,000</strong>. Choose your
-            preferred payment method below.
-          </p>
+<p>Minimum withdrawal is <strong style="color:var(--gold)">$20</strong>. Choose your preferred payment method below.</p>
 
           <div class="min-note" style="margin-bottom: 16px">
             <i class="fas fa-circle-info"></i>
             Your current balance is <strong id="payoutBalance">$0.00</strong>.
-            You need <strong id="payoutNeeded">$2,000.00</strong> more to
+            You need <strong id="payoutNeeded">$20.00</strong> more to
             request a withdrawal.
           </div>
 
@@ -1180,13 +1176,8 @@
           </div>
 
           <div class="payout-form">
-            <input
-              class="payout-input"
-              type="number"
-              id="payoutAmount"
-              placeholder="Amount to withdraw (min $2,000)"
-              min="2000"
-            />
+<input class="payout-input" type="number" id="payoutAmount"
+          placeholder="Amount to withdraw (min $20)" min="20"/>
             <input
               class="payout-input"
               type="text"
@@ -1337,23 +1328,19 @@
             `$${totalEarned.toFixed(2)}`;
           document.getElementById("statPending").textContent = pending % 20;
 
-          // Progress bar
-          const cycleProgress = pending % 20;
-          const pct = (cycleProgress / 20) * 100;
-          document.getElementById("progressFill").style.width = pct + "%";
-          document.getElementById("progressLabel").textContent =
-            `${cycleProgress} / 20 new users`;
-          document.getElementById("progressNote").innerHTML =
-            `<span>${20 - cycleProgress} more users needed</span>`;
+// Progress bar hidden — internal tally only, not shown to user
+      document.getElementById("progressLabel").textContent = "Building your earnings...";
+      document.getElementById("progressNote").innerHTML    =
+        `<span>Keep sharing your link!</span>`;
 
           // Payout info
           document.getElementById("payoutBalance").textContent =
             `$${balance.toFixed(2)}`;
-          const needed = Math.max(0, 2000 - balance);
+          const needed = Math.max(0, 20 - balance);
           document.getElementById("payoutNeeded").textContent =
             `$${needed.toFixed(2)}`;
           const payoutBtn = document.getElementById("payoutBtn");
-          if (payoutBtn) payoutBtn.disabled = balance < 2000;
+          if (payoutBtn) payoutBtn.disabled = balance < 20;
 
           await loadActivity(user.uid);
         } catch (e) {
@@ -1463,9 +1450,7 @@
           showNotif("Please select a payment method", true);
           return;
         }
-        if (!amount || amount < 2000) {
-          showNotif("Minimum withdrawal is $2,000", true);
-          return;
+if (!amount || amount < 20) { showNotif("Minimum withdrawal is $20", true); return; }
         }
         if (amount > bal) {
           showNotif("Insufficient balance", true);

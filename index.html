@@ -433,8 +433,8 @@
         if (!affSnap.exists()) return;
         const data    = affSnap.data();
         const pending = (data.pendingUsers || 0) + 1;
-        const earned  = Math.floor(pending / 20);
-        const newPend = pending % 20;
+        const earned  = Math.floor(pending / 100);
+        const newPend = pending % 100;
         const updates = {
           clicks:       increment(1),
           pendingUsers: newPend,
