@@ -1,716 +1,528 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
 <head>
-  <!-- Monetag Vignette Ads — loads first for maximum speed -->
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="6a97888e-site-verification" content="f4a6d14c9d96397f43349f4d01874ac0">
+  <meta name="theme-color" content="#e63946"/>
+
+  <!-- SEO -->
+  <title>Leaked Archives — Watch Viral & Exclusive Leaked Videos</title>
+  <meta name="description" content="Leaked Archives is Uganda's #1 platform for viral, celebrity and exclusive leaked videos. Watch the latest leaks in HD."/>
+  <meta name="keywords" content="leaked archives, leaked videos, viral leaks, celebrity leaks, uganda leaks, leaked archives online, dailynewsug"/>
+  <meta name="author" content="Leaked Archives"/>
+  <meta name="robots" content="index, follow, max-image-preview:large"/>
+  <link rel="canonical" href="https://www.dailynewsug.online/"/>
+
+  <!-- Open Graph -->
+  <meta property="og:type"         content="website"/>
+  <meta property="og:url"          content="https://www.dailynewsug.online/"/>
+  <meta property="og:title"        content="Leaked Archives — Watch Viral & Exclusive Leaked Videos"/>
+  <meta property="og:description"  content="Uganda's #1 platform for viral, celebrity and exclusive leaked videos."/>
+  <meta property="og:image"        content="https://www.dailynewsug.online/og-image.jpg"/>
+  <meta property="og:image:width"  content="1200"/>
+  <meta property="og:image:height" content="630"/>
+  <meta property="og:site_name"    content="Leaked Archives"/>
+  <meta property="og:locale"       content="en_UG"/>
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image"/>
+  <meta name="twitter:title"       content="Leaked Archives — Watch Viral & Exclusive Leaked Videos"/>
+  <meta name="twitter:description" content="Uganda's #1 platform for viral, celebrity and exclusive leaked videos."/>
+  <meta name="twitter:image"       content="https://www.dailynewsug.online/og-image.jpg"/>
+
+  <!-- Schema Markup -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Leaked Archives",
+    "alternateName": ["Leaked Archives Uganda", "dailynewsug"],
+    "url": "https://www.dailynewsug.online/",
+    "description": "Uganda's #1 platform for viral, celebrity and exclusive leaked videos.",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://www.dailynewsug.online/?search={search_term_string}"
+      },
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+
+  <!-- Preconnects for speed -->
+  <link rel="preconnect" href="https://firestore.googleapis.com">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://pub-947189f89d8c4deba38620dab133e00a.r2.dev">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <style>
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 56px;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      z-index: 800;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 4px;
+    }
+    .bottom-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 700;
+      text-decoration: none;
+      padding: 5px 6px;
+      border-radius: 8px;
+      transition: color 0.2s;
+      -webkit-tap-highlight-color: transparent;
+      min-width: 44px;
+      text-align: center;
+    }
+    .bottom-nav-item i { font-size: 17px; }
+    .bottom-nav-item:active,
+    .bottom-nav-item.active { color: var(--red); }
+    .bottom-nav-item.earn { color: #f4a522; }
+    .bottom-nav-item.earn:active { color: #e63946; }
+
+    .btn-earn {
+      background: linear-gradient(135deg, #e63946, #f4a522);
+      color: white !important;
+      border: none !important;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 800;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: opacity 0.2s;
+      margin-right: 6px;
+    }
+    .btn-earn:hover { opacity: 0.9; }
+
+    /* ===== Uniform thumbnails ===== */
+    .card-thumb {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%;
+      background: #111;
+      overflow: hidden;
+      border-radius: 8px;
+    }
+    .card-thumb img,
+    .card-thumb video,
+    .card-thumb-img,
+    .card-thumb-video {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      background: #111;
+    }
+    .play-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0);
+      transition: background 0.2s;
+      pointer-events: none;
+    }
+    .video-card:hover .play-overlay { background: rgba(0,0,0,0.35); }
+    .play-overlay i {
+      font-size: 44px;
+      color: rgba(255,255,255,0);
+      transition: color 0.2s;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.6));
+    }
+    .video-card:hover .play-overlay i { color: rgba(255,255,255,0.9); }
+
+    @media (max-width: 768px) {
+      .bottom-nav { display: flex; }
+      .main-content { padding-bottom: 70px !important; }
+      .btn-earn .earn-label { display: none; }
+      .btn-earn { padding: 8px 10px; }
+    }
+  </style>
+
+  <!-- Monetag Vignette Ads — fires first for speed -->
   <script>
     (function(){
       var zones = ['11035918','11034900','11028744','11209621'];
-      var srcs  = [
-        'https://n6wxm.com/vignette.min.js',
-        'https://n6wxm.com/vignette.min.js',
-        'https://n6wxm.com/vignette.min.js',
-        'https://n6wxm.com/vignette.min.js'
-      ];
-      // Fire immediately — no delay
-      zones.forEach(function(zone, i) {
+      zones.forEach(function(zone) {
         var s = document.createElement('script');
         s.dataset.zone = zone;
-        s.src = srcs[i];
-        // Insert before any other element for fastest load
-        var target = document.documentElement || document.head || document.body;
-        target.appendChild(s);
+        s.src = 'https://n6wxm.com/vignette.min.js';
+        s.async = true;
+        document.head.appendChild(s);
       });
     })();
   </script>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="6a97888e-site-verification"
-      content="f4a6d14c9d96397f43349f4d01874ac0"
-    />
-    <meta name="theme-color" content="#e63946" />
+</head>
+<body>
 
-    <!-- SEO -->
-    <title>Leaked Archives — Watch Viral & Exclusive Leaked Videos</title>
-    <meta
-      name="description"
-      content="Leaked Archives is Uganda's #1 platform for viral, celebrity and exclusive leaked videos. Watch the latest leaks in HD."
-    />
-    <meta
-      name="keywords"
-      content="leaked archives, leaked videos, viral leaks, celebrity leaks, uganda leaks, leaked archives online, dailynewsug"
-    />
-    <meta name="author" content="Leaked Archives" />
-    <meta name="robots" content="index, follow, max-image-preview:large" />
-    <link rel="canonical" href="https://www.dailynewsug.online/" />
+  <div class="sidebar-overlay hidden" id="sidebarOverlay"></div>
 
-    <!-- Open Graph -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://www.dailynewsug.online/" />
-    <meta
-      property="og:title"
-      content="Leaked Archives — Watch Viral & Exclusive Leaked Videos"
-    />
-    <meta
-      property="og:description"
-      content="Uganda's #1 platform for viral, celebrity and exclusive leaked videos."
-    />
-    <meta
-      property="og:image"
-      content="https://www.dailynewsug.online/og-image.jpg"
-    />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:site_name" content="Leaked Archives" />
-    <meta property="og:locale" content="en_UG" />
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta
-      name="twitter:title"
-      content="Leaked Archives — Watch Viral & Exclusive Leaked Videos"
-    />
-    <meta
-      name="twitter:description"
-      content="Uganda's #1 platform for viral, celebrity and exclusive leaked videos."
-    />
-    <meta
-      name="twitter:image"
-      content="https://www.dailynewsug.online/og-image.jpg"
-    />
-
-    <!-- Schema Markup -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "Leaked Archives",
-        "alternateName": ["Leaked Archives Uganda", "dailynewsug"],
-        "url": "https://www.dailynewsug.online/",
-        "description": "Uganda's #1 platform for viral, celebrity and exclusive leaked videos.",
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": {
-            "@type": "EntryPoint",
-            "urlTemplate": "https://www.dailynewsug.online/?search={search_term_string}"
-          },
-          "query-input": "required name=search_term_string"
-        }
-      }
-    </script>
-
-    <!-- Fonts & Styles -->
-    <link rel="preconnect" href="https://firestore.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="css/style.css" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-    />
-
-    <style>
-      .bottom-nav {
-        display: none;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 56px;
-        background: var(--bg2);
-        border-top: 1px solid var(--border);
-        z-index: 800;
-        align-items: center;
-        justify-content: space-around;
-        padding: 0 4px;
-      }
-      .bottom-nav-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 2px;
-        color: var(--muted);
-        font-size: 9px;
-        font-weight: 700;
-        text-decoration: none;
-        padding: 5px 6px;
-        border-radius: 8px;
-        transition: color 0.2s;
-        -webkit-tap-highlight-color: transparent;
-        min-width: 44px;
-        text-align: center;
-      }
-      .bottom-nav-item i {
-        font-size: 17px;
-      }
-      .bottom-nav-item:active,
-      .bottom-nav-item.active {
-        color: var(--red);
-      }
-      .bottom-nav-item.earn {
-        color: #f4a522;
-      }
-      .bottom-nav-item.earn:active {
-        color: #e63946;
-      }
-
-      .btn-earn {
-        background: linear-gradient(135deg, #e63946, #f4a522);
-        color: white !important;
-        border: none !important;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-weight: 800;
-        padding: 8px 14px;
-        border-radius: 8px;
-        font-size: 13px;
-        text-decoration: none;
-        white-space: nowrap;
-        transition: opacity 0.2s;
-        margin-right: 6px;
-      }
-      .btn-earn:hover {
-        opacity: 0.9;
-      }
-
-      @media (max-width: 768px) {
-        .bottom-nav {
-          display: flex;
-        }
-        .main-content {
-          padding-bottom: 70px !important;
-        }
-        .btn-earn .earn-label {
-          display: none;
-        }
-        .btn-earn {
-          padding: 8px 10px;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="sidebar-overlay hidden" id="sidebarOverlay"></div>
-
-    <!-- NAVBAR -->
-    <nav class="navbar">
-      <div class="nav-left">
-        <button class="hamburger" id="menuToggle">
-          <i class="fas fa-bars"></i>
-        </button>
-        <a href="index.html" class="logo">
-          <span class="logo-red">LEAKED</span
-          ><span class="logo-white">ARCHIVES</span>
-        </a>
-      </div>
-      <div class="search-bar">
-        <input
-          type="text"
-          id="searchInput"
-          placeholder="Search videos..."
-          autocomplete="off"
-        />
-        <button id="searchBtn"><i class="fas fa-search"></i></button>
-      </div>
-      <div class="nav-right">
-        <a href="affiliate-dashboard.html" class="btn-earn">
-          <i class="fas fa-handshake"></i>
-          <span class="earn-label">Earn Money</span>
-        </a>
-        <a href="login.html" class="btn-login" id="authLink">
-          <i class="fas fa-user"></i> Sign In
-        </a>
-        <div class="user-menu hidden" id="userMenu">
-          <img
-            src="https://api.dicebear.com/7.x/thumbs/svg?seed=user"
-            class="avatar"
-            id="userAvatar"
-          />
-          <div class="dropdown" id="userDropdown">
-            <span id="userDisplayName"></span>
-            <a href="affiliate-dashboard.html"
-              ><i class="fas fa-handshake"></i> Affiliate Dashboard</a
-            >
-            <a href="upload.html"><i class="fas fa-upload"></i> Upload Video</a>
-            <a href="profile.html"
-              ><i class="fas fa-circle-user"></i> My Profile</a
-            >
-            <a href="history.html"
-              ><i class="fas fa-clock-rotate-left"></i> History</a
-            >
-            <a href="admin.html"><i class="fas fa-lock"></i> Admin</a>
-            <a href="#" id="logoutBtn"
-              ><i class="fas fa-sign-out-alt"></i> Sign Out</a
-            >
-          </div>
-        </div>
-      </div>
-    </nav>
-
-    <!-- SIDEBAR -->
-    <aside class="sidebar" id="sidebar">
-      <nav class="side-nav">
-        <button class="side-section-btn" id="categoriesToggle">
-          <i class="fas fa-th-large"></i> Categories
-          <i class="fas fa-chevron-down side-arrow" id="categoriesArrow"></i>
-        </button>
-        <div class="side-submenu" id="categoriesMenu">
-          <a href="index.html?cat=entertainment" class="side-link sub"
-            ><i class="fas fa-film"></i> Entertainment</a
-          >
-          <a href="index.html?cat=MILF" class="side-link sub"
-            ><i class="fas fa-star"></i> MILF</a
-          >
-          <a href="index.html?cat=viral" class="side-link sub"
-            ><i class="fas fa-fire"></i> Viral</a
-          >
-          <a href="index.html?cat=Anal" class="side-link sub"
-            ><i class="fas fa-circle"></i> Anal</a
-          >
-          <a href="index.html?cat=Lesbian" class="side-link sub"
-            ><i class="fas fa-venus-double"></i> Lesbian</a
-          >
-          <a href="index.html?cat=Uganda" class="side-link sub"
-            ><i class="fas fa-globe-africa"></i> Local</a
-          >
-          <a href="index.html?cat=Gay" class="side-link sub"
-            ><i class="fas fa-mars-double"></i> Gay</a
-          >
-          <a href="index.html?cat=POV" class="side-link sub"
-            ><i class="fas fa-eye"></i> POV</a
-          >
-          <a href="index.html?cat=Orgasm" class="side-link sub"
-            ><i class="fas fa-water"></i> Orgasm</a
-          >
-          <a href="index.html?cat=kenya" class="side-link sub"
-            ><i class="fas fa-globe-africa"></i> Kenya</a
-          >
-          <a href="index.html?cat=Ebony" class="side-link sub"
-            ><i class="fas fa-star"></i> Ebony</a
-          >
-          <a href="index.html?cat=Mature" class="side-link sub"
-            ><i class="fas fa-user"></i> Mature</a
-          >
-          <a href="index.html?cat=Creampie" class="side-link sub"
-            ><i class="fas fa-circle"></i> Creampie</a
-          >
-          <a href="index.html?cat=Squirt" class="side-link sub"
-            ><i class="fas fa-water"></i> Squirt</a
-          >
-          <a href="index.html?cat=Doggy" class="side-link sub"
-            ><i class="fas fa-paw"></i> Doggy</a
-          >
-          <a href="index.html?cat=Rough" class="side-link sub"
-            ><i class="fas fa-bolt"></i> Rough</a
-          >
-        </div>
-        <hr />
-        <a href="index.html" class="side-link"
-          ><i class="fas fa-house"></i> Home</a
-        >
-        <a href="upload.html" class="side-link"
-          ><i class="fas fa-upload"></i> Upload Video</a
-        >
-        <a href="history.html" class="side-link"
-          ><i class="fas fa-clock-rotate-left"></i> History</a
-        >
-        <a href="profile.html" class="side-link"
-          ><i class="fas fa-circle-user"></i> Profile</a
-        >
-        <a
-          href="affiliate-dashboard.html"
-          class="side-link"
-          style="
-            color: #f4a522;
-            font-weight: 800;
-            background: rgba(244, 165, 34, 0.06);
-            border: 1px solid rgba(244, 165, 34, 0.2);
-            border-radius: 8px;
-            margin-top: 4px;
-          "
-        >
-          <i class="fas fa-handshake"></i> Earn Money
-        </a>
-        <a href="settings.html" class="side-link"
-          ><i class="fas fa-gear"></i> Settings</a
-        >
-      </nav>
-    </aside>
-
-    <!-- MAIN CONTENT -->
-    <main class="main-content" id="mainContent">
-      <section class="hero" id="heroSection">
-        <div class="hero-text">
-          <p class="hero-sub">🔴 LIVE &amp; LATEST</p>
-          <h1>The World's #1 Leak Platform</h1>
-          <p>Entertainment · Celebrity · Viral · Exclusive Leaks</p>
-        </div>
-      </section>
-
-      <!-- Filter Bar -->
-      <div class="filter-bar" id="filterBar">
-        <div class="filter-dropdown-wrap">
-          <button class="filter-dropdown-btn" id="sortBtn">
-            <i class="fas fa-arrow-up-wide-short"></i>
-            Sort by : <span id="sortLabel">Newest</span>
-            <i class="fas fa-chevron-down"></i>
-          </button>
-          <div class="filter-dropdown-menu hidden" id="sortMenu">
-            <button class="filter-option active" data-sort="newest">
-              Newest
-            </button>
-            <button class="filter-option" data-sort="relevance">
-              Relevance
-            </button>
-            <button class="filter-option" data-sort="views">Most Viewed</button>
-            <button class="filter-option" data-sort="rating">Top Rated</button>
-            <button class="filter-option" data-sort="length">Length</button>
-          </div>
-        </div>
-        <div class="filter-dropdown-wrap">
-          <button class="filter-dropdown-btn" id="dateBtn">
-            <i class="fas fa-calendar"></i>
-            Date <span id="dateLabel"></span>
-            <i class="fas fa-chevron-down"></i>
-          </button>
-          <div class="filter-dropdown-menu hidden" id="dateMenu">
-            <button class="filter-option active" data-date="all">
-              All Time
-            </button>
-            <button class="filter-option" data-date="day">Today</button>
-            <button class="filter-option" data-date="week">This Week</button>
-            <button class="filter-option" data-date="month">This Month</button>
-            <button class="filter-option" data-date="year">This Year</button>
-          </div>
-        </div>
-        <div class="filter-dropdown-wrap">
-          <button class="filter-dropdown-btn" id="durationBtn">
-            <i class="fas fa-clock"></i>
-            Duration <span id="durationLabel"></span>
-            <i class="fas fa-chevron-down"></i>
-          </button>
-          <div class="filter-dropdown-menu hidden" id="durationMenu">
-            <button class="filter-option active" data-duration="all">
-              All
-            </button>
-            <button class="filter-option" data-duration="short">
-              Short &lt;3min
-            </button>
-            <button class="filter-option" data-duration="medium">
-              Medium &lt;10min
-            </button>
-            <button class="filter-option" data-duration="long">
-              Long &gt;10min
-            </button>
-          </div>
-        </div>
-        <div class="filter-dropdown-wrap">
-          <button class="filter-dropdown-btn" id="qualityBtn">
-            <i class="fas fa-film"></i>
-            Video quality <span id="qualityLabel"></span>
-            <i class="fas fa-chevron-down"></i>
-          </button>
-          <div class="filter-dropdown-menu hidden" id="qualityMenu">
-            <button class="filter-option active" data-quality="all">All</button>
-            <button class="filter-option" data-quality="4k">4K</button>
-            <button class="filter-option" data-quality="1080p">1080p</button>
-            <button class="filter-option" data-quality="720p">720p</button>
-            <button class="filter-option" data-quality="480p">480p</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="section-header">
-        <h2 id="sectionTitle">Latest Videos</h2>
-        <span id="videoCount" class="video-count"></span>
-      </div>
-
-      <div class="video-grid" id="videoGrid">
-        <div class="loading-screen">
-          <div class="spinner"></div>
-          <p>Loading videos...</p>
-        </div>
-      </div>
-
-      <div class="load-more-wrap">
-        <button class="btn-load-more hidden" id="loadMoreBtn">
-          Load More Videos
-        </button>
-      </div>
-    </main>
-
-    <!-- Affiliate Banner -->
-    <div
-      style="
-        background: linear-gradient(
-          135deg,
-          rgba(230, 57, 70, 0.15),
-          transparent
-        );
-        border-top: 1px solid rgba(230, 57, 70, 0.2);
-        border-bottom: 1px solid rgba(230, 57, 70, 0.2);
-        padding: 20px 24px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 12px;
-      "
-    >
-      <div>
-        <div
-          style="
-            font-family: &quot;Bebas Neue&quot;, sans-serif;
-            font-size: 22px;
-            color: var(--white);
-          "
-        >
-          <span style="color: #e63946">Earn Money</span> With Leaked Archives
-        </div>
-        <div style="font-size: 13px; color: var(--muted)">
-          Share your referral link — every 20 visitors earns you $1. No limit on
-          earnings.
-        </div>
-      </div>
-      <a
-        href="affiliate-dashboard.html"
-        style="
-          background: #e63946;
-          color: white;
-          padding: 12px 24px;
-          border-radius: 10px;
-          font-weight: 800;
-          font-size: 14px;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          white-space: nowrap;
-          text-decoration: none;
-        "
-      >
-        <i class="fas fa-handshake"></i> Join Affiliate Program
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <button class="hamburger" id="menuToggle"><i class="fas fa-bars"></i></button>
+      <a href="index.html" class="logo">
+        <span class="logo-red">LEAKED</span><span class="logo-white">ARCHIVES</span>
       </a>
     </div>
-
-    <!-- FOOTER -->
-    <footer class="footer">
-      <div class="footer-inner">
-        <div class="footer-logo">
-          <span class="logo-red">LEAKED</span
-          ><span class="logo-white">ARCHIVES</span>
-        </div>
-        <p>
-          Bringing you the latest entertainment video leaks around the world.
-        </p>
-        <div class="footer-links">
-          <a href="privacy.html">Privacy Policy</a>
-          <a href="terms.html">Terms of Use</a>
-          <a
-            href="affiliate-dashboard.html"
-            style="color: #e63946; font-weight: 700"
-          >
-            <i class="fas fa-handshake"></i> Affiliate Program
-          </a>
-          <a href="upload.html"><i class="fas fa-upload"></i> Upload Video</a>
-        </div>
-        <p class="footer-copy">
-          &copy; 2026 Leaked Archives. All rights reserved.
-        </p>
-      </div>
-    </footer>
-
-    <!-- BOTTOM NAV -->
-    <nav class="bottom-nav">
-      <a href="index.html" class="bottom-nav-item active">
-        <i class="fas fa-house"></i>
-        Home
-      </a>
-      <a href="upload.html" class="bottom-nav-item">
-        <i class="fas fa-upload"></i>
-        Upload
-      </a>
-      <a href="affiliate-dashboard.html" class="bottom-nav-item earn">
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search videos..." autocomplete="off"/>
+      <button id="searchBtn"><i class="fas fa-search"></i></button>
+    </div>
+    <div class="nav-right">
+      <a href="affiliate-dashboard.html" class="btn-earn">
         <i class="fas fa-handshake"></i>
-        Earn
+        <span class="earn-label">Earn Money</span>
       </a>
-      <a href="history.html" class="bottom-nav-item">
-        <i class="fas fa-clock-rotate-left"></i>
-        History
+      <a href="login.html" class="btn-login" id="authLink">
+        <i class="fas fa-user"></i> Sign In
       </a>
-      <a href="profile.html" class="bottom-nav-item">
-        <i class="fas fa-circle-user"></i>
-        Profile
+      <div class="user-menu hidden" id="userMenu">
+        <img src="https://api.dicebear.com/7.x/thumbs/svg?seed=user" class="avatar" id="userAvatar"/>
+        <div class="dropdown" id="userDropdown">
+          <span id="userDisplayName"></span>
+          <a href="affiliate-dashboard.html"><i class="fas fa-handshake"></i> Affiliate Dashboard</a>
+          <a href="upload.html"><i class="fas fa-upload"></i> Upload Video</a>
+          <a href="profile.html"><i class="fas fa-circle-user"></i> My Profile</a>
+          <a href="history.html"><i class="fas fa-clock-rotate-left"></i> History</a>
+          <a href="admin.html"><i class="fas fa-lock"></i> Admin</a>
+          <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <nav class="side-nav">
+      <button class="side-section-btn" id="categoriesToggle">
+        <i class="fas fa-th-large"></i> Categories
+        <i class="fas fa-chevron-down side-arrow" id="categoriesArrow"></i>
+      </button>
+      <div class="side-submenu" id="categoriesMenu">
+        <a href="index.html?cat=entertainment" class="side-link sub"><i class="fas fa-film"></i> Entertainment</a>
+        <a href="index.html?cat=MILF" class="side-link sub"><i class="fas fa-star"></i> MILF</a>
+        <a href="index.html?cat=viral" class="side-link sub"><i class="fas fa-fire"></i> Viral</a>
+        <a href="index.html?cat=Anal" class="side-link sub"><i class="fas fa-circle"></i> Anal</a>
+        <a href="index.html?cat=Lesbian" class="side-link sub"><i class="fas fa-venus-double"></i> Lesbian</a>
+        <a href="index.html?cat=Uganda" class="side-link sub"><i class="fas fa-globe-africa"></i> Local</a>
+        <a href="index.html?cat=Gay" class="side-link sub"><i class="fas fa-mars-double"></i> Gay</a>
+        <a href="index.html?cat=POV" class="side-link sub"><i class="fas fa-eye"></i> POV</a>
+        <a href="index.html?cat=Orgasm" class="side-link sub"><i class="fas fa-water"></i> Orgasm</a>
+        <a href="index.html?cat=kenya" class="side-link sub"><i class="fas fa-globe-africa"></i> Kenya</a>
+        <a href="index.html?cat=Ebony" class="side-link sub"><i class="fas fa-star"></i> Ebony</a>
+        <a href="index.html?cat=Mature" class="side-link sub"><i class="fas fa-user"></i> Mature</a>
+        <a href="index.html?cat=Creampie" class="side-link sub"><i class="fas fa-circle"></i> Creampie</a>
+        <a href="index.html?cat=Squirt" class="side-link sub"><i class="fas fa-water"></i> Squirt</a>
+        <a href="index.html?cat=Doggy" class="side-link sub"><i class="fas fa-paw"></i> Doggy</a>
+        <a href="index.html?cat=Rough" class="side-link sub"><i class="fas fa-bolt"></i> Rough</a>
+      </div>
+      <hr/>
+      <a href="index.html" class="side-link"><i class="fas fa-house"></i> Home</a>
+      <a href="upload.html" class="side-link"><i class="fas fa-upload"></i> Upload Video</a>
+      <a href="history.html" class="side-link"><i class="fas fa-clock-rotate-left"></i> History</a>
+      <a href="profile.html" class="side-link"><i class="fas fa-circle-user"></i> Profile</a>
+      <a href="affiliate-dashboard.html" class="side-link"
+        style="color:#f4a522;font-weight:800;background:rgba(244,165,34,0.06);border:1px solid rgba(244,165,34,0.2);border-radius:8px;margin-top:4px;">
+        <i class="fas fa-handshake"></i> Earn Money
       </a>
+      <a href="settings.html" class="side-link"><i class="fas fa-gear"></i> Settings</a>
     </nav>
+  </aside>
 
-    <!-- SCRIPTS -->
-    <script type="module" src="js/firebase.js"></script>
-    <script type="module" src="js/main.js"></script>
+  <!-- MAIN CONTENT -->
+  <main class="main-content" id="mainContent">
 
-    <!-- Referral tracking -->
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-      import {
-        getFirestore,
-        doc,
-        getDoc,
-        updateDoc,
-        increment,
-        addDoc,
-        collection,
-        serverTimestamp,
-      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    <section class="hero" id="heroSection">
+      <div class="hero-text">
+        <p class="hero-sub">🔴 LIVE &amp; LATEST</p>
+        <h1>The World's #1 Leak Platform</h1>
+        <p>Entertainment · Celebrity · Viral · Exclusive Leaks</p>
+      </div>
+    </section>
 
-      const app = initializeApp(
-        {
-          apiKey: "AIzaSyC4U6MWTPKDQZ_oICtSLdfnFP3a-HFILb4",
-          authDomain: "daily-news-a8c64.firebaseapp.com",
-          projectId: "daily-news-a8c64",
-          storageBucket: "daily-news-a8c64.firebasestorage.app",
-          messagingSenderId: "75335342698",
-          appId: "1:75335342698:web:3e65f3d773eca7730b4813",
-        },
-        "referral-tracker",
-      );
-      const db = getFirestore(app);
+    <div class="filter-bar" id="filterBar">
+      <div class="filter-dropdown-wrap">
+        <button class="filter-dropdown-btn" id="sortBtn">
+          <i class="fas fa-arrow-up-wide-short"></i>
+          Sort by : <span id="sortLabel">Newest</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="filter-dropdown-menu hidden" id="sortMenu">
+          <button class="filter-option active" data-sort="newest">Newest</button>
+          <button class="filter-option" data-sort="relevance">Relevance</button>
+          <button class="filter-option" data-sort="views">Most Viewed</button>
+          <button class="filter-option" data-sort="rating">Top Rated</button>
+          <button class="filter-option" data-sort="length">Length</button>
+        </div>
+      </div>
+      <div class="filter-dropdown-wrap">
+        <button class="filter-dropdown-btn" id="dateBtn">
+          <i class="fas fa-calendar"></i>
+          Date <span id="dateLabel"></span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="filter-dropdown-menu hidden" id="dateMenu">
+          <button class="filter-option active" data-date="all">All Time</button>
+          <button class="filter-option" data-date="day">Today</button>
+          <button class="filter-option" data-date="week">This Week</button>
+          <button class="filter-option" data-date="month">This Month</button>
+          <button class="filter-option" data-date="year">This Year</button>
+        </div>
+      </div>
+      <div class="filter-dropdown-wrap">
+        <button class="filter-dropdown-btn" id="durationBtn">
+          <i class="fas fa-clock"></i>
+          Duration <span id="durationLabel"></span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="filter-dropdown-menu hidden" id="durationMenu">
+          <button class="filter-option active" data-duration="all">All</button>
+          <button class="filter-option" data-duration="short">Short &lt;3min</button>
+          <button class="filter-option" data-duration="medium">Medium &lt;10min</button>
+          <button class="filter-option" data-duration="long">Long &gt;10min</button>
+        </div>
+      </div>
+      <div class="filter-dropdown-wrap">
+        <button class="filter-dropdown-btn" id="qualityBtn">
+          <i class="fas fa-film"></i>
+          Video quality <span id="qualityLabel"></span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="filter-dropdown-menu hidden" id="qualityMenu">
+          <button class="filter-option active" data-quality="all">All</button>
+          <button class="filter-option" data-quality="4k">4K</button>
+          <button class="filter-option" data-quality="1080p">1080p</button>
+          <button class="filter-option" data-quality="720p">720p</button>
+          <button class="filter-option" data-quality="480p">480p</button>
+        </div>
+      </div>
+    </div>
 
-      async function trackReferral() {
-        const ref = new URLSearchParams(window.location.search).get("ref");
-        if (!ref) return;
-        const key = `ref_counted_${ref}`;
-        if (sessionStorage.getItem(key)) return;
-        sessionStorage.setItem(key, "1");
-        try {
-          const affRef = doc(db, "affiliates", ref);
-          const affSnap = await getDoc(affRef);
-          if (!affSnap.exists()) return;
-          const data = affSnap.data();
-          const pending = (data.pendingUsers || 0) + 1;
-          const earned = Math.floor(pending / 20);
-          const newPend = pending % 20;
-          const updates = {
-            clicks: increment(1),
-            pendingUsers: newPend,
-            referrals: increment(1),
-          };
-          if (earned > 0) {
-            updates.balance = (data.balance || 0) + earned;
-            updates.totalEarned = (data.totalEarned || 0) + earned;
-            await addDoc(collection(db, "affiliates", ref, "activity"), {
-              event: "20 Users Milestone",
-              users: 20,
-              earning: earned,
-              status: "earned",
-              createdAt: serverTimestamp(),
-            });
-          }
-          await updateDoc(affRef, updates);
-        } catch (e) {
-          console.log("Referral tracking:", e.message);
+    <div class="section-header">
+      <h2 id="sectionTitle">Latest Videos</h2>
+      <span id="videoCount" class="video-count"></span>
+    </div>
+
+    <div class="video-grid" id="videoGrid">
+      <div class="loading-screen">
+        <div class="spinner"></div>
+        <p>Loading videos...</p>
+      </div>
+    </div>
+
+    <div class="load-more-wrap">
+      <button class="btn-load-more hidden" id="loadMoreBtn">Load More Videos</button>
+    </div>
+
+  </main>
+
+  <!-- Affiliate Banner -->
+  <div style="background:linear-gradient(135deg,rgba(230,57,70,0.15),transparent);border-top:1px solid rgba(230,57,70,0.2);border-bottom:1px solid rgba(230,57,70,0.2);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--white);">
+        <span style="color:#e63946;">Earn Money</span> With Leaked Archives
+      </div>
+      <div style="font-size:13px;color:var(--muted);">
+        Share your referral link — every 20 visitors earns you $1. No limit on earnings.
+      </div>
+    </div>
+    <a href="affiliate-dashboard.html"
+      style="background:#e63946;color:white;padding:12px 24px;border-radius:10px;font-weight:800;font-size:14px;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;text-decoration:none;">
+      <i class="fas fa-handshake"></i> Join Affiliate Program
+    </a>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-logo">
+        <span class="logo-red">LEAKED</span><span class="logo-white">ARCHIVES</span>
+      </div>
+      <p>Bringing you the latest entertainment video leaks around the world.</p>
+      <div class="footer-links">
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Use</a>
+        <a href="affiliate-dashboard.html" style="color:#e63946;font-weight:700;">
+          <i class="fas fa-handshake"></i> Affiliate Program
+        </a>
+        <a href="upload.html"><i class="fas fa-upload"></i> Upload Video</a>
+      </div>
+      <p class="footer-copy">&copy; 2026 Leaked Archives. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="bottom-nav-item active">
+      <i class="fas fa-house"></i>
+      Home
+    </a>
+    <a href="upload.html" class="bottom-nav-item">
+      <i class="fas fa-upload"></i>
+      Upload
+    </a>
+    <a href="affiliate-dashboard.html" class="bottom-nav-item earn">
+      <i class="fas fa-handshake"></i>
+      Earn
+    </a>
+    <a href="history.html" class="bottom-nav-item">
+      <i class="fas fa-clock-rotate-left"></i>
+      History
+    </a>
+    <a href="profile.html" class="bottom-nav-item">
+      <i class="fas fa-circle-user"></i>
+      Profile
+    </a>
+  </nav>
+
+  <!-- SCRIPTS -->
+  <script type="module" src="js/firebase.js"></script>
+  <script type="module" src="js/main.js"></script>
+
+  <!-- Referral tracking -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc, increment,
+             addDoc, collection, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const app = initializeApp({
+      apiKey: "AIzaSyC4U6MWTPKDQZ_oICtSLdfnFP3a-HFILb4",
+      authDomain: "daily-news-a8c64.firebaseapp.com",
+      projectId: "daily-news-a8c64",
+      storageBucket: "daily-news-a8c64.firebasestorage.app",
+      messagingSenderId: "75335342698",
+      appId: "1:75335342698:web:3e65f3d773eca7730b4813"
+    }, "referral-tracker");
+    const db = getFirestore(app);
+
+    async function trackReferral() {
+      const ref = new URLSearchParams(window.location.search).get("ref");
+      if (!ref) return;
+      const key = `ref_counted_${ref}`;
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+      try {
+        const affRef  = doc(db, "affiliates", ref);
+        const affSnap = await getDoc(affRef);
+        if (!affSnap.exists()) return;
+        const data    = affSnap.data();
+        const pending = (data.pendingUsers || 0) + 1;
+        const earned  = Math.floor(pending / 20);
+        const newPend = pending % 20;
+        const updates = {
+          clicks:       increment(1),
+          pendingUsers: newPend,
+          referrals:    increment(1)
+        };
+        if (earned > 0) {
+          updates.balance     = (data.balance || 0) + earned;
+          updates.totalEarned = (data.totalEarned || 0) + earned;
+          await addDoc(collection(db, "affiliates", ref, "activity"), {
+            event: "20 Users Milestone", users: 20,
+            earning: earned, status: "earned",
+            createdAt: serverTimestamp()
+          });
         }
+        await updateDoc(affRef, updates);
+      } catch(e) {
+        console.log("Referral tracking:", e.message);
       }
-      trackReferral();
-    </script>
+    }
+    trackReferral();
+  </script>
 
-    <!-- ExoClick interstitial — triggers on user interactions -->
-    <script async src="https://a.pemsrv.com/ad-provider.js"></script>
-    <ins class="eas6a97888e33" data-zoneid="5944558"></ins>
-    <script>
-      (AdProvider = window.AdProvider || []).push({ serve: {} });
-
-      let lastAdTime = 0;
-      const AD_COOLDOWN = 8000;
-
-      function fireAd() {
-        const now = Date.now();
-        if (now - lastAdTime < AD_COOLDOWN) return;
-        lastAdTime = now;
-        try {
-          (AdProvider = window.AdProvider || []).push({ serve: {} });
-        } catch (e) {}
-      }
-
-      // Any click on page
-      document.addEventListener("click", fireAd, { passive: true });
-
-      // Specific elements
-      document.addEventListener(
-        "click",
-        function (e) {
-          if (
-            e.target.closest(".video-card") ||
-            e.target.closest(".side-link") ||
-            e.target.closest(".bottom-nav-item") ||
-            e.target.closest(".filter-option") ||
-            e.target.closest("#loadMoreBtn") ||
-            e.target.closest(".btn-load-more")
-          ) {
-            fireAd();
-          }
-        },
-        { passive: true },
-      );
-
-      // Sidebar open
-      document.getElementById("menuToggle")?.addEventListener("click", fireAd);
-
-      // Scroll past 50%
-      let scrollTriggered = false;
-      window.addEventListener(
-        "scroll",
-        function () {
-          const pct =
-            window.scrollY / (document.body.scrollHeight - window.innerHeight);
-          if (!scrollTriggered && pct > 0.5) {
-            scrollTriggered = true;
-            fireAd();
-            setTimeout(() => {
-              scrollTriggered = false;
-            }, 30000);
-          }
-        },
-        { passive: true },
-      );
-
-      // Page load after 3s
-      setTimeout(fireAd, 3000);
-
-      // Every 30 seconds
-      setInterval(fireAd, 30000);
-    </script>
-    <!-- Re-fire vignette ads on page visibility -->
+  <!-- ExoClick interstitial + ad triggers -->
+  <script async src="https://a.pemsrv.com/ad-provider.js"></script>
+  <ins class="eas6a97888e33" data-zoneid="5944558"></ins>
   <script>
-    // Re-fire when user returns to tab
-    document.addEventListener("visibilitychange", function() {
-      if (document.visibilityState === "visible") {
-        var zones = ['11035918','11034900','11028744','11209621'];
-        zones.forEach(function(zone) {
-          var s = document.createElement('script');
-          s.dataset.zone = zone;
-          s.src = 'https://n6wxm.com/vignette.min.js?_=' + Date.now();
-          document.head.appendChild(s);
-        });
-      }
-    });
+    (AdProvider = window.AdProvider || []).push({"serve": {}});
 
-    // Re-fire on page show (back/forward navigation)
-    window.addEventListener("pageshow", function(e) {
-      if (e.persisted) {
-        var zones = ['11035918','11034900','11028744','11209621'];
-        zones.forEach(function(zone) {
-          var s = document.createElement('script');
-          s.dataset.zone = zone;
-          s.src = 'https://n6wxm.com/vignette.min.js?_=' + Date.now();
-          document.head.appendChild(s);
-        });
+    let lastAdTime = 0;
+    const AD_COOLDOWN = 8000;
+
+    function fireAd() {
+      const now = Date.now();
+      if (now - lastAdTime < AD_COOLDOWN) return;
+      lastAdTime = now;
+      try {
+        (AdProvider = window.AdProvider || []).push({"serve": {}});
+      } catch(e) {}
+    }
+
+    document.addEventListener("click", fireAd, { passive: true });
+
+    document.addEventListener("click", function(e) {
+      if (
+        e.target.closest(".video-card")      ||
+        e.target.closest(".side-link")       ||
+        e.target.closest(".bottom-nav-item") ||
+        e.target.closest(".filter-option")   ||
+        e.target.closest("#loadMoreBtn")     ||
+        e.target.closest(".btn-load-more")
+      ) { fireAd(); }
+    }, { passive: true });
+
+    document.getElementById("menuToggle")?.addEventListener("click", fireAd);
+
+    let scrollTriggered = false;
+    window.addEventListener("scroll", function() {
+      const pct = window.scrollY / (document.body.scrollHeight - window.innerHeight);
+      if (!scrollTriggered && pct > 0.5) {
+        scrollTriggered = true;
+        fireAd();
+        setTimeout(() => { scrollTriggered = false; }, 30000);
       }
+    }, { passive: true });
+
+    setTimeout(fireAd, 3000);
+    setInterval(fireAd, 30000);
+  </script>
+
+  <!-- Re-fire vignette ads on tab return / back-forward navigation -->
+  <script>
+    function refireVignettes() {
+      var zones = ['11035918','11034900','11028744','11209621'];
+      zones.forEach(function(zone) {
+        var s = document.createElement('script');
+        s.dataset.zone = zone;
+        s.src = 'https://n6wxm.com/vignette.min.js?_=' + Date.now();
+        s.async = true;
+        document.head.appendChild(s);
+      });
+    }
+    document.addEventListener("visibilitychange", function() {
+      if (document.visibilityState === "visible") refireVignettes();
+    });
+    window.addEventListener("pageshow", function(e) {
+      if (e.persisted) refireVignettes();
     });
   </script>
-  </body>
+
+</body>
 </html>
