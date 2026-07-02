@@ -1,1555 +1,660 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
 <head>
-  <!-- Monetag Vignette Ads — loads first for maximum speed -->
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Affiliate Dashboard — Leaked Archives Partners</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --red: #e63946; --red-dark: #b52d38; --gold: #f4a522; --green: #22c55e;
+      --dark: #0d0d0d; --dark2: #141414; --dark3: #1c1c1c; --dark4: #242424;
+      --border: rgba(255,255,255,0.08); --white: #ffffff; --muted: #888;
+      --text: #e8e8e8; --radius: 12px;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family:'Nunito',sans-serif; background:var(--dark); color:var(--text); min-height:100vh; overflow-x:hidden; }
+    a { text-decoration:none; color:inherit; }
+
+    .auth-screen { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+      background: radial-gradient(ellipse at 50% 0%, rgba(230,57,70,0.1) 0%, transparent 70%), var(--dark); }
+    .auth-box { background:var(--dark2); border:1px solid var(--border); border-radius:16px; padding:40px 36px; width:100%; max-width:420px; box-shadow:0 20px 60px rgba(0,0,0,0.5); }
+    .auth-logo { font-family:'Bebas Neue',sans-serif; font-size:28px; margin-bottom:6px; text-align:center; }
+    .auth-logo span { color:var(--red); }
+    .auth-tagline { text-align:center; color:var(--muted); font-size:13px; margin-bottom:28px; }
+    .auth-tabs { display:flex; background:var(--dark3); border-radius:10px; padding:4px; margin-bottom:22px; }
+    .auth-tab { flex:1; padding:9px; border-radius:8px; font-size:14px; font-weight:700; color:var(--muted); background:none; border:none; cursor:pointer; font-family:'Nunito',sans-serif; transition:all 0.2s; }
+    .auth-tab.active { background:var(--red); color:white; }
+    .auth-form { display:flex; flex-direction:column; gap:12px; }
+    .auth-input { background:var(--dark3); border:1px solid var(--border); border-radius:8px; color:var(--white); font-family:'Nunito',sans-serif; font-size:14px; padding:11px 14px; width:100%; outline:none; transition:border-color 0.2s; }
+    .auth-input:focus { border-color:var(--red); }
+    .auth-btn { background:var(--red); color:white; border:none; border-radius:8px; padding:13px; font-family:'Nunito',sans-serif; font-size:15px; font-weight:800; cursor:pointer; transition:background 0.2s; margin-top:4px; }
+    .auth-btn:hover { background:var(--red-dark); }
+    .auth-msg { padding:10px 14px; border-radius:8px; font-size:13px; font-weight:600; display:none; }
+    .auth-msg.error { background:rgba(230,57,70,0.15); color:var(--red); border:1px solid rgba(230,57,70,0.3); display:block; }
+    .auth-msg.success { background:rgba(34,197,94,0.15); color:var(--green); border:1px solid rgba(34,197,94,0.3); display:block; }
+    .divider { text-align:center; color:var(--muted); font-size:12px; margin:4px 0; position:relative; }
+    .divider::before, .divider::after { content:''; position:absolute; top:50%; width:42%; height:1px; background:var(--border); }
+    .divider::before { left:0; }
+    .divider::after { right:0; }
+    .google-btn { background:var(--dark3); border:1px solid var(--border); color:var(--white); border-radius:8px; padding:11px; font-family:'Nunito',sans-serif; font-size:14px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; transition:all 0.2s; width:100%; }
+    .google-btn:hover { background:var(--dark4); border-color:rgba(255,255,255,0.2); }
+    .google-btn img { width:18px; height:18px; }
+
+    .dashboard { display:none; min-height:100vh; }
+    .topbar { position:fixed; top:0; left:0; right:0; height:60px; background:var(--dark2); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 24px; justify-content:space-between; z-index:100; gap:12px; }
+    .topbar-logo { font-family:'Bebas Neue',sans-serif; font-size:22px; }
+    .topbar-logo span { color:var(--red); }
+    .topbar-logo .badge { background:var(--gold); color:#000; font-family:'Nunito',sans-serif; font-size:9px; font-weight:800; padding:2px 6px; border-radius:4px; margin-left:6px; vertical-align:middle; }
+    .topbar-right { display:flex; align-items:center; gap:12px; }
+    .topbar-user { font-size:13px; color:var(--muted); font-weight:600; }
+    .topbar-user span { color:var(--white); }
+    .logout-btn { background:var(--dark3); border:1px solid var(--border); color:var(--muted); padding:7px 14px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:'Nunito',sans-serif; transition:all 0.2s; display:flex; align-items:center; gap:6px; }
+    .logout-btn:hover { color:var(--white); border-color:rgba(255,255,255,0.2); }
+    .dash-body { margin-top:60px; padding:28px 24px 60px; max-width:1100px; margin-left:auto; margin-right:auto; }
+
+    .welcome-bar { background:linear-gradient(135deg, rgba(230,57,70,0.15) 0%, transparent 60%), var(--dark2); border:1px solid var(--border); border-radius:var(--radius); padding:24px 28px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; }
+    .welcome-bar h2 { font-family:'Bebas Neue',sans-serif; font-size:26px; color:var(--white); }
+    .welcome-bar h2 span { color:var(--red); }
+    .welcome-bar p { color:var(--muted); font-size:13px; margin-top:4px; }
+    .status-badge { background:rgba(34,197,94,0.15); color:var(--green); border:1px solid rgba(34,197,94,0.3); padding:6px 14px; border-radius:20px; font-size:12px; font-weight:800; display:flex; align-items:center; gap:6px; }
+    .status-badge::before { content:''; width:7px; height:7px; background:var(--green); border-radius:50%; display:inline-block; animation:pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+    .stats-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:24px; }
+    .stat-card { background:var(--dark2); border:1px solid var(--border); border-radius:var(--radius); padding:22px 20px; position:relative; overflow:hidden; transition:border-color 0.2s; }
+    .stat-card:hover { border-color:rgba(230,57,70,0.2); }
+    .stat-card.highlight { background:linear-gradient(135deg, rgba(230,57,70,0.1) 0%, var(--dark2) 100%); border-color:rgba(230,57,70,0.25); }
+    .stat-card.gold-card { background:linear-gradient(135deg, rgba(244,165,34,0.1) 0%, var(--dark2) 100%); border-color:rgba(244,165,34,0.25); }
+    .stat-label { font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+    .stat-label i { color:var(--red); }
+    .stat-card.gold-card .stat-label i { color:var(--gold); }
+    .stat-value { font-family:'Bebas Neue',sans-serif; font-size:40px; line-height:1; color:var(--white); }
+    .stat-card.highlight .stat-value { color:var(--red); }
+    .stat-card.gold-card .stat-value { color:var(--gold); }
+    .stat-sub { font-size:12px; color:var(--muted); margin-top:6px; }
+    .stat-sub span { color:var(--green); font-weight:700; }
+
+    .section-card { background:var(--dark2); border:1px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:20px; }
+    .section-card h3 { font-size:16px; font-weight:800; color:var(--white); margin-bottom:6px; display:flex; align-items:center; gap:8px; }
+    .section-card h3 i { color:var(--red); }
+    .section-card p { font-size:13px; color:var(--muted); margin-bottom:16px; }
+
+    .link-box { display:flex; gap:10px; align-items:center; background:var(--dark3); border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-bottom:12px; }
+    .link-box input { flex:1; background:none; border:none; color:var(--red); font-size:13px; font-weight:700; font-family:'Nunito',sans-serif; outline:none; min-width:0; }
+    .copy-btn { background:var(--red); color:white; border:none; border-radius:6px; padding:8px 16px; font-size:13px; font-weight:700; cursor:pointer; font-family:'Nunito',sans-serif; white-space:nowrap; display:flex; align-items:center; gap:6px; flex-shrink:0; transition:background 0.2s; }
+    .copy-btn:hover { background:var(--red-dark); }
+    .copy-btn.copied { background:var(--green); }
+
+    .share-btns { display:flex; gap:8px; flex-wrap:wrap; }
+    .share-btn { display:flex; align-items:center; gap:6px; padding:8px 16px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; border:none; font-family:'Nunito',sans-serif; transition:opacity 0.2s; }
+    .share-btn:hover { opacity:0.85; }
+    .share-btn.wa { background:#25d366; color:white; }
+    .share-btn.fb { background:#1877f2; color:white; }
+    .share-btn.tg { background:#0088cc; color:white; }
+    .share-btn.tw { background:#000; color:white; border:1px solid #333; }
+
+    .progress-section { margin-bottom:16px; }
+    .progress-label { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:600; }
+    .progress-label span:last-child { color:var(--gold); }
+    .progress-bg { background:var(--dark4); border-radius:10px; height:10px; overflow:hidden; }
+    .progress-fill { background:linear-gradient(90deg, var(--red), var(--gold)); height:100%; border-radius:10px; transition:width 0.5s ease; }
+    .progress-note { font-size:12px; color:var(--muted); margin-top:6px; }
+    .progress-note span { color:var(--green); font-weight:700; }
+
+    .activity-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .activity-table th { text-align:left; padding:10px 12px; font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--border); }
+    .activity-table td { padding:12px 12px; border-bottom:1px solid var(--border); color:var(--text); }
+    .activity-table tr:last-child td { border-bottom:none; }
+    .activity-table tr:hover td { background:rgba(255,255,255,0.02); }
+    .badge-earned { background:rgba(34,197,94,0.15); color:var(--green); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:800; }
+    .badge-pending { background:rgba(244,165,34,0.15); color:var(--gold); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:800; }
+
+    .payout-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-bottom:16px; }
+    .payout-method { background:var(--dark3); border:1px solid var(--border); border-radius:10px; padding:16px; cursor:pointer; transition:all 0.2s; text-align:center; }
+    .payout-method:hover { border-color:var(--red); }
+    .payout-method.selected { border-color:var(--red); background:rgba(230,57,70,0.08); }
+    .payout-method i { font-size:28px; margin-bottom:8px; display:block; color:var(--muted); }
+    .payout-method.selected i { color:var(--red); }
+    .payout-method h4 { font-size:13px; font-weight:800; color:var(--white); margin-bottom:3px; }
+    .payout-method p { font-size:11px; color:var(--muted); }
+
+    .payout-form { display:flex; flex-direction:column; gap:12px; }
+    .payout-input { background:var(--dark3); border:1px solid var(--border); border-radius:8px; color:var(--white); font-family:'Nunito',sans-serif; font-size:14px; padding:11px 14px; width:100%; outline:none; transition:border-color 0.2s; }
+    .payout-input:focus { border-color:var(--red); }
+    .payout-btn { background:var(--green); color:white; border:none; border-radius:8px; padding:13px; font-family:'Nunito',sans-serif; font-size:15px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:background 0.2s; }
+    .payout-btn:hover { background:#16a34a; }
+    .payout-btn:disabled { background:var(--dark4); color:var(--muted); cursor:not-allowed; }
+    .min-note { font-size:12px; color:var(--muted); padding:10px 14px; background:rgba(244,165,34,0.08); border:1px solid rgba(244,165,34,0.2); border-radius:8px; }
+    .min-note i { color:var(--gold); margin-right:6px; }
+
+    .notif { position:fixed; bottom:24px; right:24px; background:var(--dark2); border:1px solid var(--border); border-radius:10px; padding:14px 18px; font-size:13px; font-weight:700; color:var(--white); display:flex; align-items:center; gap:10px; box-shadow:0 8px 32px rgba(0,0,0,0.5); z-index:9999; transform:translateY(100px); opacity:0; transition:all 0.3s ease; }
+    .notif.show { transform:translateY(0); opacity:1; }
+    .notif i { color:var(--green); font-size:16px; }
+
+    @media (max-width:768px) {
+      .dash-body { padding:20px 14px 60px; }
+      .topbar { padding:0 14px; }
+      .topbar-user { display:none; }
+      .welcome-bar { padding:18px; }
+      .stat-value { font-size:32px; }
+      .link-box { flex-direction:column; align-items:stretch; }
+      .link-box input { font-size:12px; }
+    }
+  </style>
+
+  <!-- Monetag Vignette Ads -->
   <script>
     (function(){
       var zones = ['11035918','11034900','11028744','11209621'];
-      var srcs  = [
-        'https://n6wxm.com/vignette.min.js',
-        'https://n6wxm.com/vignette.min.js',
-        'https://n6wxm.com/vignette.min.js',
-        'https://n6wxm.com/vignette.min.js'
-      ];
-      // Fire immediately — no delay
-      zones.forEach(function(zone, i) {
+      zones.forEach(function(zone) {
         var s = document.createElement('script');
         s.dataset.zone = zone;
-        s.src = srcs[i];
-        // Insert before any other element for fastest load
-        var target = document.documentElement || document.head || document.body;
-        target.appendChild(s);
+        s.src = 'https://n6wxm.com/vignette.min.js';
+        s.async = true;
+        document.head.appendChild(s);
       });
     })();
   </script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Affiliate Dashboard — Leaked Archives Partners</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-    />
-    <style>
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-      :root {
-        --red: #e63946;
-        --red-dark: #b52d38;
-        --gold: #f4a522;
-        --green: #22c55e;
-        --dark: #0d0d0d;
-        --dark2: #141414;
-        --dark3: #1c1c1c;
-        --dark4: #242424;
-        --border: rgba(255, 255, 255, 0.08);
-        --white: #ffffff;
-        --muted: #888;
-        --text: #e8e8e8;
-        --radius: 12px;
-      }
-      html {
-        scroll-behavior: smooth;
-      }
-      body {
-        font-family: "Nunito", sans-serif;
-        background: var(--dark);
-        color: var(--text);
-        min-height: 100vh;
-        overflow-x: hidden;
-      }
-      a {
-        text-decoration: none;
-        color: inherit;
-      }
+</head>
+<body>
 
-      /* ===== AUTH SCREEN ===== */
-      .auth-screen {
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        background:
-          radial-gradient(
-            ellipse at 50% 0%,
-            rgba(230, 57, 70, 0.1) 0%,
-            transparent 70%
-          ),
-          var(--dark);
-      }
-      .auth-box {
-        background: var(--dark2);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 40px 36px;
-        width: 100%;
-        max-width: 420px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-      }
-      .auth-logo {
-        font-family: "Bebas Neue", sans-serif;
-        font-size: 28px;
-        margin-bottom: 6px;
-        text-align: center;
-      }
-      .auth-logo span {
-        color: var(--red);
-      }
-      .auth-tagline {
-        text-align: center;
-        color: var(--muted);
-        font-size: 13px;
-        margin-bottom: 28px;
-      }
-      .auth-tabs {
-        display: flex;
-        background: var(--dark3);
-        border-radius: 10px;
-        padding: 4px;
-        margin-bottom: 22px;
-      }
-      .auth-tab {
-        flex: 1;
-        padding: 9px;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 700;
-        color: var(--muted);
-        background: none;
-        border: none;
-        cursor: pointer;
-        font-family: "Nunito", sans-serif;
-        transition: all 0.2s;
-      }
-      .auth-tab.active {
-        background: var(--red);
-        color: white;
-      }
-      .auth-form {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-      .auth-input {
-        background: var(--dark3);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        color: var(--white);
-        font-family: "Nunito", sans-serif;
-        font-size: 14px;
-        padding: 11px 14px;
-        width: 100%;
-        outline: none;
-        transition: border-color 0.2s;
-      }
-      .auth-input:focus {
-        border-color: var(--red);
-      }
-      .auth-btn {
-        background: var(--red);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 13px;
-        font-family: "Nunito", sans-serif;
-        font-size: 15px;
-        font-weight: 800;
-        cursor: pointer;
-        transition: background 0.2s;
-        margin-top: 4px;
-      }
-      .auth-btn:hover {
-        background: var(--red-dark);
-      }
-      .auth-msg {
-        padding: 10px 14px;
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: 600;
-        display: none;
-      }
-      .auth-msg.error {
-        background: rgba(230, 57, 70, 0.15);
-        color: var(--red);
-        border: 1px solid rgba(230, 57, 70, 0.3);
-        display: block;
-      }
-      .auth-msg.success {
-        background: rgba(34, 197, 94, 0.15);
-        color: var(--green);
-        border: 1px solid rgba(34, 197, 94, 0.3);
-        display: block;
-      }
-      .divider {
-        text-align: center;
-        color: var(--muted);
-        font-size: 12px;
-        margin: 4px 0;
-        position: relative;
-      }
-      .divider::before,
-      .divider::after {
-        content: "";
-        position: absolute;
-        top: 50%;
-        width: 42%;
-        height: 1px;
-        background: var(--border);
-      }
-      .divider::before {
-        left: 0;
-      }
-      .divider::after {
-        right: 0;
-      }
-      .google-btn {
-        background: var(--dark3);
-        border: 1px solid var(--border);
-        color: var(--white);
-        border-radius: 8px;
-        padding: 11px;
-        font-family: "Nunito", sans-serif;
-        font-size: 14px;
-        font-weight: 700;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        transition: all 0.2s;
-        width: 100%;
-      }
-      .google-btn:hover {
-        background: var(--dark4);
-        border-color: rgba(255, 255, 255, 0.2);
-      }
-      .google-btn img {
-        width: 18px;
-        height: 18px;
-      }
+  <!-- AUTH SCREEN -->
+  <div class="auth-screen" id="authScreen">
+    <div class="auth-box">
+      <div class="auth-logo"><span>Leaked Archives</span> Partners</div>
+      <p class="auth-tagline">Sign in to your affiliate dashboard</p>
 
-      /* ===== DASHBOARD ===== */
-      .dashboard {
-        display: none;
-        min-height: 100vh;
-      }
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabLogin" onclick="switchTab('login')">Sign In</button>
+        <button class="auth-tab" id="tabRegister" onclick="switchTab('register')">Register</button>
+      </div>
 
-      /* Topbar */
-      .topbar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 60px;
-        background: var(--dark2);
-        border-bottom: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        padding: 0 24px;
-        justify-content: space-between;
-        z-index: 100;
-        gap: 12px;
-      }
-      .topbar-logo {
-        font-family: "Bebas Neue", sans-serif;
-        font-size: 22px;
-      }
-      .topbar-logo span {
-        color: var(--red);
-      }
-      .topbar-logo .badge {
-        background: var(--gold);
-        color: #000;
-        font-family: "Nunito", sans-serif;
-        font-size: 9px;
-        font-weight: 800;
-        padding: 2px 6px;
-        border-radius: 4px;
-        margin-left: 6px;
-        vertical-align: middle;
-      }
-      .topbar-right {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-      .topbar-user {
-        font-size: 13px;
-        color: var(--muted);
-        font-weight: 600;
-      }
-      .topbar-user span {
-        color: var(--white);
-      }
-      .logout-btn {
-        background: var(--dark3);
-        border: 1px solid var(--border);
-        color: var(--muted);
-        padding: 7px 14px;
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: 700;
-        cursor: pointer;
-        font-family: "Nunito", sans-serif;
-        transition: all 0.2s;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-      .logout-btn:hover {
-        color: var(--white);
-        border-color: rgba(255, 255, 255, 0.2);
-      }
+      <div class="auth-msg" id="authMsg"></div>
 
-      /* Main layout */
-      .dash-body {
-        margin-top: 60px;
-        padding: 28px 24px 60px;
-        max-width: 1100px;
-        margin-left: auto;
-        margin-right: auto;
-      }
+      <div id="loginForm" class="auth-form">
+        <input class="auth-input" type="email" id="loginEmail" placeholder="Email address"/>
+        <input class="auth-input" type="password" id="loginPassword" placeholder="Password"/>
+        <button class="auth-btn" onclick="doLogin()">
+          <i class="fas fa-sign-in-alt"></i> Sign In
+        </button>
+        <div class="divider">or</div>
+        <button class="google-btn" onclick="doGoogle()">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"/>
+          Continue with Google
+        </button>
+      </div>
 
-      /* Welcome bar */
-      .welcome-bar {
-        background:
-          linear-gradient(135deg, rgba(230, 57, 70, 0.15) 0%, transparent 60%),
-          var(--dark2);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 24px 28px;
-        margin-bottom: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 16px;
-      }
-      .welcome-bar h2 {
-        font-family: "Bebas Neue", sans-serif;
-        font-size: 26px;
-        color: var(--white);
-      }
-      .welcome-bar h2 span {
-        color: var(--red);
-      }
-      .welcome-bar p {
-        color: var(--muted);
-        font-size: 13px;
-        margin-top: 4px;
-      }
-      .status-badge {
-        background: rgba(34, 197, 94, 0.15);
-        color: var(--green);
-        border: 1px solid rgba(34, 197, 94, 0.3);
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 800;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-      .status-badge::before {
-        content: "";
-        width: 7px;
-        height: 7px;
-        background: var(--green);
-        border-radius: 50%;
-        display: inline-block;
-        animation: pulse 1.5s infinite;
-      }
-      @keyframes pulse {
-        0%,
-        100% {
-          opacity: 1;
-        }
-        50% {
-          opacity: 0.3;
-        }
-      }
+      <div id="registerForm" class="auth-form" style="display:none;">
+        <input class="auth-input" type="text" id="regName" placeholder="Full name"/>
+        <input class="auth-input" type="email" id="regEmail" placeholder="Email address"/>
+        <input class="auth-input" type="password" id="regPassword" placeholder="Password (min 6 chars)"/>
+        <button class="auth-btn" onclick="doRegister()">
+          <i class="fas fa-user-plus"></i> Create Account
+        </button>
+        <div class="divider">or</div>
+        <button class="google-btn" onclick="doGoogle()">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"/>
+          Continue with Google
+        </button>
+      </div>
+    </div>
+  </div>
 
-      /* Stats cards */
-      .stats-row {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 16px;
-        margin-bottom: 24px;
-      }
-      .stat-card {
-        background: var(--dark2);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 22px 20px;
-        position: relative;
-        overflow: hidden;
-        transition: border-color 0.2s;
-      }
-      .stat-card:hover {
-        border-color: rgba(230, 57, 70, 0.2);
-      }
-      .stat-card.highlight {
-        background: linear-gradient(
-          135deg,
-          rgba(230, 57, 70, 0.1) 0%,
-          var(--dark2) 100%
-        );
-        border-color: rgba(230, 57, 70, 0.25);
-      }
-      .stat-card.gold-card {
-        background: linear-gradient(
-          135deg,
-          rgba(244, 165, 34, 0.1) 0%,
-          var(--dark2) 100%
-        );
-        border-color: rgba(244, 165, 34, 0.25);
-      }
-      .stat-label {
-        font-size: 12px;
-        font-weight: 700;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 10px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-      .stat-label i {
-        color: var(--red);
-      }
-      .stat-card.gold-card .stat-label i {
-        color: var(--gold);
-      }
-      .stat-value {
-        font-family: "Bebas Neue", sans-serif;
-        font-size: 40px;
-        line-height: 1;
-        color: var(--white);
-      }
-      .stat-card.highlight .stat-value {
-        color: var(--red);
-      }
-      .stat-card.gold-card .stat-value {
-        color: var(--gold);
-      }
-      .stat-sub {
-        font-size: 12px;
-        color: var(--muted);
-        margin-top: 6px;
-      }
-      .stat-sub span {
-        color: var(--green);
-        font-weight: 700;
-      }
-
-      /* Referral link section */
-      .section-card {
-        background: var(--dark2);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 24px;
-        margin-bottom: 20px;
-      }
-      .section-card h3 {
-        font-size: 16px;
-        font-weight: 800;
-        color: var(--white);
-        margin-bottom: 6px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .section-card h3 i {
-        color: var(--red);
-      }
-      .section-card p {
-        font-size: 13px;
-        color: var(--muted);
-        margin-bottom: 16px;
-      }
-
-      .link-box {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        background: var(--dark3);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 12px 14px;
-        margin-bottom: 12px;
-      }
-      .link-box input {
-        flex: 1;
-        background: none;
-        border: none;
-        color: var(--red);
-        font-size: 13px;
-        font-weight: 700;
-        font-family: "Nunito", sans-serif;
-        outline: none;
-        min-width: 0;
-      }
-      .copy-btn {
-        background: var(--red);
-        color: white;
-        border: none;
-        border-radius: 6px;
-        padding: 8px 16px;
-        font-size: 13px;
-        font-weight: 700;
-        cursor: pointer;
-        font-family: "Nunito", sans-serif;
-        white-space: nowrap;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        flex-shrink: 0;
-        transition: background 0.2s;
-      }
-      .copy-btn:hover {
-        background: var(--red-dark);
-      }
-      .copy-btn.copied {
-        background: var(--green);
-      }
-
-      .share-btns {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-      .share-btn {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 16px;
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: 700;
-        cursor: pointer;
-        border: none;
-        font-family: "Nunito", sans-serif;
-        transition: opacity 0.2s;
-      }
-      .share-btn:hover {
-        opacity: 0.85;
-      }
-      .share-btn.wa {
-        background: #25d366;
-        color: white;
-      }
-      .share-btn.fb {
-        background: #1877f2;
-        color: white;
-      }
-      .share-btn.tg {
-        background: #0088cc;
-        color: white;
-      }
-      .share-btn.tw {
-        background: #000;
-        color: white;
-        border: 1px solid #333;
-      }
-
-      /* Progress bar */
-      .progress-section {
-        margin-bottom: 16px;
-      }
-      .progress-label {
-        display: flex;
-        justify-content: space-between;
-        font-size: 12px;
-        color: var(--muted);
-        margin-bottom: 6px;
-        font-weight: 600;
-      }
-      .progress-label span:last-child {
-        color: var(--gold);
-      }
-      .progress-bg {
-        background: var(--dark4);
-        border-radius: 10px;
-        height: 10px;
-        overflow: hidden;
-      }
-      .progress-fill {
-        background: linear-gradient(90deg, var(--red), var(--gold));
-        height: 100%;
-        border-radius: 10px;
-        transition: width 0.5s ease;
-      }
-      .progress-note {
-        font-size: 12px;
-        color: var(--muted);
-        margin-top: 6px;
-      }
-      .progress-note span {
-        color: var(--green);
-        font-weight: 700;
-      }
-
-      /* Activity table */
-      .activity-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 13px;
-      }
-      .activity-table th {
-        text-align: left;
-        padding: 10px 12px;
-        font-size: 11px;
-        font-weight: 800;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border-bottom: 1px solid var(--border);
-      }
-      .activity-table td {
-        padding: 12px 12px;
-        border-bottom: 1px solid var(--border);
-        color: var(--text);
-      }
-      .activity-table tr:last-child td {
-        border-bottom: none;
-      }
-      .activity-table tr:hover td {
-        background: rgba(255, 255, 255, 0.02);
-      }
-      .badge-earned {
-        background: rgba(34, 197, 94, 0.15);
-        color: var(--green);
-        padding: 3px 10px;
-        border-radius: 20px;
-        font-size: 11px;
-        font-weight: 800;
-      }
-      .badge-pending {
-        background: rgba(244, 165, 34, 0.15);
-        color: var(--gold);
-        padding: 3px 10px;
-        border-radius: 20px;
-        font-size: 11px;
-        font-weight: 800;
-      }
-
-      /* Payout section */
-      .payout-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 12px;
-        margin-bottom: 16px;
-      }
-      .payout-method {
-        background: var(--dark3);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 16px;
-        cursor: pointer;
-        transition: all 0.2s;
-        text-align: center;
-      }
-      .payout-method:hover {
-        border-color: var(--red);
-      }
-      .payout-method.selected {
-        border-color: var(--red);
-        background: rgba(230, 57, 70, 0.08);
-      }
-      .payout-method i {
-        font-size: 28px;
-        margin-bottom: 8px;
-        display: block;
-        color: var(--muted);
-      }
-      .payout-method.selected i {
-        color: var(--red);
-      }
-      .payout-method h4 {
-        font-size: 13px;
-        font-weight: 800;
-        color: var(--white);
-        margin-bottom: 3px;
-      }
-      .payout-method p {
-        font-size: 11px;
-        color: var(--muted);
-      }
-
-      .payout-form {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-      .payout-input {
-        background: var(--dark3);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        color: var(--white);
-        font-family: "Nunito", sans-serif;
-        font-size: 14px;
-        padding: 11px 14px;
-        width: 100%;
-        outline: none;
-        transition: border-color 0.2s;
-      }
-      .payout-input:focus {
-        border-color: var(--red);
-      }
-      .payout-btn {
-        background: var(--green);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 13px;
-        font-family: "Nunito", sans-serif;
-        font-size: 15px;
-        font-weight: 800;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        transition: background 0.2s;
-      }
-      .payout-btn:hover {
-        background: #16a34a;
-      }
-      .payout-btn:disabled {
-        background: var(--dark4);
-        color: var(--muted);
-        cursor: not-allowed;
-      }
-      .min-note {
-        font-size: 12px;
-        color: var(--muted);
-        padding: 10px 14px;
-        background: rgba(244, 165, 34, 0.08);
-        border: 1px solid rgba(244, 165, 34, 0.2);
-        border-radius: 8px;
-      }
-      .min-note i {
-        color: var(--gold);
-        margin-right: 6px;
-      }
-
-      /* Notification */
-      .notif {
-        position: fixed;
-        bottom: 24px;
-        right: 24px;
-        background: var(--dark2);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 14px 18px;
-        font-size: 13px;
-        font-weight: 700;
-        color: var(--white);
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-        z-index: 9999;
-        transform: translateY(100px);
-        opacity: 0;
-        transition: all 0.3s ease;
-      }
-      .notif.show {
-        transform: translateY(0);
-        opacity: 1;
-      }
-      .notif i {
-        color: var(--green);
-        font-size: 16px;
-      }
-
-      @media (max-width: 768px) {
-        .dash-body {
-          padding: 20px 14px 60px;
-        }
-        .topbar {
-          padding: 0 14px;
-        }
-        .topbar-user {
-          display: none;
-        }
-        .welcome-bar {
-          padding: 18px;
-        }
-        .stat-value {
-          font-size: 32px;
-        }
-        .link-box {
-          flex-direction: column;
-          align-items: stretch;
-        }
-        .link-box input {
-          font-size: 12px;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <!-- ===== AUTH SCREEN ===== -->
-    <div class="auth-screen" id="authScreen">
-      <div class="auth-box">
-        <div class="auth-logo"><span>Leaked Archives</span> Partners</div>
-        <p class="auth-tagline">Sign in to your affiliate dashboard</p>
-
-        <div class="auth-tabs">
-          <button
-            class="auth-tab active"
-            id="tabLogin"
-            onclick="switchTab('login')"
-          >
-            Sign In
-          </button>
-          <button
-            class="auth-tab"
-            id="tabRegister"
-            onclick="switchTab('register')"
-          >
-            Register
-          </button>
-        </div>
-
-        <div class="auth-msg" id="authMsg"></div>
-
-        <!-- Login form -->
-        <div id="loginForm" class="auth-form">
-          <input
-            class="auth-input"
-            type="email"
-            id="loginEmail"
-            placeholder="Email address"
-          />
-          <input
-            class="auth-input"
-            type="password"
-            id="loginPassword"
-            placeholder="Password"
-          />
-          <button class="auth-btn" onclick="doLogin()">
-            <i class="fas fa-sign-in-alt"></i> Sign In
-          </button>
-          <div class="divider">or</div>
-          <button class="google-btn" onclick="doGoogle()">
-            <img
-              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-              alt="Google"
-            />
-            Continue with Google
-          </button>
-        </div>
-
-        <!-- Register form -->
-        <div id="registerForm" class="auth-form" style="display: none">
-          <input
-            class="auth-input"
-            type="text"
-            id="regName"
-            placeholder="Full name"
-          />
-          <input
-            class="auth-input"
-            type="email"
-            id="regEmail"
-            placeholder="Email address"
-          />
-          <input
-            class="auth-input"
-            type="password"
-            id="regPassword"
-            placeholder="Password (min 6 chars)"
-          />
-          <button class="auth-btn" onclick="doRegister()">
-            <i class="fas fa-user-plus"></i> Create Account
-          </button>
-          <div class="divider">or</div>
-          <button class="google-btn" onclick="doGoogle()">
-            <img
-              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-              alt="Google"
-            />
-            Continue with Google
-          </button>
-        </div>
+  <!-- DASHBOARD -->
+  <div class="dashboard" id="dashboard">
+    <div class="topbar">
+      <div class="topbar-logo">
+        <span>Leaked</span> Archives
+        <span class="badge">PARTNERS</span>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-user">Welcome, <span id="dashUserName">Partner</span></div>
+        <button class="logout-btn" onclick="doLogout()">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
       </div>
     </div>
 
-    <!-- ===== DASHBOARD ===== -->
-    <div class="dashboard" id="dashboard">
-      <!-- Topbar -->
-      <div class="topbar">
-        <div class="topbar-logo">
-          <span>Leaked</span> Archives
-          <span class="badge">PARTNERS</span>
+    <div class="dash-body" style="margin-top:88px;">
+
+      <div class="welcome-bar">
+        <div>
+          <h2>Partner <span>Dashboard</span></h2>
+          <p>Track your referrals, earnings and payouts in real time</p>
         </div>
-        <div class="topbar-right">
-          <div class="topbar-user">
-            Welcome, <span id="dashUserName">Partner</span>
+        <div class="status-badge">Active Partner</div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card highlight">
+          <div class="stat-label"><i class="fas fa-dollar-sign"></i> Current Balance</div>
+          <div class="stat-value" id="statBalance">$0.00</div>
+          <div class="stat-sub">Withdrawable earnings</div>
+        </div>
+        <div class="stat-card gold-card">
+          <div class="stat-label"><i class="fas fa-users" style="color:var(--gold)"></i> Total Referrals</div>
+          <div class="stat-value" id="statReferrals">0</div>
+          <div class="stat-sub"><span id="statPending">—</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label"><i class="fas fa-eye"></i> Link Clicks</div>
+          <div class="stat-value" id="statClicks">0</div>
+          <div class="stat-sub">Total visits via your link</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label"><i class="fas fa-trophy"></i> Total Earned</div>
+          <div class="stat-value" id="statTotal">$0.00</div>
+          <div class="stat-sub">All time earnings</div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <h3><i class="fas fa-chart-line"></i> Your Earnings Progress</h3>
+        <p>Keep sharing your link to grow your balance</p>
+        <div class="progress-section">
+          <div class="progress-label">
+            <span id="progressLabel">Building your earnings...</span>
+            <span id="progressNext"></span>
           </div>
-          <button class="logout-btn" onclick="doLogout()">
-            <i class="fas fa-sign-out-alt"></i> Logout
+          <div class="progress-bg">
+            <div class="progress-fill" id="progressFill" style="width:100%"></div>
+          </div>
+          <div class="progress-note">
+            <span id="progressNote">Keep sharing your link!</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <h3><i class="fas fa-link"></i> Your Unique Referral Link</h3>
+        <p>This link is unique to your account. Share it anywhere — every visitor tracked to you earns you money.</p>
+
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+          <div style="background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.3);border-radius:8px;padding:8px 16px;display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-fingerprint" style="color:var(--red);"></i>
+            <span style="font-size:12px;color:var(--muted);font-weight:700;">Your Affiliate Code:</span>
+            <span id="shortCode" style="font-size:14px;color:var(--red);font-weight:800;font-family:monospace;letter-spacing:1px;">Loading...</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);">
+            <i class="fas fa-circle-info"></i> Unique to you — cannot be changed
+          </div>
+        </div>
+
+        <div style="margin-bottom:6px;">
+          <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px;">
+            <i class="fas fa-link"></i> Full Referral Link:
+          </div>
+          <div class="link-box">
+            <input type="text" id="refLink" readonly style="font-size:12px;word-break:break-all;"/>
+            <button class="copy-btn" id="copyBtn" onclick="copyLink()">
+              <i class="fas fa-copy"></i> Copy
+            </button>
+          </div>
+        </div>
+
+        <div style="background:var(--dark3);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.8;">
+          <i class="fas fa-circle-info" style="color:var(--red);margin-right:6px;"></i>
+          <strong style="color:var(--white);">How tracking works:</strong>
+          When someone clicks your link, they land on Leaked Archives homepage. Their visit is recorded to your account and contributes toward your earnings automatically.
+        </div>
+
+        <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:8px;">
+          <i class="fas fa-share-nodes"></i> Share directly:
+        </div>
+        <div class="share-btns">
+          <button class="share-btn wa" onclick="shareLink('whatsapp')"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+          <button class="share-btn fb" onclick="shareLink('facebook')"><i class="fab fa-facebook"></i> Facebook</button>
+          <button class="share-btn tg" onclick="shareLink('telegram')"><i class="fab fa-telegram"></i> Telegram</button>
+          <button class="share-btn tw" onclick="shareLink('twitter')"><i class="fab fa-x-twitter"></i> X / Twitter</button>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <h3><i class="fas fa-clock-rotate-left"></i> Recent Activity</h3>
+        <p style="margin-bottom:14px;">Your latest referral events and earnings</p>
+        <div style="overflow-x:auto;">
+          <table class="activity-table">
+            <thead>
+              <tr><th>Date</th><th>Event</th><th>Users</th><th>Earning</th><th>Status</th></tr>
+            </thead>
+            <tbody id="activityLog">
+              <tr>
+                <td colspan="5" style="text-align:center;color:var(--muted);padding:32px;">
+                  No activity yet. Share your link to start earning!
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <h3><i class="fas fa-wallet"></i> Request Payout</h3>
+        <p>Minimum withdrawal is <strong style="color:var(--gold)">$20</strong>. Choose your preferred payment method below.</p>
+
+        <div class="min-note" style="margin-bottom:16px;">
+          <i class="fas fa-circle-info"></i>
+          Your current balance is <strong id="payoutBalance">$0.00</strong>.
+          You need <strong id="payoutNeeded">$20.00</strong> more to request a withdrawal.
+        </div>
+
+        <div class="payout-grid">
+          <div class="payout-method" onclick="selectMethod(this, 'paypal')">
+            <i class="fab fa-paypal" style="color:#003087;"></i>
+            <h4>PayPal</h4><p>Instant transfer</p>
+          </div>
+          <div class="payout-method" onclick="selectMethod(this, 'payoneer')">
+            <i class="fas fa-credit-card"></i>
+            <h4>Payoneer</h4><p>1-3 business days</p>
+          </div>
+          <div class="payout-method" onclick="selectMethod(this, 'bank')">
+            <i class="fas fa-building-columns"></i>
+            <h4>Bank Transfer</h4><p>3-5 business days</p>
+          </div>
+          <div class="payout-method" onclick="selectMethod(this, 'flutterwave')">
+            <i class="fas fa-money-bill-wave" style="color:#f5a623;"></i>
+            <h4>Flutterwave</h4><p>Local bank / Mobile money</p>
+          </div>
+        </div>
+
+        <div class="payout-form">
+          <input class="payout-input" type="number" id="payoutAmount" placeholder="Amount to withdraw (min $20)" min="20"/>
+          <input class="payout-input" type="text" id="payoutDetails" placeholder="Payment details (e.g. PayPal email / bank account number)"/>
+          <button class="payout-btn" id="payoutBtn" onclick="requestPayout()" disabled>
+            <i class="fas fa-paper-plane"></i> Request Payout
           </button>
         </div>
       </div>
 
-      <div class="dash-body" style="margin-top: 88px">
-        <!-- Welcome bar -->
-        <div class="welcome-bar">
-          <div>
-            <h2>Partner <span>Dashboard</span></h2>
-            <p>Track your referrals, earnings and payouts in real time</p>
-          </div>
-          <div class="status-badge">Active Partner</div>
-        </div>
-
-        <!-- Stats row -->
-        <div class="stats-row">
-          <div class="stat-card highlight">
-            <div class="stat-label">
-              <i class="fas fa-dollar-sign"></i> Current Balance
-            </div>
-            <div class="stat-value" id="statBalance">$0.00</div>
-            <div class="stat-sub">Withdrawable earnings</div>
-          </div>
-          <div class="stat-card gold-card">
-            <div class="stat-label">
-              <i class="fas fa-users" style="color: var(--gold)"></i> Total
-              Referrals
-            </div>
-            <div class="stat-value" id="statReferrals">0</div>
-            <div class="stat-sub">
-              <span id="statPending">0</span> pending this cycle
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label"><i class="fas fa-eye"></i> Link Clicks</div>
-            <div class="stat-value" id="statClicks">0</div>
-            <div class="stat-sub">Total visits via your link</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">
-              <i class="fas fa-trophy"></i> Total Earned
-            </div>
-            <div class="stat-value" id="statTotal">$0.00</div>
-            <div class="stat-sub">All time earnings</div>
-          </div>
-        </div>
-
-        <!-- Progress to next dollar -->
-        <div class="section-card">
-          <h3><i class="fas fa-chart-line"></i> Progress to Next $1</h3>
-          <p>
-            Every 20 new unique visitors through your link = $1 credited to your
-            balance
-          </p>
-          <div class="progress-section">
-            <div class="progress-label">
-              <span id="progressLabel">0 / 20 new users</span>
-              <span id="progressNext">$1.00 next</span>
-            </div>
-            <div class="progress-bg">
-              <div
-                class="progress-fill"
-                id="progressFill"
-                style="width: 0%"
-              ></div>
-            </div>
-            <div class="progress-note">
-              <span id="progressNote">0 more users needed</span> to earn your
-              next $1
-            </div>
-          </div>
-        </div>
-
-        <!-- Referral link -->
-        <div class="section-card">
-          <h3><i class="fas fa-link"></i> Your Unique Referral Link</h3>
-          <p>
-            This link is unique to your account. Share it anywhere — every
-            visitor tracked to you earns you money.
-          </p>
-
-          <!-- Short code badge -->
-          <div
-            style="
-              display: flex;
-              align-items: center;
-              gap: 10px;
-              margin-bottom: 14px;
-              flex-wrap: wrap;
-            "
-          >
-            <div
-              style="
-                background: rgba(230, 57, 70, 0.1);
-                border: 1px solid rgba(230, 57, 70, 0.3);
-                border-radius: 8px;
-                padding: 8px 16px;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-              "
-            >
-              <i class="fas fa-fingerprint" style="color: var(--red)"></i>
-              <span
-                style="font-size: 12px; color: var(--muted); font-weight: 700"
-                >Your Affiliate Code:</span
-              >
-              <span
-                id="shortCode"
-                style="
-                  font-size: 14px;
-                  color: var(--red);
-                  font-weight: 800;
-                  font-family: monospace;
-                  letter-spacing: 1px;
-                "
-                >Loading...</span
-              >
-            </div>
-            <div style="font-size: 12px; color: var(--muted)">
-              <i class="fas fa-circle-info"></i>
-              Unique to you — cannot be changed
-            </div>
-          </div>
-
-          <!-- Full link box -->
-          <div style="margin-bottom: 6px">
-            <div
-              style="
-                font-size: 12px;
-                color: var(--muted);
-                font-weight: 700;
-                margin-bottom: 6px;
-              "
-            >
-              <i class="fas fa-link"></i> Full Referral Link:
-            </div>
-            <div class="link-box">
-              <input
-                type="text"
-                id="refLink"
-                readonly
-                style="font-size: 12px; word-break: break-all"
-              />
-              <button class="copy-btn" id="copyBtn" onclick="copyLink()">
-                <i class="fas fa-copy"></i> Copy
-              </button>
-            </div>
-          </div>
-
-          <!-- How it works mini guide -->
-          <div
-            style="
-              background: var(--dark3);
-              border-radius: 8px;
-              padding: 12px 16px;
-              margin-bottom: 16px;
-              font-size: 12px;
-              color: var(--muted);
-              line-height: 1.8;
-            "
-          >
-            <i
-              class="fas fa-circle-info"
-              style="color: var(--red); margin-right: 6px"
-            ></i>
-            <strong style="color: var(--white)">How tracking works:</strong>
-            When someone clicks your link, they land on Leaked Archives
-            homepage. Their visit is recorded to your account. Every
-            <strong style="color: var(--gold)">20 unique visitors</strong> =
-            <strong style="color: var(--green)">$1 credited</strong> to your
-            balance automatically.
-          </div>
-
-          <!-- Share buttons -->
-          <div
-            style="
-              font-size: 12px;
-              color: var(--muted);
-              font-weight: 700;
-              margin-bottom: 8px;
-            "
-          >
-            <i class="fas fa-share-nodes"></i> Share directly:
-          </div>
-          <div class="share-btns">
-            <button class="share-btn wa" onclick="shareLink('whatsapp')">
-              <i class="fab fa-whatsapp"></i> WhatsApp
-            </button>
-            <button class="share-btn fb" onclick="shareLink('facebook')">
-              <i class="fab fa-facebook"></i> Facebook
-            </button>
-            <button class="share-btn tg" onclick="shareLink('telegram')">
-              <i class="fab fa-telegram"></i> Telegram
-            </button>
-            <button class="share-btn tw" onclick="shareLink('twitter')">
-              <i class="fab fa-x-twitter"></i> X / Twitter
-            </button>
-          </div>
-        </div>
-
-        <!-- Activity log -->
-        <div class="section-card">
-          <h3><i class="fas fa-clock-rotate-left"></i> Recent Activity</h3>
-          <p style="margin-bottom: 14px">
-            Your latest referral events and earnings
-          </p>
-          <div style="overflow-x: auto">
-            <table class="activity-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Event</th>
-                  <th>Users</th>
-                  <th>Earning</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody id="activityLog">
-                <tr>
-                  <td
-                    colspan="5"
-                    style="
-                      text-align: center;
-                      color: var(--muted);
-                      padding: 32px;
-                    "
-                  >
-                    No activity yet. Share your link to start earning!
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Payout section -->
-        <div class="section-card">
-          <h3><i class="fas fa-wallet"></i> Request Payout</h3>
-<p>Minimum withdrawal is <strong style="color:var(--gold)">$20</strong>. Choose your preferred payment method below.</p>
-
-          <div class="min-note" style="margin-bottom: 16px">
-            <i class="fas fa-circle-info"></i>
-            Your current balance is <strong id="payoutBalance">$0.00</strong>.
-            You need <strong id="payoutNeeded">$20.00</strong> more to
-            request a withdrawal.
-          </div>
-
-          <div class="payout-grid">
-            <div class="payout-method" onclick="selectMethod(this, 'paypal')">
-              <i class="fab fa-paypal" style="color: #003087"></i>
-              <h4>PayPal</h4>
-              <p>Instant transfer</p>
-            </div>
-            <div class="payout-method" onclick="selectMethod(this, 'payoneer')">
-              <i class="fas fa-credit-card"></i>
-              <h4>Payoneer</h4>
-              <p>1-3 business days</p>
-            </div>
-            <div class="payout-method" onclick="selectMethod(this, 'bank')">
-              <i class="fas fa-building-columns"></i>
-              <h4>Bank Transfer</h4>
-              <p>3-5 business days</p>
-            </div>
-            <div
-              class="payout-method"
-              onclick="selectMethod(this, 'flutterwave')"
-            >
-              <i class="fas fa-money-bill-wave" style="color: #f5a623"></i>
-              <h4>Flutterwave</h4>
-              <p>Local bank / Mobile money</p>
-            </div>
-          </div>
-
-          <div class="payout-form">
-<input class="payout-input" type="number" id="payoutAmount"
-          placeholder="Amount to withdraw (min $20)" min="20"/>
-            <input
-              class="payout-input"
-              type="text"
-              id="payoutDetails"
-              placeholder="Payment details (e.g. PayPal email / bank account number)"
-            />
-            <button
-              class="payout-btn"
-              id="payoutBtn"
-              onclick="requestPayout()"
-              disabled
-            >
-              <i class="fas fa-paper-plane"></i> Request Payout
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
+  </div>
 
-    <!-- Notification toast -->
-    <div class="notif" id="notif">
-      <i class="fas fa-check-circle"></i>
-      <span id="notifText">Copied!</span>
-    </div>
+  <div class="notif" id="notif">
+    <i class="fas fa-check-circle"></i>
+    <span id="notifText">Copied!</span>
+  </div>
 
-    <!-- Firebase -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, doc, getDoc, setDoc, updateDoc, collection,
-           addDoc, getDocs, query, orderBy, increment, serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-           signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged,
-           updateProfile
-  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, collection,
+             addDoc, getDocs, query, orderBy, increment, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+             signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged,
+             updateProfile
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyC4U6MWTPKDQZ_oICtSLdfnFP3a-HFILb4",
-    authDomain: "daily-news-a8c64.firebaseapp.com",
-    projectId: "daily-news-a8c64",
-    storageBucket: "daily-news-a8c64.firebasestorage.app",
-    messagingSenderId: "75335342698",
-    appId: "1:75335342698:web:3e65f3d773eca7730b4813"
-  };
+    const app      = initializeApp({
+      apiKey: "AIzaSyC4U6MWTPKDQZ_oICtSLdfnFP3a-HFILb4",
+      authDomain: "daily-news-a8c64.firebaseapp.com",
+      projectId: "daily-news-a8c64",
+      storageBucket: "daily-news-a8c64.firebasestorage.app",
+      messagingSenderId: "75335342698",
+      appId: "1:75335342698:web:3e65f3d773eca7730b4813"
+    }, "affiliate-dashboard");
+    const db       = getFirestore(app);
+    const auth     = getAuth(app);
+    const provider = new GoogleAuthProvider();
 
-  const app      = initializeApp(firebaseConfig, "affiliate-dashboard");
-  const db       = getFirestore(app);
-  const auth     = getAuth(app);
-  const provider = new GoogleAuthProvider();
+    const BASE_URL   = "https://www.dailynewsug.online/index.html";
+    const MIN_PAYOUT = 20;
 
-  const BASE_URL = "https://www.dailynewsug.online/index.html";
-  const MIN_PAYOUT = 20;
-  const TALLY_SIZE = 100; // 100 visitors = $1
+    let currentUser = null;
+    let selectedPayMethod = null;
 
-  let currentUser = null;
-  let selectedPayMethod = null;
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        document.getElementById("authScreen").style.display = "none";
+        document.getElementById("dashboard").style.display  = "block";
+        document.getElementById("dashUserName").textContent =
+          user.displayName || user.email.split("@")[0];
 
-  // ---- AUTH STATE ----
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      currentUser = user;
-      document.getElementById("authScreen").style.display = "none";
-      document.getElementById("dashboard").style.display  = "block";
-      document.getElementById("dashUserName").textContent =
-        user.displayName || user.email.split("@")[0];
+        const fullLink  = `${BASE_URL}?ref=${user.uid}`;
+        const shortCode = user.uid.substring(0, 8).toUpperCase();
+        document.getElementById("refLink").value = fullLink;
+        document.getElementById("shortCode").textContent = shortCode;
 
-      const fullLink  = `${BASE_URL}?ref=${user.uid}`;
-      const shortCode = user.uid.substring(0, 8).toUpperCase();
-      const refInput  = document.getElementById("refLink");
-      if (refInput) refInput.value = fullLink;
-      const shortEl = document.getElementById("shortCode");
-      if (shortEl) shortEl.textContent = shortCode;
+        await ensureAffiliate(user);
+        await loadDashboard(user);
+      } else {
+        currentUser = null;
+        document.getElementById("authScreen").style.display = "flex";
+        document.getElementById("dashboard").style.display  = "none";
+      }
+    });
 
-      await ensureAffiliate(user);
-      await loadDashboard(user);
-    } else {
-      currentUser = null;
-      document.getElementById("authScreen").style.display = "flex";
-      document.getElementById("dashboard").style.display  = "none";
-    }
-  });
-
-  // ---- ENSURE AFFILIATE DOC ----
-  async function ensureAffiliate(user) {
-    const ref  = doc(db, "affiliates", user.uid);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) {
-      await setDoc(ref, {
-        uid:          user.uid,
-        name:         user.displayName || user.email.split("@")[0],
-        email:        user.email,
-        balance:      0,
-        totalEarned:  0,
-        clicks:       0,
-        referrals:    0,
-        pendingUsers: 0,
-        status:       "active",
-        joinedAt:     serverTimestamp()
-      });
-    }
-  }
-
-  // ---- LOAD DASHBOARD ----
-  async function loadDashboard(user) {
-    try {
+    async function ensureAffiliate(user) {
       const ref  = doc(db, "affiliates", user.uid);
       const snap = await getDoc(ref);
-      if (!snap.exists()) return;
-      const data = snap.data();
-
-      const balance     = data.balance     || 0;
-      const totalEarned = data.totalEarned || 0;
-      const clicks      = data.clicks      || 0;
-      const referrals   = data.referrals   || 0;
-
-      document.getElementById("statBalance").textContent   = `$${balance.toFixed(2)}`;
-      document.getElementById("statReferrals").textContent = referrals;
-      document.getElementById("statClicks").textContent    = clicks;
-      document.getElementById("statTotal").textContent     = `$${totalEarned.toFixed(2)}`;
-      const statPending = document.getElementById("statPending");
-      if (statPending) statPending.textContent = "—";
-
-      // Progress bar — hidden exact tally, generic message only
-      const progLabel = document.getElementById("progressLabel");
-      const progNote  = document.getElementById("progressNote");
-      const progFill  = document.getElementById("progressFill");
-      if (progLabel) progLabel.textContent = "Building your earnings...";
-      if (progNote)  progNote.innerHTML    = `<span>Keep sharing your link!</span>`;
-      if (progFill)  progFill.style.width  = "100%";
-
-      // Payout info
-      document.getElementById("payoutBalance").textContent = `$${balance.toFixed(2)}`;
-      const needed = Math.max(0, MIN_PAYOUT - balance);
-      document.getElementById("payoutNeeded").textContent  = `$${needed.toFixed(2)}`;
-      const payoutBtn = document.getElementById("payoutBtn");
-      if (payoutBtn) payoutBtn.disabled = balance < MIN_PAYOUT;
-
-      await loadActivity(user.uid);
-    } catch(e) {
-      console.error("Dashboard load error:", e);
+      if (!snap.exists()) {
+        await setDoc(ref, {
+          uid: user.uid, name: user.displayName || user.email.split("@")[0],
+          email: user.email, balance: 0, totalEarned: 0, clicks: 0,
+          referrals: 0, pendingUsers: 0, status: "active", joinedAt: serverTimestamp()
+        });
+      }
     }
-  }
 
-  // ---- LOAD ACTIVITY ----
-  async function loadActivity(uid) {
-    const tbody = document.getElementById("activityLog");
-    if (!tbody) return;
-    try {
-      const q    = query(
-        collection(db, "affiliates", uid, "activity"),
-        orderBy("createdAt", "desc")
-      );
-      const snap = await getDocs(q);
-      if (snap.empty) return;
-      tbody.innerHTML = "";
-      snap.docs.slice(0, 20).forEach(d => {
-        const a    = d.data();
-        const date = a.createdAt?.toDate().toLocaleDateString("en-UG", {
-          day: "numeric", month: "short", year: "numeric"
-        }) || "Recent";
-        tbody.innerHTML += `
-          <tr>
-            <td>${date}</td>
-            <td>${a.event || "Referral"}</td>
-            <td>${a.users || 0}</td>
-            <td style="color:var(--green);font-weight:700;">
-              ${a.earning ? `+$${a.earning.toFixed(2)}` : "—"}
-            </td>
-            <td>
-              <span class="${a.status === 'earned' ? 'badge-earned' : 'badge-pending'}">
-                ${a.status === 'earned' ? 'Earned' : 'Pending'}
-              </span>
-            </td>
-          </tr>`;
+    async function loadDashboard(user) {
+      try {
+        const ref  = doc(db, "affiliates", user.uid);
+        const snap = await getDoc(ref);
+        if (!snap.exists()) return;
+        const data = snap.data();
+
+        const balance     = data.balance     || 0;
+        const totalEarned = data.totalEarned || 0;
+        const clicks      = data.clicks      || 0;
+        const referrals   = data.referrals   || 0;
+
+        document.getElementById("statBalance").textContent   = `$${balance.toFixed(2)}`;
+        document.getElementById("statReferrals").textContent = referrals;
+        document.getElementById("statClicks").textContent    = clicks;
+        document.getElementById("statTotal").textContent     = `$${totalEarned.toFixed(2)}`;
+
+        document.getElementById("payoutBalance").textContent = `$${balance.toFixed(2)}`;
+        const needed = Math.max(0, MIN_PAYOUT - balance);
+        document.getElementById("payoutNeeded").textContent  = `$${needed.toFixed(2)}`;
+        document.getElementById("payoutBtn").disabled = balance < MIN_PAYOUT;
+
+        await loadActivity(user.uid);
+      } catch(e) {
+        console.error("Dashboard load error:", e);
+      }
+    }
+
+    async function loadActivity(uid) {
+      const tbody = document.getElementById("activityLog");
+      try {
+        const q    = query(collection(db, "affiliates", uid, "activity"), orderBy("createdAt", "desc"));
+        const snap = await getDocs(q);
+        if (snap.empty) return;
+        tbody.innerHTML = "";
+        snap.docs.slice(0, 20).forEach(d => {
+          const a    = d.data();
+          const date = a.createdAt?.toDate().toLocaleDateString("en-UG", { day:"numeric", month:"short", year:"numeric" }) || "Recent";
+          tbody.innerHTML += `
+            <tr>
+              <td>${date}</td>
+              <td>${a.event || "Referral"}</td>
+              <td>${a.users || 0}</td>
+              <td style="color:var(--green);font-weight:700;">${a.earning ? `+$${a.earning.toFixed(2)}` : "—"}</td>
+              <td><span class="${a.status === 'earned' ? 'badge-earned' : 'badge-pending'}">${a.status === 'earned' ? 'Earned' : 'Pending'}</span></td>
+            </tr>`;
+        });
+      } catch(e) {
+        console.error("Activity error:", e);
+      }
+    }
+
+    window.copyLink = function() {
+      const link = document.getElementById("refLink").value;
+      if (!link) { showNotif("Link not ready yet", true); return; }
+      navigator.clipboard.writeText(link).then(() => {
+        const btn = document.getElementById("copyBtn");
+        btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+        btn.classList.add("copied");
+        showNotif("Referral link copied!");
+        setTimeout(() => {
+          btn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+          btn.classList.remove("copied");
+        }, 2500);
       });
-    } catch(e) {
-      console.error("Activity error:", e);
-    }
-  }
-
-  // ---- COPY LINK ----
-  window.copyLink = function() {
-    const link = document.getElementById("refLink").value;
-    if (!link) { showNotif("Link not ready yet", true); return; }
-    navigator.clipboard.writeText(link).then(() => {
-      const btn = document.getElementById("copyBtn");
-      btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-      btn.classList.add("copied");
-      showNotif("Referral link copied!");
-      setTimeout(() => {
-        btn.innerHTML = '<i class="fas fa-copy"></i> Copy';
-        btn.classList.remove("copied");
-      }, 2500);
-    });
-  };
-
-  // ---- SHARE LINK ----
-  window.shareLink = function(platform) {
-    const link = document.getElementById("refLink").value;
-    if (!link) { showNotif("Link not ready yet", true); return; }
-    const encoded = encodeURIComponent(link);
-    const text    = encodeURIComponent("Watch the hottest leaked videos on Leaked Archives 🔥");
-    const urls = {
-      whatsapp: `https://wa.me/?text=${text}%20${encoded}`,
-      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encoded}`,
-      telegram: `https://t.me/share/url?url=${encoded}&text=${text}`,
-      twitter:  `https://twitter.com/intent/tweet?text=${text}&url=${encoded}`
     };
-    window.open(urls[platform], "_blank");
-  };
 
-  // ---- SELECT PAYOUT METHOD ----
-  window.selectMethod = function(el, method) {
-    document.querySelectorAll(".payout-method").forEach(m => m.classList.remove("selected"));
-    el.classList.add("selected");
-    selectedPayMethod = method;
-  };
+    window.shareLink = function(platform) {
+      const link = document.getElementById("refLink").value;
+      if (!link) { showNotif("Link not ready yet", true); return; }
+      const encoded = encodeURIComponent(link);
+      const text    = encodeURIComponent("Watch the hottest leaked videos on Leaked Archives 🔥");
+      const urls = {
+        whatsapp: `https://wa.me/?text=${text}%20${encoded}`,
+        facebook: `https://www.facebook.com/sharer/sharer.php?u=${encoded}`,
+        telegram: `https://t.me/share/url?url=${encoded}&text=${text}`,
+        twitter:  `https://twitter.com/intent/tweet?text=${text}&url=${encoded}`
+      };
+      window.open(urls[platform], "_blank");
+    };
 
-  // ---- REQUEST PAYOUT ----
-  window.requestPayout = async function() {
-    if (!currentUser) return;
-    const amount  = parseFloat(document.getElementById("payoutAmount").value);
-    const details = document.getElementById("payoutDetails").value.trim();
-    const ref     = doc(db, "affiliates", currentUser.uid);
-    const snap    = await getDoc(ref);
-    const bal     = snap.data().balance || 0;
+    window.selectMethod = function(el, method) {
+      document.querySelectorAll(".payout-method").forEach(m => m.classList.remove("selected"));
+      el.classList.add("selected");
+      selectedPayMethod = method;
+    };
 
-    if (!selectedPayMethod) { showNotif("Please select a payment method", true); return; }
-    if (!amount || amount < MIN_PAYOUT) { showNotif(`Minimum withdrawal is $${MIN_PAYOUT}`, true); return; }
-    if (amount > bal) { showNotif("Insufficient balance", true); return; }
-    if (!details) { showNotif("Please enter your payment details", true); return; }
+    window.requestPayout = async function() {
+      if (!currentUser) return;
+      const amount  = parseFloat(document.getElementById("payoutAmount").value);
+      const details = document.getElementById("payoutDetails").value.trim();
+      const ref     = doc(db, "affiliates", currentUser.uid);
+      const snap    = await getDoc(ref);
+      const bal     = snap.data().balance || 0;
 
-    const payoutBtn = document.getElementById("payoutBtn");
-    payoutBtn.disabled  = true;
-    payoutBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+      if (!selectedPayMethod) { showNotif("Please select a payment method", true); return; }
+      if (!amount || amount < MIN_PAYOUT) { showNotif(`Minimum withdrawal is $${MIN_PAYOUT}`, true); return; }
+      if (amount > bal) { showNotif("Insufficient balance", true); return; }
+      if (!details) { showNotif("Please enter your payment details", true); return; }
 
-    try {
-      await addDoc(collection(db, "payoutRequests"), {
-        uid:       currentUser.uid,
-        name:      currentUser.displayName || currentUser.email,
-        email:     currentUser.email,
-        amount,
-        method:    selectedPayMethod,
-        details,
-        status:    "pending",
-        createdAt: serverTimestamp()
-      });
-      await updateDoc(ref, { balance: increment(-amount) });
-      await addDoc(collection(db, "affiliates", currentUser.uid, "activity"), {
-        event:     "Payout Requested",
-        users:     0,
-        earning:   -amount,
-        status:    "pending",
-        createdAt: serverTimestamp()
-      });
-      showNotif(`Payout of $${amount.toFixed(2)} requested!`);
-      await loadDashboard(currentUser);
-    } catch(e) {
-      showNotif("Error: " + e.message, true);
+      const payoutBtn = document.getElementById("payoutBtn");
+      payoutBtn.disabled  = true;
+      payoutBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+      try {
+        await addDoc(collection(db, "payoutRequests"), {
+          uid: currentUser.uid, name: currentUser.displayName || currentUser.email,
+          email: currentUser.email, amount, method: selectedPayMethod, details,
+          status: "pending", createdAt: serverTimestamp()
+        });
+        await updateDoc(ref, { balance: increment(-amount) });
+        await addDoc(collection(db, "affiliates", currentUser.uid, "activity"), {
+          event: "Payout Requested", users: 0, earning: -amount,
+          status: "pending", createdAt: serverTimestamp()
+        });
+        showNotif(`Payout of $${amount.toFixed(2)} requested!`);
+        await loadDashboard(currentUser);
+      } catch(e) {
+        showNotif("Error: " + e.message, true);
+      }
+
+      payoutBtn.disabled  = false;
+      payoutBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Request Payout';
+    };
+
+    window.switchTab = function(tab) {
+      document.getElementById("loginForm").style.display    = tab === "login"    ? "flex" : "none";
+      document.getElementById("registerForm").style.display = tab === "register" ? "flex" : "none";
+      document.getElementById("tabLogin").classList.toggle("active",    tab === "login");
+      document.getElementById("tabRegister").classList.toggle("active", tab === "register");
+      const msg = document.getElementById("authMsg");
+      msg.className = "auth-msg";
+      msg.textContent = "";
+    };
+
+    function showAuthMsg(msg, type) {
+      const el = document.getElementById("authMsg");
+      el.textContent = msg;
+      el.className = `auth-msg ${type}`;
     }
 
-    payoutBtn.disabled  = false;
-    payoutBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Request Payout';
-  };
+    window.doLogin = async function() {
+      const email = document.getElementById("loginEmail").value.trim();
+      const pass  = document.getElementById("loginPassword").value;
+      if (!email || !pass) { showAuthMsg("Please fill in all fields.", "error"); return; }
+      try {
+        showAuthMsg("Signing in...", "success");
+        await signInWithEmailAndPassword(auth, email, pass);
+      } catch(e) {
+        showAuthMsg(
+          e.code === "auth/wrong-password"     ? "Incorrect password." :
+          e.code === "auth/user-not-found"     ? "No account found with this email." :
+          e.code === "auth/invalid-email"      ? "Invalid email address." :
+          e.code === "auth/invalid-credential" ? "Incorrect email or password." :
+          e.code === "auth/too-many-requests"  ? "Too many attempts. Try again later." :
+          e.message, "error"
+        );
+      }
+    };
 
-  // ---- AUTH TAB SWITCH ----
-  window.switchTab = function(tab) {
-    document.getElementById("loginForm").style.display    = tab === "login"    ? "flex" : "none";
-    document.getElementById("registerForm").style.display = tab === "register" ? "flex" : "none";
-    document.getElementById("tabLogin").classList.toggle("active",    tab === "login");
-    document.getElementById("tabRegister").classList.toggle("active", tab === "register");
-    const msg = document.getElementById("authMsg");
-    msg.className   = "auth-msg";
-    msg.textContent = "";
-  };
+    window.doRegister = async function() {
+      const name  = document.getElementById("regName").value.trim();
+      const email = document.getElementById("regEmail").value.trim();
+      const pass  = document.getElementById("regPassword").value;
+      if (!name || !email || !pass) { showAuthMsg("Please fill in all fields.", "error"); return; }
+      if (pass.length < 6) { showAuthMsg("Password must be at least 6 characters.", "error"); return; }
+      try {
+        showAuthMsg("Creating account...", "success");
+        const result = await createUserWithEmailAndPassword(auth, email, pass);
+        await updateProfile(result.user, { displayName: name });
+      } catch(e) {
+        showAuthMsg(
+          e.code === "auth/email-already-in-use" ? "Email already registered. Try signing in instead." : e.message, "error"
+        );
+      }
+    };
 
-  function showAuthMsg(msg, type) {
-    const el = document.getElementById("authMsg");
-    el.textContent = msg;
-    el.className   = `auth-msg ${type}`;
-  }
+    window.doGoogle = async function() {
+      try {
+        await signInWithPopup(auth, provider);
+      } catch(e) {
+        showAuthMsg(e.message, "error");
+      }
+    };
 
-  // ---- LOGIN ----
-  window.doLogin = async function() {
-    const email = document.getElementById("loginEmail").value.trim();
-    const pass  = document.getElementById("loginPassword").value;
-    if (!email || !pass) { showAuthMsg("Please fill in all fields.", "error"); return; }
-    try {
-      showAuthMsg("Signing in...", "success");
-      await signInWithEmailAndPassword(auth, email, pass);
-    } catch(e) {
-      showAuthMsg(
-        e.code === "auth/wrong-password"    ? "Incorrect password." :
-        e.code === "auth/user-not-found"    ? "No account found with this email." :
-        e.code === "auth/invalid-email"     ? "Invalid email address." :
-        e.code === "auth/invalid-credential"? "Incorrect email or password." :
-        e.code === "auth/too-many-requests" ? "Too many attempts. Try again later." :
-        e.message, "error"
-      );
-    }
-  };
+    window.doLogout = async function() {
+      await signOut(auth);
+    };
 
-  // ---- REGISTER ----
-  window.doRegister = async function() {
-    const name  = document.getElementById("regName").value.trim();
-    const email = document.getElementById("regEmail").value.trim();
-    const pass  = document.getElementById("regPassword").value;
-    if (!name || !email || !pass) { showAuthMsg("Please fill in all fields.", "error"); return; }
-    if (pass.length < 6) { showAuthMsg("Password must be at least 6 characters.", "error"); return; }
-    try {
-      showAuthMsg("Creating account...", "success");
-      const result = await createUserWithEmailAndPassword(auth, email, pass);
-      await updateProfile(result.user, { displayName: name });
-    } catch(e) {
-      showAuthMsg(
-        e.code === "auth/email-already-in-use" ?
-        "Email already registered. Try signing in instead." : e.message, "error"
-      );
-    }
-  };
+    window.showNotif = function(msg, isError = false) {
+      const el = document.getElementById("notif");
+      document.getElementById("notifText").textContent = msg;
+      el.querySelector("i").style.color = isError ? "var(--red)" : "var(--green)";
+      el.classList.add("show");
+      setTimeout(() => el.classList.remove("show"), 3500);
+    };
+  </script>
 
-  // ---- GOOGLE SIGN IN ----
-  window.doGoogle = async function() {
-    try {
-      await signInWithPopup(auth, provider);
-    } catch(e) {
-      showAuthMsg(e.message, "error");
-    }
-  };
-
-  // ---- LOGOUT ----
-  window.doLogout = async function() {
-    await signOut(auth);
-  };
-
-  // ---- NOTIFICATION ----
-  window.showNotif = function(msg, isError = false) {
-    const el = document.getElementById("notif");
-    document.getElementById("notifText").textContent = msg;
-    el.querySelector("i").style.color = isError ? "var(--red)" : "var(--green)";
-    el.classList.add("show");
-    setTimeout(() => el.classList.remove("show"), 3500);
-  };
-
-</script>
-    <!-- Re-fire vignette ads on page visibility -->
   <script>
-    // Re-fire when user returns to tab
+    function refireVignettes() {
+      var zones = ['11035918','11034900','11028744','11209621'];
+      zones.forEach(function(zone) {
+        var s = document.createElement('script');
+        s.dataset.zone = zone;
+        s.src = 'https://n6wxm.com/vignette.min.js?_=' + Date.now();
+        s.async = true;
+        document.head.appendChild(s);
+      });
+    }
     document.addEventListener("visibilitychange", function() {
-      if (document.visibilityState === "visible") {
-        var zones = ['11035918','11034900','11028744','11209621'];
-        zones.forEach(function(zone) {
-          var s = document.createElement('script');
-          s.dataset.zone = zone;
-          s.src = 'https://n6wxm.com/vignette.min.js?_=' + Date.now();
-          document.head.appendChild(s);
-        });
-      }
+      if (document.visibilityState === "visible") refireVignettes();
     });
-
-    // Re-fire on page show (back/forward navigation)
     window.addEventListener("pageshow", function(e) {
-      if (e.persisted) {
-        var zones = ['11035918','11034900','11028744','11209621'];
-        zones.forEach(function(zone) {
-          var s = document.createElement('script');
-          s.dataset.zone = zone;
-          s.src = 'https://n6wxm.com/vignette.min.js?_=' + Date.now();
-          document.head.appendChild(s);
-        });
-      }
+      if (e.persisted) refireVignettes();
     });
   </script>
-  </body>
+
+</body>
 </html>
