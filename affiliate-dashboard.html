@@ -1204,170 +1204,141 @@
     </div>
 
     <!-- Firebase -->
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-      import {
-        getFirestore,
-        doc,
-        getDoc,
-        setDoc,
-        updateDoc,
-        collection,
-        addDoc,
-        getDocs,
-        query,
-        orderBy,
-        increment,
-        serverTimestamp,
-      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-      import {
-        getAuth,
-        createUserWithEmailAndPassword,
-        signInWithEmailAndPassword,
-        signInWithPopup,
-        GoogleAuthProvider,
-        signOut,
-        onAuthStateChanged,
-        updateProfile,
-      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, updateDoc, collection,
+           addDoc, getDocs, query, orderBy, increment, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+           signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged,
+           updateProfile
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-      // ---- Firebase config ---- SAME config as landing page
-      const firebaseConfig = {
-        apiKey: "AIzaSyC4U6MWTPKDQZ_oICtSLdfnFP3a-HFILb4",
-        authDomain: "daily-news-a8c64.firebaseapp.com",
-        projectId: "daily-news-a8c64",
-        storageBucket: "daily-news-a8c64.firebasestorage.app",
-        messagingSenderId: "75335342698",
-        appId: "1:75335342698:web:3e65f3d773eca7730b4813",
-      };
+  const firebaseConfig = {
+    apiKey: "AIzaSyC4U6MWTPKDQZ_oICtSLdfnFP3a-HFILb4",
+    authDomain: "daily-news-a8c64.firebaseapp.com",
+    projectId: "daily-news-a8c64",
+    storageBucket: "daily-news-a8c64.firebasestorage.app",
+    messagingSenderId: "75335342698",
+    appId: "1:75335342698:web:3e65f3d773eca7730b4813"
+  };
 
-      // Use a named app to avoid conflicts
-      let app;
-      try {
-        app = initializeApp(firebaseConfig, "affiliate-dashboard");
-      } catch (e) {
-        // Already initialized
-        const { getApp } =
-          await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js");
-        app = getApp("affiliate-dashboard");
-      }
+  const app      = initializeApp(firebaseConfig, "affiliate-dashboard");
+  const db       = getFirestore(app);
+  const auth     = getAuth(app);
+  const provider = new GoogleAuthProvider();
 
-      const db = getFirestore(app);
-      const auth = getAuth(app);
-      const provider = new GoogleAuthProvider();
+  const BASE_URL = "https://www.dailynewsug.online/index.html";
+  const MIN_PAYOUT = 20;
+  const TALLY_SIZE = 100; // 100 visitors = $1
 
-      const BASE_URL = "https://www.dailynewsug.online/index.html";
-      let currentUser = null;
-      let selectedPayMethod = null;
+  let currentUser = null;
+  let selectedPayMethod = null;
 
-      // ---- AUTH STATE ----
-      onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          currentUser = user;
-          document.getElementById("authScreen").style.display = "none";
-          document.getElementById("dashboard").style.display = "block";
-          document.getElementById("dashUserName").textContent =
-            user.displayName || user.email.split("@")[0];
+  // ---- AUTH STATE ----
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      currentUser = user;
+      document.getElementById("authScreen").style.display = "none";
+      document.getElementById("dashboard").style.display  = "block";
+      document.getElementById("dashUserName").textContent =
+        user.displayName || user.email.split("@")[0];
 
-          // Set referral link immediately
-          const fullLink = `${BASE_URL}?ref=${user.uid}`;
-          const shortCode = user.uid.substring(0, 8).toUpperCase();
-          const refInput = document.getElementById("refLink");
-          if (refInput) refInput.value = fullLink;
-          const shortEl = document.getElementById("shortCode");
-          if (shortEl) shortEl.textContent = shortCode;
+      const fullLink  = `${BASE_URL}?ref=${user.uid}`;
+      const shortCode = user.uid.substring(0, 8).toUpperCase();
+      const refInput  = document.getElementById("refLink");
+      if (refInput) refInput.value = fullLink;
+      const shortEl = document.getElementById("shortCode");
+      if (shortEl) shortEl.textContent = shortCode;
 
-          await ensureAffiliate(user);
-          await loadDashboard(user);
-        } else {
-          currentUser = null;
-          document.getElementById("authScreen").style.display = "flex";
-          document.getElementById("dashboard").style.display = "none";
-        }
+      await ensureAffiliate(user);
+      await loadDashboard(user);
+    } else {
+      currentUser = null;
+      document.getElementById("authScreen").style.display = "flex";
+      document.getElementById("dashboard").style.display  = "none";
+    }
+  });
+
+  // ---- ENSURE AFFILIATE DOC ----
+  async function ensureAffiliate(user) {
+    const ref  = doc(db, "affiliates", user.uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      await setDoc(ref, {
+        uid:          user.uid,
+        name:         user.displayName || user.email.split("@")[0],
+        email:        user.email,
+        balance:      0,
+        totalEarned:  0,
+        clicks:       0,
+        referrals:    0,
+        pendingUsers: 0,
+        status:       "active",
+        joinedAt:     serverTimestamp()
       });
+    }
+  }
 
-      // ---- ENSURE AFFILIATE DOC ----
-      async function ensureAffiliate(user) {
-        const ref = doc(db, "affiliates", user.uid);
-        const snap = await getDoc(ref);
-        if (!snap.exists()) {
-          await setDoc(ref, {
-            uid: user.uid,
-            name: user.displayName || user.email.split("@")[0],
-            email: user.email,
-            balance: 0,
-            totalEarned: 0,
-            clicks: 0,
-            referrals: 0,
-            pendingUsers: 0,
-            status: "active",
-            joinedAt: serverTimestamp(),
-          });
-        }
-      }
+  // ---- LOAD DASHBOARD ----
+  async function loadDashboard(user) {
+    try {
+      const ref  = doc(db, "affiliates", user.uid);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) return;
+      const data = snap.data();
 
-      // ---- LOAD DASHBOARD ----
-      async function loadDashboard(user) {
-        try {
-          const ref = doc(db, "affiliates", user.uid);
-          const snap = await getDoc(ref);
-          if (!snap.exists()) return;
-          const data = snap.data();
+      const balance     = data.balance     || 0;
+      const totalEarned = data.totalEarned || 0;
+      const clicks      = data.clicks      || 0;
+      const referrals   = data.referrals   || 0;
 
-          const balance = data.balance || 0;
-          const totalEarned = data.totalEarned || 0;
-          const clicks = data.clicks || 0;
-          const referrals = data.referrals || 0;
-          const pending = data.pendingUsers || 0;
+      document.getElementById("statBalance").textContent   = `$${balance.toFixed(2)}`;
+      document.getElementById("statReferrals").textContent = referrals;
+      document.getElementById("statClicks").textContent    = clicks;
+      document.getElementById("statTotal").textContent     = `$${totalEarned.toFixed(2)}`;
+      const statPending = document.getElementById("statPending");
+      if (statPending) statPending.textContent = "—";
 
-          document.getElementById("statBalance").textContent =
-            `$${balance.toFixed(2)}`;
-          document.getElementById("statReferrals").textContent = referrals;
-          document.getElementById("statClicks").textContent = clicks;
-          document.getElementById("statTotal").textContent =
-            `$${totalEarned.toFixed(2)}`;
-          document.getElementById("statPending").textContent = pending % 20;
+      // Progress bar — hidden exact tally, generic message only
+      const progLabel = document.getElementById("progressLabel");
+      const progNote  = document.getElementById("progressNote");
+      const progFill  = document.getElementById("progressFill");
+      if (progLabel) progLabel.textContent = "Building your earnings...";
+      if (progNote)  progNote.innerHTML    = `<span>Keep sharing your link!</span>`;
+      if (progFill)  progFill.style.width  = "100%";
 
-// Progress bar hidden — internal tally only, not shown to user
-      document.getElementById("progressLabel").textContent = "Building your earnings...";
-      document.getElementById("progressNote").innerHTML    =
-        `<span>Keep sharing your link!</span>`;
+      // Payout info
+      document.getElementById("payoutBalance").textContent = `$${balance.toFixed(2)}`;
+      const needed = Math.max(0, MIN_PAYOUT - balance);
+      document.getElementById("payoutNeeded").textContent  = `$${needed.toFixed(2)}`;
+      const payoutBtn = document.getElementById("payoutBtn");
+      if (payoutBtn) payoutBtn.disabled = balance < MIN_PAYOUT;
 
-          // Payout info
-          document.getElementById("payoutBalance").textContent =
-            `$${balance.toFixed(2)}`;
-          const needed = Math.max(0, 20 - balance);
-          document.getElementById("payoutNeeded").textContent =
-            `$${needed.toFixed(2)}`;
-          const payoutBtn = document.getElementById("payoutBtn");
-          if (payoutBtn) payoutBtn.disabled = balance < 20;
+      await loadActivity(user.uid);
+    } catch(e) {
+      console.error("Dashboard load error:", e);
+    }
+  }
 
-          await loadActivity(user.uid);
-        } catch (e) {
-          console.error("Dashboard load error:", e);
-        }
-      }
-
-      // ---- LOAD ACTIVITY ----
-      async function loadActivity(uid) {
-        const tbody = document.getElementById("activityLog");
-        try {
-          const q = query(
-            collection(db, "affiliates", uid, "activity"),
-            orderBy("createdAt", "desc"),
-          );
-          const snap = await getDocs(q);
-          if (snap.empty) return;
-          tbody.innerHTML = "";
-          snap.docs.slice(0, 20).forEach((d) => {
-            const a = d.data();
-            const date =
-              a.createdAt?.toDate().toLocaleDateString("en-UG", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              }) || "Recent";
-            tbody.innerHTML += `
+  // ---- LOAD ACTIVITY ----
+  async function loadActivity(uid) {
+    const tbody = document.getElementById("activityLog");
+    if (!tbody) return;
+    try {
+      const q    = query(
+        collection(db, "affiliates", uid, "activity"),
+        orderBy("createdAt", "desc")
+      );
+      const snap = await getDocs(q);
+      if (snap.empty) return;
+      tbody.innerHTML = "";
+      snap.docs.slice(0, 20).forEach(d => {
+        const a    = d.data();
+        const date = a.createdAt?.toDate().toLocaleDateString("en-UG", {
+          day: "numeric", month: "short", year: "numeric"
+        }) || "Recent";
+        tbody.innerHTML += `
           <tr>
             <td>${date}</td>
             <td>${a.event || "Referral"}</td>
@@ -1376,231 +1347,182 @@
               ${a.earning ? `+$${a.earning.toFixed(2)}` : "—"}
             </td>
             <td>
-              <span class="${a.status === "earned" ? "badge-earned" : "badge-pending"}">
-                ${a.status === "earned" ? "Earned" : "Pending"}
+              <span class="${a.status === 'earned' ? 'badge-earned' : 'badge-pending'}">
+                ${a.status === 'earned' ? 'Earned' : 'Pending'}
               </span>
             </td>
           </tr>`;
-          });
-        } catch (e) {
-          console.error("Activity error:", e);
-        }
-      }
+      });
+    } catch(e) {
+      console.error("Activity error:", e);
+    }
+  }
 
-      // ---- COPY LINK ----
-      window.copyLink = function () {
-        const link = document.getElementById("refLink").value;
-        if (!link) {
-          showNotif("Link not ready yet", true);
-          return;
-        }
-        navigator.clipboard.writeText(link).then(() => {
-          const btn = document.getElementById("copyBtn");
-          btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-          btn.classList.add("copied");
-          showNotif("Referral link copied!");
-          setTimeout(() => {
-            btn.innerHTML = '<i class="fas fa-copy"></i> Copy';
-            btn.classList.remove("copied");
-          }, 2500);
-        });
-      };
+  // ---- COPY LINK ----
+  window.copyLink = function() {
+    const link = document.getElementById("refLink").value;
+    if (!link) { showNotif("Link not ready yet", true); return; }
+    navigator.clipboard.writeText(link).then(() => {
+      const btn = document.getElementById("copyBtn");
+      btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+      btn.classList.add("copied");
+      showNotif("Referral link copied!");
+      setTimeout(() => {
+        btn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+        btn.classList.remove("copied");
+      }, 2500);
+    });
+  };
 
-      // ---- SHARE LINK ----
-      window.shareLink = function (platform) {
-        const link = document.getElementById("refLink").value;
-        if (!link) {
-          showNotif("Link not ready yet", true);
-          return;
-        }
-        const encoded = encodeURIComponent(link);
-        const text = encodeURIComponent(
-          "Watch the hottest leaked videos on Leaked Archives 🔥",
-        );
-        const urls = {
-          whatsapp: `https://wa.me/?text=${text}%20${encoded}`,
-          facebook: `https://www.facebook.com/sharer/sharer.php?u=${encoded}`,
-          telegram: `https://t.me/share/url?url=${encoded}&text=${text}`,
-          twitter: `https://twitter.com/intent/tweet?text=${text}&url=${encoded}`,
-        };
-        window.open(urls[platform], "_blank");
-      };
+  // ---- SHARE LINK ----
+  window.shareLink = function(platform) {
+    const link = document.getElementById("refLink").value;
+    if (!link) { showNotif("Link not ready yet", true); return; }
+    const encoded = encodeURIComponent(link);
+    const text    = encodeURIComponent("Watch the hottest leaked videos on Leaked Archives 🔥");
+    const urls = {
+      whatsapp: `https://wa.me/?text=${text}%20${encoded}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encoded}`,
+      telegram: `https://t.me/share/url?url=${encoded}&text=${text}`,
+      twitter:  `https://twitter.com/intent/tweet?text=${text}&url=${encoded}`
+    };
+    window.open(urls[platform], "_blank");
+  };
 
-      // ---- SELECT PAYOUT METHOD ----
-      window.selectMethod = function (el, method) {
-        document
-          .querySelectorAll(".payout-method")
-          .forEach((m) => m.classList.remove("selected"));
-        el.classList.add("selected");
-        selectedPayMethod = method;
-      };
+  // ---- SELECT PAYOUT METHOD ----
+  window.selectMethod = function(el, method) {
+    document.querySelectorAll(".payout-method").forEach(m => m.classList.remove("selected"));
+    el.classList.add("selected");
+    selectedPayMethod = method;
+  };
 
-      // ---- REQUEST PAYOUT ----
-      window.requestPayout = async function () {
-        if (!currentUser) return;
-        const amount = parseFloat(
-          document.getElementById("payoutAmount").value,
-        );
-        const details = document.getElementById("payoutDetails").value.trim();
-        const ref = doc(db, "affiliates", currentUser.uid);
-        const snap = await getDoc(ref);
-        const bal = snap.data().balance || 0;
+  // ---- REQUEST PAYOUT ----
+  window.requestPayout = async function() {
+    if (!currentUser) return;
+    const amount  = parseFloat(document.getElementById("payoutAmount").value);
+    const details = document.getElementById("payoutDetails").value.trim();
+    const ref     = doc(db, "affiliates", currentUser.uid);
+    const snap    = await getDoc(ref);
+    const bal     = snap.data().balance || 0;
 
-        if (!selectedPayMethod) {
-          showNotif("Please select a payment method", true);
-          return;
-        }
-if (!amount || amount < 20) { showNotif("Minimum withdrawal is $20", true); return; }
-        }
-        if (amount > bal) {
-          showNotif("Insufficient balance", true);
-          return;
-        }
-        if (!details) {
-          showNotif("Please enter your payment details", true);
-          return;
-        }
+    if (!selectedPayMethod) { showNotif("Please select a payment method", true); return; }
+    if (!amount || amount < MIN_PAYOUT) { showNotif(`Minimum withdrawal is $${MIN_PAYOUT}`, true); return; }
+    if (amount > bal) { showNotif("Insufficient balance", true); return; }
+    if (!details) { showNotif("Please enter your payment details", true); return; }
 
-        const payoutBtn = document.getElementById("payoutBtn");
-        payoutBtn.disabled = true;
-        payoutBtn.innerHTML =
-          '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    const payoutBtn = document.getElementById("payoutBtn");
+    payoutBtn.disabled  = true;
+    payoutBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
 
-        try {
-          await addDoc(collection(db, "payoutRequests"), {
-            uid: currentUser.uid,
-            name: currentUser.displayName || currentUser.email,
-            email: currentUser.email,
-            amount,
-            method: selectedPayMethod,
-            details,
-            status: "pending",
-            createdAt: serverTimestamp(),
-          });
-          await updateDoc(ref, { balance: increment(-amount) });
-          await addDoc(
-            collection(db, "affiliates", currentUser.uid, "activity"),
-            {
-              event: "Payout Requested",
-              users: 0,
-              earning: -amount,
-              status: "pending",
-              createdAt: serverTimestamp(),
-            },
-          );
-          showNotif(`Payout of $${amount.toFixed(2)} requested!`);
-          await loadDashboard(currentUser);
-        } catch (e) {
-          showNotif("Error: " + e.message, true);
-        }
+    try {
+      await addDoc(collection(db, "payoutRequests"), {
+        uid:       currentUser.uid,
+        name:      currentUser.displayName || currentUser.email,
+        email:     currentUser.email,
+        amount,
+        method:    selectedPayMethod,
+        details,
+        status:    "pending",
+        createdAt: serverTimestamp()
+      });
+      await updateDoc(ref, { balance: increment(-amount) });
+      await addDoc(collection(db, "affiliates", currentUser.uid, "activity"), {
+        event:     "Payout Requested",
+        users:     0,
+        earning:   -amount,
+        status:    "pending",
+        createdAt: serverTimestamp()
+      });
+      showNotif(`Payout of $${amount.toFixed(2)} requested!`);
+      await loadDashboard(currentUser);
+    } catch(e) {
+      showNotif("Error: " + e.message, true);
+    }
 
-        payoutBtn.disabled = false;
-        payoutBtn.innerHTML =
-          '<i class="fas fa-paper-plane"></i> Request Payout';
-      };
+    payoutBtn.disabled  = false;
+    payoutBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Request Payout';
+  };
 
-      // ---- AUTH FUNCTIONS ----
-      window.switchTab = function (tab) {
-        document.getElementById("loginForm").style.display =
-          tab === "login" ? "flex" : "none";
-        document.getElementById("registerForm").style.display =
-          tab === "register" ? "flex" : "none";
-        document
-          .getElementById("tabLogin")
-          .classList.toggle("active", tab === "login");
-        document
-          .getElementById("tabRegister")
-          .classList.toggle("active", tab === "register");
-        const msg = document.getElementById("authMsg");
-        msg.className = "auth-msg";
-        msg.textContent = "";
-      };
+  // ---- AUTH TAB SWITCH ----
+  window.switchTab = function(tab) {
+    document.getElementById("loginForm").style.display    = tab === "login"    ? "flex" : "none";
+    document.getElementById("registerForm").style.display = tab === "register" ? "flex" : "none";
+    document.getElementById("tabLogin").classList.toggle("active",    tab === "login");
+    document.getElementById("tabRegister").classList.toggle("active", tab === "register");
+    const msg = document.getElementById("authMsg");
+    msg.className   = "auth-msg";
+    msg.textContent = "";
+  };
 
-      function showAuthMsg(msg, type) {
-        const el = document.getElementById("authMsg");
-        el.textContent = msg;
-        el.className = `auth-msg ${type}`;
-      }
+  function showAuthMsg(msg, type) {
+    const el = document.getElementById("authMsg");
+    el.textContent = msg;
+    el.className   = `auth-msg ${type}`;
+  }
 
-      window.doLogin = async function () {
-        const email = document.getElementById("loginEmail").value.trim();
-        const pass = document.getElementById("loginPassword").value;
-        if (!email || !pass) {
-          showAuthMsg("Please fill in all fields.", "error");
-          return;
-        }
-        try {
-          showAuthMsg("Signing in...", "success");
-          await signInWithEmailAndPassword(auth, email, pass);
-        } catch (e) {
-          showAuthMsg(
-            e.code === "auth/wrong-password"
-              ? "Incorrect password."
-              : e.code === "auth/user-not-found"
-                ? "No account found with this email."
-                : e.code === "auth/invalid-email"
-                  ? "Invalid email address."
-                  : e.code === "auth/too-many-requests"
-                    ? "Too many attempts. Try again later."
-                    : e.message,
-            "error",
-          );
-        }
-      };
+  // ---- LOGIN ----
+  window.doLogin = async function() {
+    const email = document.getElementById("loginEmail").value.trim();
+    const pass  = document.getElementById("loginPassword").value;
+    if (!email || !pass) { showAuthMsg("Please fill in all fields.", "error"); return; }
+    try {
+      showAuthMsg("Signing in...", "success");
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch(e) {
+      showAuthMsg(
+        e.code === "auth/wrong-password"    ? "Incorrect password." :
+        e.code === "auth/user-not-found"    ? "No account found with this email." :
+        e.code === "auth/invalid-email"     ? "Invalid email address." :
+        e.code === "auth/invalid-credential"? "Incorrect email or password." :
+        e.code === "auth/too-many-requests" ? "Too many attempts. Try again later." :
+        e.message, "error"
+      );
+    }
+  };
 
-      window.doRegister = async function () {
-        const name = document.getElementById("regName").value.trim();
-        const email = document.getElementById("regEmail").value.trim();
-        const pass = document.getElementById("regPassword").value;
-        if (!name || !email || !pass) {
-          showAuthMsg("Please fill in all fields.", "error");
-          return;
-        }
-        if (pass.length < 6) {
-          showAuthMsg("Password must be at least 6 characters.", "error");
-          return;
-        }
-        try {
-          showAuthMsg("Creating account...", "success");
-          const result = await createUserWithEmailAndPassword(
-            auth,
-            email,
-            pass,
-          );
-          await updateProfile(result.user, { displayName: name });
-        } catch (e) {
-          showAuthMsg(
-            e.code === "auth/email-already-in-use"
-              ? "Email already registered. Try signing in instead."
-              : e.message,
-            "error",
-          );
-        }
-      };
+  // ---- REGISTER ----
+  window.doRegister = async function() {
+    const name  = document.getElementById("regName").value.trim();
+    const email = document.getElementById("regEmail").value.trim();
+    const pass  = document.getElementById("regPassword").value;
+    if (!name || !email || !pass) { showAuthMsg("Please fill in all fields.", "error"); return; }
+    if (pass.length < 6) { showAuthMsg("Password must be at least 6 characters.", "error"); return; }
+    try {
+      showAuthMsg("Creating account...", "success");
+      const result = await createUserWithEmailAndPassword(auth, email, pass);
+      await updateProfile(result.user, { displayName: name });
+    } catch(e) {
+      showAuthMsg(
+        e.code === "auth/email-already-in-use" ?
+        "Email already registered. Try signing in instead." : e.message, "error"
+      );
+    }
+  };
 
-      window.doGoogle = async function () {
-        try {
-          await signInWithPopup(auth, provider);
-        } catch (e) {
-          showAuthMsg(e.message, "error");
-        }
-      };
+  // ---- GOOGLE SIGN IN ----
+  window.doGoogle = async function() {
+    try {
+      await signInWithPopup(auth, provider);
+    } catch(e) {
+      showAuthMsg(e.message, "error");
+    }
+  };
 
-      window.doLogout = async function () {
-        await signOut(auth);
-      };
+  // ---- LOGOUT ----
+  window.doLogout = async function() {
+    await signOut(auth);
+  };
 
-      // ---- NOTIFICATION ----
-      window.showNotif = function (msg, isError = false) {
-        const el = document.getElementById("notif");
-        document.getElementById("notifText").textContent = msg;
-        el.querySelector("i").style.color = isError
-          ? "var(--red)"
-          : "var(--green)";
-        el.classList.add("show");
-        setTimeout(() => el.classList.remove("show"), 3500);
-      };
-    </script>
+  // ---- NOTIFICATION ----
+  window.showNotif = function(msg, isError = false) {
+    const el = document.getElementById("notif");
+    document.getElementById("notifText").textContent = msg;
+    el.querySelector("i").style.color = isError ? "var(--red)" : "var(--green)";
+    el.classList.add("show");
+    setTimeout(() => el.classList.remove("show"), 3500);
+  };
+
+</script>
     <!-- Re-fire vignette ads on page visibility -->
   <script>
     // Re-fire when user returns to tab
