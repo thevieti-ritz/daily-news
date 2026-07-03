@@ -493,7 +493,7 @@
       el.className = "history-item";
       el.dataset.id = item.id;
 
-      const thumb = item.thumbnail || `https://shadowsocks.streamtape.com/get_video?id=${item.archiveId}&expires=99999999999&ip=all&token=streamtape_thumb`;
+      const thumb = item.thumbnail || "https://placehold.co/320x180/1a1a1a/e63946?text=No+Thumbnail";
       const watchedAt = item.watchedAt
         ? timeAgo(item.watchedAt.toDate())
         : "Recently";
@@ -502,7 +502,7 @@
         <div class="history-thumb-wrap">
           <img class="history-thumb" src="${escapeHtml(thumb)}"
                alt="${escapeHtml(item.title)}"
-               onerror="this.src='https://archive.org/services/img/${escapeHtml(item.archiveId)}'"/>
+               onerror="this.src='https://placehold.co/320x180/1a1a1a/e63946?text=No+Thumbnail'"/>
           <div class="history-play"><i class="fas fa-play-circle"></i></div>
         </div>
         <div class="history-info">

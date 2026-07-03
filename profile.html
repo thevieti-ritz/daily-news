@@ -342,6 +342,7 @@
         getDoc,
         updateDoc,
         collection,
+        collectionGroup,
         query,
         where,
         getDocs,
@@ -392,10 +393,10 @@
           }
         }
 
-        // Load my comments
+        // Load my comments — comments live in videos/{id}/comments subcollections
         try {
           const q = query(
-            collection(db, "comments"),
+            collectionGroup(db, "comments"),
             where("userId", "==", user.uid),
           );
           const snap = await getDocs(q);

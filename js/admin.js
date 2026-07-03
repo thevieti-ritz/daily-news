@@ -298,14 +298,14 @@ function createManageItem(video) {
       loadDashboard();
     }
   });
-  return el;
-}
-el.querySelector(".btn-approve")?.addEventListener("click", async () => {
+  el.querySelector(".btn-approve")?.addEventListener("click", async () => {
     await updateDoc(doc(db, "videos", video.id), { status: "approved" });
     el.querySelector(".btn-approve").remove();
     showUploadMsg(`✅ "${video.title}" approved and is now public!`, "success");
     loadDashboard();
   });
+  return el;
+}
 
 // ============================================
 // MANAGER SEARCH

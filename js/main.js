@@ -256,6 +256,8 @@ async function loadVideos() {
     const snapshot   = await getDocs(buildQuery(fetchLimit));
     let docs         = snapshot.docs;
     const rawLastDoc = snapshot.docs[snapshot.docs.length - 1];
+// Hide videos still pending admin approval
+    docs = docs.filter(d => d.data().status !== "pending");
 
     // Search filter
     if (currentSearch) {
