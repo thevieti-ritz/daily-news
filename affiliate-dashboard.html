@@ -252,18 +252,18 @@
       </div>
 
       <div class="section-card">
-        <h3><i class="fas fa-chart-line"></i> Your Earnings Progress</h3>
-        <p>Keep sharing your link to grow your balance</p>
+        <h3><i class="fas fa-chart-line"></i> Your Earnings</h3>
+        <p>Earnings grow as visitors come through your link</p>
         <div class="progress-section">
           <div class="progress-label">
-            <span id="progressLabel">Building your earnings...</span>
-            <span id="progressNext"></span>
+            <span id="progressLabel">Total visitors tracked to you</span>
+            <span id="progressNext" style="color:var(--gold);"><span id="statClicksInline">0</span></span>
           </div>
           <div class="progress-bg">
             <div class="progress-fill" id="progressFill" style="width:100%"></div>
           </div>
           <div class="progress-note">
-            <span id="progressNote">Keep sharing your link!</span>
+            <span id="progressNote">Keep sharing your link — every visitor counts toward your balance!</span>
           </div>
         </div>
       </div>
@@ -455,6 +455,9 @@
         document.getElementById("statReferrals").textContent = referrals;
         document.getElementById("statClicks").textContent    = clicks;
         document.getElementById("statTotal").textContent     = `$${totalEarned.toFixed(2)}`;
+
+        const clicksInline = document.getElementById("statClicksInline");
+        if (clicksInline) clicksInline.textContent = clicks;
 
         document.getElementById("payoutBalance").textContent = `$${balance.toFixed(2)}`;
         const needed = Math.max(0, MIN_PAYOUT - balance);
