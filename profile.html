@@ -1,6 +1,13 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <head>
+  <meta charset="UTF-8"/>
+  <link rel="manifest" href="/manifest.json"/>
+  <link rel="apple-touch-icon" href="/icons/icon-192.png"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Leaked Archives"/>
 <head>
   <!-- Monetag Vignette Ads — loads first for maximum speed -->
   <script>
@@ -475,6 +482,16 @@
         });
       }
     });
+  </script>
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/service-worker.js")
+          .then((reg) => console.log("Service worker registered:", reg.scope))
+          .catch((err) => console.log("Service worker failed:", err));
+      });
+    }
   </script>
   </body>
 </html>

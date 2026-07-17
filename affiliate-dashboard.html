@@ -2,6 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
+  <link rel="manifest" href="/manifest.json"/>
+  <link rel="apple-touch-icon" href="/icons/icon-192.png"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Leaked Archives"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Affiliate Dashboard — Leaked Archives Partners</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -658,6 +663,15 @@
       if (e.persisted) refireVignettes();
     });
   </script>
-
+<!-- PWA Service Worker Registration -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/service-worker.js")
+          .then((reg) => console.log("Service worker registered:", reg.scope))
+          .catch((err) => console.log("Service worker failed:", err));
+      });
+    }
+  </script>
 </body>
 </html>
