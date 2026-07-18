@@ -445,12 +445,25 @@ const lazyObserver = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
       const img = entry.target;
-      img.src = img.dataset.src;
-      img.classList.remove("lazy-img");
+      const src = img.dataset.src;
+      if (!src) return;
+
+      // Preload then swap so blur clears only once image is actually ready
+      const preload = new Image();
+      preload.onload = () => {
+        img.src = src;
+        img.classList.remove("lazy-img");
+      };
+      preload.onerror = () => {
+        img.src = src; // still swap so it doesn't stay stuck forever
+        img.classList.remove("lazy-img");
+      };
+      preload.src = src;
+
       lazyObserver.unobserve(img);
     }
   });
-}, { rootMargin: "150px", threshold: 0 });
+}, { rootMargin: "300px", threshold: 0.01 });
 
 function initLazyLoad() {
   document.querySelectorAll("img.lazy-img").forEach(img => lazyObserver.observe(img));

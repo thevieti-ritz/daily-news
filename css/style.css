@@ -463,10 +463,6 @@ select option { background: var(--bg3); }
   width: 100%;
   box-sizing: border-box;
 }
-.video-card {
-  content-visibility: auto;
-  contain-intrinsic-size: 0 260px;
-}
 
 .video-card {
   background: var(--bg2);
@@ -631,6 +627,11 @@ img.lazy-img {
   transition: filter 0.4s ease;
   background: var(--bg3);
   aspect-ratio: 16 / 9;
+  animation: forceUnblur 3s forwards;
+}
+@keyframes forceUnblur {
+  0%, 90% { filter: blur(6px); }
+  100% { filter: blur(0); }
 }
 img:not(.lazy-img) { filter: none; }
 
@@ -1294,3 +1295,11 @@ img:not(.lazy-img) { filter: none; }
 @media (max-width: 768px) {
   .related-thumb-wrap { width: 100px; height: 56px; }
 }
+@media (max-width: 768px) {
+  ...
+  .video-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 8px 10px;
+    width: 100%;
+  }
