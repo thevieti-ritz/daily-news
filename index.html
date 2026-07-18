@@ -12,7 +12,7 @@
   <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="Leaked Archives"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <meta name="6a97888e-site-verification" content="f4a6d14c9d96397f43349f4d01874ac0">
   <meta name="theme-color" content="#e63946"/>
 
@@ -173,17 +173,24 @@
     }
   </style>
 
-  <!-- Monetag Vignette Ads — fires first for speed -->
+  <!-- Monetag Vignette Ads — deferred until after page paints -->
   <script>
     (function(){
       var zones = ['11035918','11034900','11028744','11209621'];
-      zones.forEach(function(zone) {
-        var s = document.createElement('script');
-        s.dataset.zone = zone;
-        s.src = 'https://n6wxm.com/vignette.min.js';
-        s.async = true;
-        document.head.appendChild(s);
-      });
+      function loadAds() {
+        zones.forEach(function(zone) {
+          var s = document.createElement('script');
+          s.dataset.zone = zone;
+          s.src = 'https://n6wxm.com/vignette.min.js';
+          s.async = true;
+          document.head.appendChild(s);
+        });
+      }
+      if (document.readyState === "complete") {
+        setTimeout(loadAds, 800);
+      } else {
+        window.addEventListener("load", function() { setTimeout(loadAds, 800); });
+      }
     })();
   </script>
 </head>
@@ -577,14 +584,20 @@
       });
     }
   </script>
-  <!-- PWA Install Prompt -->
+<!-- PWA Install Prompt — shows every visit until installed -->
   <script>
-    let deferredPrompt;
-    window.addEventListener("beforeinstallprompt", (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
+    let deferredPrompt = null;
 
-      // Show a simple install banner
+    // Check if already running as installed app
+    function isAppInstalled() {
+      return window.matchMedia("(display-mode: standalone)").matches ||
+             window.navigator.standalone === true;
+    }
+
+    function showInstallBanner() {
+      if (isAppInstalled()) return;
+      if (document.getElementById("pwaInstallBanner")) return;
+
       const banner = document.createElement("div");
       banner.id = "pwaInstallBanner";
       banner.style.cssText = `
@@ -594,11 +607,12 @@
         display: flex; align-items: center; justify-content: space-between;
         gap: 12px; z-index: 9999; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700;
+        animation: pwaSlideUp 0.3s ease;
       `;
       banner.innerHTML = `
         <span><i class="fas fa-mobile-alt"></i> Install Leaked Archives as an app</span>
-        <div style="display:flex;gap:8px;">
-          <button id="pwaInstallBtn" style="background:white;color:#e63946;border:none;padding:8px 14px;border-radius:8px;font-weight:800;font-size:12px;cursor:pointer;">Install</button>
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+          <button id="pwaInstallBtn" style="background:white;color:#e63946;border:none;padding:8px 14px;border-radius:8px;font-weight:800;font-size:12px;cursor:pointer;white-space:nowrap;">Install</button>
           <button id="pwaDismissBtn" style="background:rgba(255,255,255,0.2);color:white;border:none;padding:8px 12px;border-radius:8px;font-size:12px;cursor:pointer;"><i class="fas fa-times"></i></button>
         </div>
       `;
@@ -610,12 +624,43 @@
           deferredPrompt.prompt();
           await deferredPrompt.userChoice;
           deferredPrompt = null;
+        } else {
+          // iOS or browsers without native prompt — show instructions
+          showIosInstructions();
         }
       });
       document.getElementById("pwaDismissBtn").addEventListener("click", () => {
         banner.remove();
       });
+    }
+
+    function showIosInstructions() {
+      alert("To install: tap the Share icon in your browser, then choose 'Add to Home Screen'.");
+    }
+
+    // Capture the native prompt when browser offers it
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+    });
+
+    // Show banner shortly after every homepage load, unless already installed
+    if (!isAppInstalled()) {
+      setTimeout(showInstallBanner, 1500);
+    }
+
+    // Hide banner automatically if app gets installed while banner is showing
+    window.addEventListener("appinstalled", () => {
+      const b = document.getElementById("pwaInstallBanner");
+      if (b) b.remove();
     });
   </script>
+
+  <style>
+    @keyframes pwaSlideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
 </body>
 </html>
