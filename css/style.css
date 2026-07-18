@@ -493,19 +493,29 @@ select option { background: var(--bg3); }
 .card-thumb {
   position: relative;
   width: 100%;
-  padding-top: 56.25%;
+  padding-top: 56.25%; /* locks every thumbnail to a 16:9 box regardless of source image size */
   background: var(--bg3);
   overflow: hidden;
+  border-radius: var(--radius) var(--radius) 0 0;
 }
-.card-thumb img {
+.card-thumb img,
+.card-thumb video,
+.card-thumb-img,
+.card-thumb-video {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover;      /* crops to fill the box instead of stretching/squashing */
+  object-position: center;
+  display: block;
   transition: transform 0.3s;
+  background: var(--bg3);
 }
-.video-card:hover .card-thumb img { transform: scale(1.04); }
+.video-card:hover .card-thumb img,
+.video-card:hover .card-thumb-img,
+.video-card:hover .card-thumb-video { transform: scale(1.04); }
 
 .play-overlay {
   position: absolute;
@@ -1264,57 +1274,14 @@ img:not(.lazy-img) { filter: none; }
   .auth-container { padding: 18px 12px; }
   .btn-login { padding: 6px 8px; font-size: 11px; }
 }
-/* Auto video thumbnail on cards */
-.card-thumb { position: relative; width: 100%; padding-top: 56.25%; background: #111; overflow: hidden; }
-.thumb-container { position: absolute; inset: 0; }
-.thumb-img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.thumb-video { width: 100%; height: 100%; object-fit: cover; display: block; }
-/* ===== UNIFORM VIDEO CARD THUMBNAILS ===== */
-.card-thumb {
-  position: relative;
-  width: 100%;
-  padding-top: 56.25%; /* 16:9 ratio */
-  background: #111;
-  overflow: hidden;
-  border-radius: 8px;
-}
-.card-thumb img,
-.card-thumb video,
-.card-thumb-img,
-.card-thumb-video {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.play-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0);
-  transition: background 0.2s;
-}
-.video-card:hover .play-overlay { background: rgba(0,0,0,0.35); }
-.play-overlay i {
-  font-size: 44px;
-  color: rgba(255,255,255,0);
-  transition: color 0.2s;
-  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.6));
-}
-.video-card:hover .play-overlay i { color: rgba(255,255,255,0.9); }
-
-/* Related video thumbnails */
+/* ===== Related video thumbnails — uniform sizing ===== */
 .related-thumb-wrap {
   flex-shrink: 0;
   width: 120px;
   height: 68px;
   border-radius: 8px;
   overflow: hidden;
-  background: #111;
+  background: var(--bg3);
   position: relative;
 }
 .related-thumb-wrap img,
@@ -1322,5 +1289,10 @@ img:not(.lazy-img) { filter: none; }
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   display: block;
+}
+
+@media (max-width: 768px) {
+  .related-thumb-wrap { width: 100px; height: 56px; }
 }
