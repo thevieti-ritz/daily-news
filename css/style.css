@@ -1161,8 +1161,7 @@ img:not(.lazy-img) { filter: none; }
     box-shadow: 4px 0 20px rgba(0,0,0,0.6);
   }
   .sidebar-overlay { display: block !important; }
-  .sidebar-overlay
-  .hidden { display: none !important; }
+  .sidebar-overlay.hidden { display: none !important; }
 
   /* Main layout — full width, no left margin */
   .main-content {
