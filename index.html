@@ -1,18 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
-<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
-<link rel="apple-touch-icon" href="/icon-192.png" />
   <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <link rel="manifest" href="/manifest.json"/>
   <link rel="apple-touch-icon" href="/icons/icon-192.png"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="Leaked Archives"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <meta name="6a97888e-site-verification" content="f4a6d14c9d96397f43349f4d01874ac0">
   <meta name="theme-color" content="#e63946"/>
 
@@ -124,46 +120,6 @@
       margin-right: 6px;
     }
     .btn-earn:hover { opacity: 0.9; }
-
-    /* ===== Uniform thumbnails ===== */
-    .card-thumb {
-      position: relative;
-      width: 100%;
-      padding-top: 56.25%;
-      background: #111;
-      overflow: hidden;
-      border-radius: 8px;
-    }
-    .card-thumb img,
-    .card-thumb video,
-    .card-thumb-img,
-    .card-thumb-video {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      background: #111;
-    }
-    .play-overlay {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,0);
-      transition: background 0.2s;
-      pointer-events: none;
-    }
-    .video-card:hover .play-overlay { background: rgba(0,0,0,0.35); }
-    .play-overlay i {
-      font-size: 44px;
-      color: rgba(255,255,255,0);
-      transition: color 0.2s;
-      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.6));
-    }
-    .video-card:hover .play-overlay i { color: rgba(255,255,255,0.9); }
 
     @media (max-width: 768px) {
       .bottom-nav { display: flex; }
@@ -473,7 +429,8 @@
     }
     trackReferral();
   </script>
-<!-- Redirect Earn Money links to dashboard if already logged in as affiliate -->
+
+  <!-- Redirect Earn Money links to dashboard if already logged in as affiliate -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -491,13 +448,10 @@
     const dbInstance   = getFirestore(authApp);
 
     onAuthStateChanged(authInstance, async (user) => {
-      if (!user) return; // not logged in — links stay pointing to affiliate.html
-
+      if (!user) return;
       try {
         const affSnap = await getDoc(doc(dbInstance, "affiliates", user.uid));
-        if (!affSnap.exists()) return; // logged in but not an affiliate yet
-
-        // User is logged in AND already an affiliate — send them straight to dashboard
+        if (!affSnap.exists()) return;
         const ids = ["earnMoneyBtn", "earnMoneySidebar", "earnMoneyBottomNav", "joinAffiliateBanner", "affiliateFooterLink"];
         ids.forEach(id => {
           const el = document.getElementById(id);
@@ -508,7 +462,8 @@
       }
     });
   </script>
-  <!-- ExoClick interstitial + ad triggers -->
+
+  <!-- ExoClick interstitial (only ad network here — clean, single instance) -->
   <script async src="https://a.pemsrv.com/ad-provider.js"></script>
   <ins class="eas6a97888e33" data-zoneid="5944558"></ins>
   <script>
@@ -574,7 +529,8 @@
       if (e.persisted) refireVignettes();
     });
   </script>
-<!-- PWA Service Worker Registration -->
+
+  <!-- PWA Service Worker Registration -->
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
@@ -584,11 +540,11 @@
       });
     }
   </script>
-<!-- PWA Install Prompt — shows every visit until installed -->
+
+  <!-- PWA Install Prompt -->
   <script>
     let deferredPrompt = null;
 
-    // Check if already running as installed app
     function isAppInstalled() {
       return window.matchMedia("(display-mode: standalone)").matches ||
              window.navigator.standalone === true;
@@ -625,8 +581,7 @@
           await deferredPrompt.userChoice;
           deferredPrompt = null;
         } else {
-          // iOS or browsers without native prompt — show instructions
-          showIosInstructions();
+          alert("To install: tap the Share icon in your browser, then choose 'Add to Home Screen'.");
         }
       });
       document.getElementById("pwaDismissBtn").addEventListener("click", () => {
@@ -634,22 +589,15 @@
       });
     }
 
-    function showIosInstructions() {
-      alert("To install: tap the Share icon in your browser, then choose 'Add to Home Screen'.");
-    }
-
-    // Capture the native prompt when browser offers it
     window.addEventListener("beforeinstallprompt", (e) => {
       e.preventDefault();
       deferredPrompt = e;
     });
 
-    // Show banner shortly after every homepage load, unless already installed
     if (!isAppInstalled()) {
       setTimeout(showInstallBanner, 1500);
     }
 
-    // Hide banner automatically if app gets installed while banner is showing
     window.addEventListener("appinstalled", () => {
       const b = document.getElementById("pwaInstallBanner");
       if (b) b.remove();
@@ -662,9 +610,6 @@
       to { transform: translateY(0); opacity: 1; }
     }
   </style>
-  <script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
- <ins class="eas6a97888e31" data-zoneid="5980730"></ins> 
- <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
 <script type="application/javascript">
 (function() {
     function randStr(e,t){for(var n="",r=t||"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",o=0;o<e;o++)n+=r.charAt(Math.floor(Math.random()*r.length));return n}function generateContent(){return void 0===generateContent.val&&(generateContent.val="document.dispatchEvent("+randStr(4*Math.random()+3)+");"),generateContent.val}try{Object.defineProperty(document.currentScript,"innerHTML",{get:generateContent}),Object.defineProperty(document.currentScript,"textContent",{get:generateContent})}catch(e){};
@@ -674,7 +619,7 @@
     var adConfig = {
     "ads_host": "a.pemsrv.com",
     "syndication_host": "s.pemsrv.com",
-    "idzone": 5980736,
+    "idzone": 5980738,
     "popup_fallback": true,
     "popup_force": false,
     "chrome_enabled": true,
@@ -695,5 +640,6 @@ window.document.querySelectorAll||(document.querySelectorAll=document.body.query
 
 
 </script>
+
 </body>
 </html>
