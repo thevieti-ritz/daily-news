@@ -14,6 +14,7 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 // ============================================
 const PAGE_SIZE    = 12;
 const R2_BASE      = "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/";
+const AD_EVERY      = 6; // insert an ad slot after every N video cards
 let lastDoc        = null;
 let currentSearch  = "";
 let isLoading      = false;
@@ -23,6 +24,7 @@ let activeDate     = "all";
 let activeDuration = "all";
 let activeQuality  = "all";
 let activeCategory = null;
+let videoCardCount = 0; // running total of rendered video cards (across pages), used for ad placement
 
 // ============================================
 // DOM REFS
@@ -192,6 +194,7 @@ function showSkeletons() {
 // ============================================
 function resetAndLoad() {
   lastDoc = null;
+  videoCardCount = 0; // restart ad-placement counter whenever the grid is rebuilt from scratch
   loadMoreBtn.classList.add("hidden");
   showSkeletons();
   loadVideos();
@@ -326,10 +329,14 @@ async function loadVideos() {
     // Clear grid on first page only
     if (!lastDoc) videoGrid.innerHTML = "";
 
-    // Render cards
+    // Render cards, inserting an ad slot after every AD_EVERY-th card
     const fragment = document.createDocumentFragment();
     docs.forEach(d => {
       fragment.appendChild(createVideoCard({ id: d.id, ...d.data() }));
+      videoCardCount++;
+      if (videoCardCount % AD_EVERY === 0) {
+        fragment.appendChild(createAdSlot());
+      }
     });
     videoGrid.appendChild(fragment);
 
@@ -436,6 +443,35 @@ function createVideoCard(video) {
   });
 
   return card;
+}
+
+// ============================================
+// AD SLOT
+// Inserted into the video grid after every
+// AD_EVERY-th video card. Each <ins> is added
+// to the DOM first, then push({serve:{}}) is
+// called so the ad network can find and fill it.
+// ============================================
+let adSlotCounter = 0; // keeps each <ins> class instance unique-looking in devtools, purely cosmetic
+
+function createAdSlot() {
+  adSlotCounter++;
+  const wrap     = document.createElement("div");
+  wrap.className = "ad-slot";
+  wrap.dataset.adSlot = adSlotCounter;
+
+  wrap.innerHTML = `
+    <div class="ad-slider-wrapper">
+      <ins class="eas6a97888e10" data-zoneid="5981462"></ins>
+    </div>`;
+
+  // Defer the serve call to the next tick so the <ins> is guaranteed to be
+  // attached to the live DOM (fragment is appended right after this returns).
+  requestAnimationFrame(() => {
+    (window.AdProvider = window.AdProvider || []).push({ serve: {} });
+  });
+
+  return wrap;
 }
 
 // ============================================

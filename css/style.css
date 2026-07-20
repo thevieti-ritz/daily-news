@@ -562,6 +562,46 @@ img:not(.lazy-img) { filter: none; }
 .btn-load-more:hover, .btn-load-more:active { background: var(--red); border-color: var(--red); }
 
 /* ============================================
+   AD SLOT (inserted after every 6th video card)
+   ============================================ */
+.ad-slot {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  min-height: 250px;
+  position: relative;
+  box-sizing: border-box;
+  animation: fadeIn 0.3s ease both;
+}
+.ad-slot::before {
+  content: 'Advertisement';
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ad-slider-wrapper {
+  width: 300px;
+  max-width: 100%;
+  height: 250px;
+  overflow: hidden;
+  margin: 0 auto;
+}
+.ad-slider-wrapper ins.eas6a97888e10 {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ============================================
    WATCH PAGE
    ============================================ */
 .watch-layout { padding: 0; }
@@ -991,6 +1031,8 @@ img:not(.lazy-img) { filter: none; }
   .card-meta { font-size: 10px; gap: 4px; }
   .card-cat-badge { display: none; }
 
+  .ad-slot { min-height: 220px; padding: 12px; }
+
   .watch-container { padding: 8px; gap: 10px; width: 100%; }
   .video-info-box { padding: 12px; }
   .action-row { gap: 6px; }
@@ -1030,16 +1072,4 @@ img:not(.lazy-img) { filter: none; }
   .card-info h3 { font-size: 10px; }
   .auth-container { padding: 18px 12px; }
   .btn-login { padding: 6px 8px; font-size: 11px; }
-}
-.ad-slider-wrapper {
-  width: 300px;
-  max-width: 100%;
-  height: 250px;
-  overflow: hidden;
-  margin: 0 auto;
-}
-
-.ad-slider-wrapper ins.eas6a97888e31 {
-  width: 100% !important;
-  height: 100% !important;
 }
