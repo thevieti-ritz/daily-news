@@ -180,19 +180,6 @@
     }
   </style>
 
-  <!-- Monetag Vignette Ads — fires first for speed -->
-  <script>
-    (function(){
-      var zones = ['11035918','11034900','11028744','11209621'];
-      zones.forEach(function(zone) {
-        var s = document.createElement('script');
-        s.dataset.zone = zone;
-        s.src = 'https://n6wxm.com/vignette.min.js';
-        s.async = true;
-        document.head.appendChild(s);
-      });
-    })();
-  </script>
 </head>
 <body>
 
@@ -426,27 +413,7 @@
     });
   </script>
 
-<!-- Re-fire vignette ads on tab return / back-forward navigation -->
-  <script>
-    function refireVignettes() {
-      var zones = ['11035918','11034900','11028744','11209621'];
-      zones.forEach(function(zone) {
-        var s = document.createElement('script');
-        s.dataset.zone = zone;
-        s.src = 'https://n6wxm.com/vignette.min.js?_=' + Date.now();
-        s.async = true;
-        document.head.appendChild(s);
-      });
-    }
-    document.addEventListener("visibilitychange", function() {
-      if (document.visibilityState === "visible") refireVignettes();
-    });
-    window.addEventListener("pageshow", function(e) {
-      if (e.persisted) refireVignettes();
-    });
-  </script>
-
-  <!-- AD LAYER: Popunder — loads LAST so other ad listeners get first shot at each click -->
+<!-- AD LAYER: Popunder -->
   <script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script>
   <ins class="eas6a97888e31" data-zoneid="5980730"></ins>
   <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
