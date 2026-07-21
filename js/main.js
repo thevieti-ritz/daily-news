@@ -448,11 +448,15 @@ function createVideoCard(video) {
 // ============================================
 // AD SLOT
 // Inserted into the video grid after every
-// AD_EVERY-th video card. Each <ins> is added
-// to the DOM first, then push({serve:{}}) is
-// called so the ad network can find and fill it.
+// AD_EVERY-th video card. Alternates between two
+// ExoClick units on each successive slot:
+//   odd slots  -> video slider (zone 5980730)
+//   even slots -> in-page push (zone 5982288)
+// Each <ins> is added to the DOM first, then
+// push({serve:{}}) is called so ExoClick can
+// find and fill it.
 // ============================================
-let adSlotCounter = 0; // keeps each <ins> class instance unique-looking in devtools, purely cosmetic
+let adSlotCounter = 0; // tracks which slot number we're on, drives the alternation
 
 function createAdSlot() {
   adSlotCounter++;
@@ -460,10 +464,15 @@ function createAdSlot() {
   wrap.className = "ad-slot";
   wrap.dataset.adSlot = adSlotCounter;
 
-  wrap.innerHTML = `
-    <div class="ad-slider-wrapper">
-      <ins class="eas6a97888e10" data-zoneid="5981462"></ins>
-    </div>`;
+  const isSliderTurn = adSlotCounter % 2 === 1; // odd -> slider, even -> push
+
+  wrap.innerHTML = isSliderTurn
+    ? `<div class="ad-slider-wrapper">
+         <ins class="eas6a97888e31" data-zoneid="5980730"></ins>
+       </div>`
+    : `<div class="ad-push-wrapper">
+         <ins class="eas6a97888e42" data-zoneid="5982288"></ins>
+       </div>`;
 
   // Defer the serve call to the next tick so the <ins> is guaranteed to be
   // attached to the live DOM (fragment is appended right after this returns).

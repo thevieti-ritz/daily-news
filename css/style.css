@@ -563,6 +563,9 @@ img:not(.lazy-img) { filter: none; }
 
 /* ============================================
    AD SLOT (inserted after every 6th video card)
+   Alternates between two ExoClick units:
+   - Video slider  (zone 5980730 / .eas6a97888e31)
+   - In-page push  (zone 5982288 / .eas6a97888e42)
    ============================================ */
 .ad-slot {
   grid-column: 1 / -1;
@@ -589,6 +592,8 @@ img:not(.lazy-img) { filter: none; }
   text-transform: uppercase;
   color: var(--muted);
 }
+
+/* Video slider unit */
 .ad-slider-wrapper {
   width: 300px;
   max-width: 100%;
@@ -596,9 +601,23 @@ img:not(.lazy-img) { filter: none; }
   overflow: hidden;
   margin: 0 auto;
 }
-.ad-slider-wrapper ins.eas6a97888e10 {
+.ad-slider-wrapper ins.eas6a97888e31 {
   width: 100% !important;
   height: 100% !important;
+}
+
+/* In-page push unit — ExoClick's push creative sizes itself,
+   so the wrapper just centers it without forcing dimensions */
+.ad-push-wrapper {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+}
+.ad-push-wrapper ins.eas6a97888e42 {
+  display: inline-block;
 }
 
 /* ============================================
@@ -1031,7 +1050,7 @@ img:not(.lazy-img) { filter: none; }
   .card-meta { font-size: 10px; gap: 4px; }
   .card-cat-badge { display: none; }
 
-  .ad-slot { min-height: 220px; padding: 12px; }
+  .ad-slot { min-height: 160px; padding: 12px; }
 
   .watch-container { padding: 8px; gap: 10px; width: 100%; }
   .video-info-box { padding: 12px; }
