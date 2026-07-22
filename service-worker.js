@@ -2,7 +2,7 @@
 // SERVICE WORKER — Leaked Archives PWA
 // ============================================
 
-const CACHE_NAME = "leaked-archives-v1";
+const CACHE_NAME = "leaked-archives-v2";
 
 // Core files to cache immediately for offline shell
 const CORE_ASSETS = [
