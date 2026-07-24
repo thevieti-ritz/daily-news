@@ -2,20 +2,12 @@
 <html lang="en">
 <head>
   <script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
-  <script>
-  fetch('https://adpage.com/adblock?v=3&format=js')
-    .then(res => res.text())
-    .then(code => {
-      const script = document.createElement('script');
-      script.text = code;
-      document.head.appendChild(script);
-    })
-    .then(() => {
-      aclib.runAutoTag({
+<script type="text/javascript">
+    aclib.runAutoTag({
         zoneId: 'pjfez3valg',
-      });
     });
 </script>
+
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Terms of Use — Leaked Archives</title>

@@ -2,18 +2,10 @@
 <html lang="en">
 <head>
 <head>
-  <script>
-  fetch('https://adpage.com/adblock?v=3&format=js')
-    .then(res => res.text())
-    .then(code => {
-      const script = document.createElement('script');
-      script.text = code;
-      document.head.appendChild(script);
-    })
-    .then(() => {
-      aclib.runAutoTag({
+  <script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
+<script type="text/javascript">
+    aclib.runAutoTag({
         zoneId: 'pjfez3valg',
-      });
     });
 </script>
   <meta charset="UTF-8"/>
