@@ -2,21 +2,74 @@
 <html lang="en">
 <head>
 <head>
-<script>
-(function(s){
-    s.dataset.zone='11379117';
-    s.src='https://mon.dailynewsug.online/tag.min.js';
-})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')));
-</script>
+<!-- Container divs — one per ad zone, in display order -->
+<div id="ad-slot-1"></div>
+<div id="ad-slot-2"></div>
+<div id="ad-slot-3"></div>
+<div id="ad-slot-4"></div>
+<div id="ad-slot-5"></div>
+<div id="ad-slot-6"></div>
 
 <script>
-(function(s){
-    s.dataset.zone='11379088';
-    s.src='https://mon.dailynewsug.online/tag.min.js';
-})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')));
+(function () {
+  // Define each ad in the order you want them to appear.
+  // type: 'al5sm' uses the dataset.zone pattern; 'quge5' uses data-zone attribute.
+  var adQueue = [
+    { type: 'al5sm', zone: '11379117', src: 'https://al5sm.com/tag.min.js', target: 'ad-slot-1' },
+    { type: 'quge5', zone: '262992',  src: 'https://quge5.com/88/tag.min.js', target: 'ad-slot-2' },
+    { type: 'al5sm', zone: '11379088', src: 'https://al5sm.com/tag.min.js', target: 'ad-slot-3' },
+    { type: 'quge5', zone: '262991',  src: 'https://quge5.com/88/tag.min.js', target: 'ad-slot-4' },
+    { type: 'quge5', zone: '262990',  src: 'https://quge5.com/88/tag.min.js', target: 'ad-slot-5' },
+    { type: 'al5sm', zone: '11046408', src: 'https://al5sm.com/tag.min.js', target: 'ad-slot-6' },
+    { type: 'al5sm', zone: '11034887', src: 'https://al5sm.com/tag.min.js', target: 'ad-slot-6' } // extra one, see note below
+  ];
+
+  var TIMEOUT_MS = 4000; // don't let one slow ad block the rest forever
+
+  function loadOne(ad) {
+    return new Promise(function (resolve) {
+      var container = document.getElementById(ad.target) || document.body;
+      var script = document.createElement('script');
+
+      script.src = ad.src;
+      script.async = false; // we control ordering ourselves
+      if (ad.type === 'quge5') {
+        script.setAttribute('data-zone', ad.zone);
+        script.setAttribute('data-cfasync', 'false');
+      } else {
+        script.dataset.zone = ad.zone;
+      }
+
+      var settled = false;
+      function done() {
+        if (settled) return;
+        settled = true;
+        resolve();
+      }
+
+      script.onload = done;
+      script.onerror = done; // don't let a failed ad stall the queue
+      setTimeout(done, TIMEOUT_MS); // safety timeout
+
+      container.appendChild(script);
+    });
+  }
+
+  function runQueue(index) {
+    if (index >= adQueue.length) return;
+    loadOne(adQueue[index]).then(function () {
+      runQueue(index + 1);
+    });
+  }
+
+  // Kick off once the DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { runQueue(0); });
+  } else {
+    runQueue(0);
+  }
+})();
 </script>
-<script src="https://q88.dailynewsug.online/88/tag.min.js" data-zone="262992" async data-cfasync="false"></script>
-<script src="https://q88.dailynewsug.online/88/tag.min.js" data-zone="262991" async data-cfasync="false"></script>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Privacy Policy — Leaked Archives</title>
