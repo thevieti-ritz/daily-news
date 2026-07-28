@@ -451,8 +451,7 @@ function createVideoCard(video) {
 // AD_EVERY-th video card. Alternates between two
 // ExoClick units on each successive slot:
 //   odd slots  -> video slider   (zone 5980730)
-//   even slots -> in-page push   (zone 5983068)
-// Each <ins> is added to the DOM first, then
+//   even slots -> video slider   (zone 5980730)
 // push({serve:{}}) is called so ExoClick can
 // find and fill it.
 // ============================================
@@ -471,15 +470,8 @@ function createAdSlot() {
          <ins class="eas6a97888e31" data-zoneid="5980730"></ins>
        </div>`
     : `<div class="ad-push-wrapper">
-         <ins class="eas6a97888e42" data-zoneid="5983068"></ins>
+         <ins class="eas6a97888e42" data-zoneid="5980730"></ins>
        </div>`;
-
-  // Defer the serve call to the next tick so the <ins> is guaranteed to be
-  // attached to the live DOM (fragment is appended right after this returns).
-  requestAnimationFrame(() => {
-    (window.AdProvider = window.AdProvider || []).push({ serve: {} });
-  });
-
   return wrap;
 }
 
