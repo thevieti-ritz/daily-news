@@ -457,46 +457,44 @@
       if (isAppInstalled()) return;
       if (document.getElementById("pwaInstallBanner")) return;
 
-      const overlay = document.createElement("div");
-      overlay.id = "pwaInstallBanner";
-      overlay.style.cssText = `
+      const banner = document.createElement("div");
+      banner.id = "pwaInstallBanner";
+      banner.style.cssText = `
         position: fixed; bottom: 0; left: 0; right: 0;
-        height: 50vh;
-        background: linear-gradient(160deg, #1a0007 0%, #0f0f0f 55%, #1a0a00 100%);
-        border-top: 3px solid #e63946;
+        background: linear-gradient(90deg, #ffea00, #ff6a00, #ff0059);
+        background-size: 200% 100%;
+        animation: pwaGradientShift 3s ease infinite, pwaSlideUp 0.35s ease;
         z-index: 99999;
         display: flex;
-        flex-direction: column;
         align-items: center;
-        justify-content: center;
-        text-align: center;
-        padding: 32px 24px;
-        box-sizing: border-box;
-        box-shadow: 0 -10px 40px rgba(0,0,0,0.6);
-        animation: pwaSlideUp 0.35s ease;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 18px;
+        box-shadow: 0 -6px 24px rgba(0,0,0,0.5);
         font-family: 'Nunito', sans-serif;
       `;
 
-      overlay.innerHTML = `
-        <button id="pwaDismissBtn" class="pwa-safe-zone" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.1);border:none;color:white;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
-          <i class="fas fa-times"></i>
-        </button>
-
-        <i class="fas fa-mobile-alt" style="font-size:44px;color:#f4a522;margin-bottom:18px;"></i>
-
-        <p style="color:#f1f1f1;font-size:17px;font-weight:700;line-height:1.6;max-width:420px;margin-bottom:26px;">
-          To earn by simply sharing our video links, install the application on your phone and let's get to explore it.
-        </p>
-
-        <button id="pwaInstallBtn" class="pwa-safe-zone" style="background:linear-gradient(135deg,#e63946,#f4a522);color:white;border:none;padding:18px 40px;border-radius:14px;font-size:18px;font-weight:900;letter-spacing:0.5px;cursor:pointer;box-shadow:0 8px 24px rgba(230,57,70,0.4);animation:pwaPulse 1.8s infinite;">
-          <i class="fas fa-download"></i> Click to Install App
-        </button>
+      banner.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+          <i class="fas fa-mobile-alt" style="font-size:24px;color:#000;flex-shrink:0;"></i>
+          <span style="color:#000;font-size:12.5px;font-weight:800;line-height:1.35;">
+            To earn by simply sharing our video links, install the app on your phone and let's get to explore it.
+          </span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+          <button id="pwaInstallBtn" style="background:#000;color:#ffea00;border:none;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:900;letter-spacing:0.3px;cursor:pointer;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,0.4);">
+            <i class="fas fa-download"></i> Click to Install
+          </button>
+          <button id="pwaDismissBtn" style="background:rgba(0,0,0,0.15);border:none;color:#000;width:30px;height:30px;border-radius:50%;font-size:14px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
       `;
 
-      document.body.appendChild(overlay);
+      document.body.appendChild(banner);
 
       document.getElementById("pwaInstallBtn").addEventListener("click", async () => {
-        overlay.remove();
+        banner.remove();
         if (deferredPrompt) {
           deferredPrompt.prompt();
           await deferredPrompt.userChoice;
@@ -506,7 +504,7 @@
         }
       });
       document.getElementById("pwaDismissBtn").addEventListener("click", () => {
-        overlay.remove();
+        banner.remove();
       });
     }
 
@@ -530,16 +528,27 @@
       from { transform: translateY(100%); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
     }
-    @keyframes pwaPulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.04); }
+    @keyframes pwaGradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
     }
-    @media (max-width: 480px) {
-      #pwaInstallBanner p { font-size: 15px !important; }
-      #pwaInstallBanner button#pwaInstallBtn { font-size: 16px !important; padding: 16px 28px !important; }
+    @media (max-width: 600px) {
+      #pwaInstallBanner {
+        flex-direction: column;
+        align-items: stretch !important;
+        padding: 14px !important;
+      }
+      #pwaInstallBanner > div:first-child { margin-bottom: 4px; }
+      #pwaInstallBanner button#pwaInstallBtn {
+        width: 100%;
+        justify-content: center;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
     }
   </style>
-<script>
     window.__isTelegramApp = !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
   </script>
   <!-- AD LAYER 2: Popunder — loads LAST -->
