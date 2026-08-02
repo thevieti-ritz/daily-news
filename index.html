@@ -3,52 +3,6 @@
 <head>
   <script src="https://5gvci.com/act/files/tag.min.js?z=11022493" data-cfasync="false" async></script>
 <script src='//libtl.com/sdk.js' data-zone='11483784' data-sdk='show_11483784'></script>
-
-// Rewarded interstitial
-
-show_11483784().then(() => {
-    // You need to add your user reward function here, which will be executed after the user watches the ad.
-    // For more details, please refer to the detailed instructions.
-    alert('You have seen an ad!');
-})
-
-
-// Rewarded Popup
-
-show_11483784('pop').then(() => {
-    // user watch ad till the end or close it in interstitial format
-    // your code to reward user for rewarded format
-}).catch(e => {
-    // user get error during playing ad
-    // do nothing or whatever you want
-})
-
-        
-
-// In-App Interstitial
-
-show_11483784({
-  type: 'inApp',
-  inAppSettings: {
-    frequency: 2,
-    capping: 0.1,
-    interval: 30,
-    timeout: 5,
-    everyPage: false
-  }
-})
-
-/*
-This value is decoded as follows:
-- show automatically 2 ads
-  within 0.1 hours (6 minutes)
-  with a 30-second interval between them
-  and a 5-second delay before the first one is shown.
-  The last digit, 0, means that the session will be saved when you navigate between pages.
-  If you set the last digit as 1, then at any transition between pages,
-  the session will be reset, and the ads will start again.
-*/
-
   <meta charset="UTF-8"/>
   <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
@@ -524,7 +478,7 @@ This value is decoded as follows:
       `;
 
       overlay.innerHTML = `
-        <button id="pwaDismissBtn" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.1);border:none;color:white;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <button id="pwaDismissBtn" class="pwa-safe-zone" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.1);border:none;color:white;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
           <i class="fas fa-times"></i>
         </button>
 
@@ -534,7 +488,7 @@ This value is decoded as follows:
           To earn by simply sharing our video links, install the application on your phone and let's get to explore it.
         </p>
 
-        <button id="pwaInstallBtn" style="background:linear-gradient(135deg,#e63946,#f4a522);color:white;border:none;padding:18px 40px;border-radius:14px;font-size:18px;font-weight:900;letter-spacing:0.5px;cursor:pointer;box-shadow:0 8px 24px rgba(230,57,70,0.4);animation:pwaPulse 1.8s infinite;">
+        <button id="pwaInstallBtn" class="pwa-safe-zone" style="background:linear-gradient(135deg,#e63946,#f4a522);color:white;border:none;padding:18px 40px;border-radius:14px;font-size:18px;font-weight:900;letter-spacing:0.5px;cursor:pointer;box-shadow:0 8px 24px rgba(230,57,70,0.4);animation:pwaPulse 1.8s infinite;">
           <i class="fas fa-download"></i> Click to Install App
         </button>
       `;
@@ -597,7 +551,7 @@ This value is decoded as follows:
     if (window.__isTelegramApp) { return; }
     function randStr(e,t){for(var n="",r=t||"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",o=0;o<e;o++)n+=r.charAt(Math.floor(Math.random()*r.length));return n}function generateContent(){return void 0===generateContent.val&&(generateContent.val="document.dispatchEvent("+randStr(4*Math.random()+3)+");"),generateContent.val}try{Object.defineProperty(document.currentScript,"innerHTML",{get:generateContent}),Object.defineProperty(document.currentScript,"textContent",{get:generateContent})}catch(e){};
 
-    var adConfig = {
+var adConfig = {
     "ads_host": "a.pemsrv.com",
     "syndication_host": "s.pemsrv.com",
     "idzone": 5980736,
@@ -607,8 +561,8 @@ This value is decoded as follows:
     "new_tab": false,
     "frequency_period": 1,
     "frequency_count": 3,
-    "trigger_method": 1,
-    "trigger_class": "",
+    "trigger_method": 2,
+    "trigger_class": "pwa-safe-zone",
     "trigger_delay": 0,
     "capping_enabled": true,
     "tcf_enabled": true,
@@ -627,7 +581,7 @@ window.document.querySelectorAll||(document.querySelectorAll=document.body.query
 
     //version 10.0.0
 
-    var adConfig = {
+var adConfig = {
     "ads_host": "a.pemsrv.com",
     "syndication_host": "s.pemsrv.com",
     "idzone": 5980738,
@@ -637,12 +591,12 @@ window.document.querySelectorAll||(document.querySelectorAll=document.body.query
     "new_tab": false,
     "frequency_period": 1,
     "frequency_count": 3,
-    "trigger_method": 1,
-    "trigger_class": "",
-    "trigger_delay": 5,
+    "trigger_method": 2,
+    "trigger_class": "pwa-safe-zone",
+    "trigger_delay": 0,
     "capping_enabled": true,
     "tcf_enabled": true,
-    "agego_cross_site_enabled": true,
+    "agego_cross_site_enabled": false,
     "only_inline": false
 };
 
@@ -683,22 +637,22 @@ window.document.querySelectorAll||(document.querySelectorAll=document.body.query
 
     //version 10.0.0
 
-    var adConfig = {
+var adConfig = {
     "ads_host": "a.pemsrv.com",
     "syndication_host": "s.pemsrv.com",
     "idzone": 5983060,
-    "popup_fallback": false,
+    "popup_fallback": true,
     "popup_force": false,
-    "chrome_enabled": false,
+    "chrome_enabled": true,
     "new_tab": false,
     "frequency_period": 1,
     "frequency_count": 3,
-    "trigger_method": 1,
-    "trigger_class": "",
+    "trigger_method": 2,
+    "trigger_class": "pwa-safe-zone",
     "trigger_delay": 0,
     "capping_enabled": true,
     "tcf_enabled": true,
-    "agego_cross_site_enabled": true,
+    "agego_cross_site_enabled": false,
     "only_inline": false
 };
 
