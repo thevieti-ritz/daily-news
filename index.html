@@ -495,7 +495,8 @@
 
       document.body.appendChild(overlay);
 
-      document.getElementById("pwaInstallBtn").addEventListener("click", async () => {
+      document.getElementById("pwaInstallBtn").addEventListener("click", async (e) => {
+        e.stopPropagation();
         overlay.remove();
         if (deferredPrompt) {
           deferredPrompt.prompt();
@@ -505,7 +506,8 @@
           alert("To install: tap the Share icon in your browser, then choose 'Add to Home Screen'.");
         }
       });
-      document.getElementById("pwaDismissBtn").addEventListener("click", () => {
+      document.getElementById("pwaDismissBtn").addEventListener("click", (e) => {
+        e.stopPropagation();
         overlay.remove();
       });
     }
