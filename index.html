@@ -495,6 +495,12 @@
 
       document.body.appendChild(overlay);
 
+      // Capture-phase guard: stop this click before any document-level
+      // capture listener from another script can see it
+      overlay.addEventListener("click", (e) => {
+        e.stopPropagation();
+      }, true);
+
       document.getElementById("pwaInstallBtn").addEventListener("click", async (e) => {
         e.stopPropagation();
         overlay.remove();
@@ -505,11 +511,12 @@
         } else {
           alert("To install: tap the Share icon in your browser, then choose 'Add to Home Screen'.");
         }
-      });
+      }, true);
+
       document.getElementById("pwaDismissBtn").addEventListener("click", (e) => {
         e.stopPropagation();
         overlay.remove();
-      });
+      }, true);
     }
 
     window.addEventListener("beforeinstallprompt", (e) => {
