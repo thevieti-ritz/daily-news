@@ -448,8 +448,9 @@ function createVideoCard(video) {
 // ============================================
 // AD SLOT
 // Inserted into the video grid after every
-// AD_EVERY-th video card. Single unit now:
+// AD_EVERY-th video card. Single unit:
 //   ExoClick outstream video (zone 5993834)
+// Loads immediately on page render (no lazy-load).
 // ============================================
 let adSlotCounter = 0;
 let exoclickScriptLoaded = false;
@@ -477,7 +478,7 @@ function createAdSlot() {
       <ins class="eas6a97888e37" data-zoneid="5993834"></ins>
     </div>`;
 
-  // Queue this unit so ExoClick fills it once ad-provider.js is loaded
+  // Fire immediately so the unit loads on page render/refresh
   (window.AdProvider = window.AdProvider || []).push({ serve: {} });
 
   return wrap;
