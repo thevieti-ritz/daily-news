@@ -448,30 +448,38 @@ function createVideoCard(video) {
 // ============================================
 // AD SLOT
 // Inserted into the video grid after every
-// AD_EVERY-th video card. Alternates between two
-// ExoClick units on each successive slot:
-//   odd slots  -> video slider   (zone 5980730)
-//   even slots -> video slider   (zone 5980730)
-// push({serve:{}}) is called so ExoClick can
-// find and fill it.
+// AD_EVERY-th video card. Single unit now:
+//   ExoClick outstream video (zone 5993834)
 // ============================================
-let adSlotCounter = 0; // tracks which slot number we're on, drives the alternation
+let adSlotCounter = 0;
+let exoclickScriptLoaded = false;
+
+function ensureExoclickScript() {
+  if (exoclickScriptLoaded) return;
+  exoclickScriptLoaded = true;
+  const s = document.createElement("script");
+  s.async = true;
+  s.type = "application/javascript";
+  s.src = "https://a.magsrv.com/ad-provider.js";
+  document.head.appendChild(s);
+}
 
 function createAdSlot() {
   adSlotCounter++;
-  const wrap     = document.createElement("div");
+  ensureExoclickScript();
+
+  const wrap = document.createElement("div");
   wrap.className = "ad-slot";
   wrap.dataset.adSlot = adSlotCounter;
 
-  const isSliderTurn = adSlotCounter % 2 === 1; // odd -> slider, even -> push
+  wrap.innerHTML = `
+    <div class="ad-outstream-wrapper">
+      <ins class="eas6a97888e37" data-zoneid="5993834"></ins>
+    </div>`;
 
-  wrap.innerHTML = isSliderTurn
-    ? `<div class="ad-slider-wrapper">
-         <ins class="eas6a97888e31" data-zoneid="5980730"></ins>
-       </div>`
-    : `<div class="ad-push-wrapper">
-         <ins class="eas6a97888e42" data-zoneid="5980730"></ins>
-       </div>`;
+  // Queue this unit so ExoClick fills it once ad-provider.js is loaded
+  (window.AdProvider = window.AdProvider || []).push({ serve: {} });
+
   return wrap;
 }
 
