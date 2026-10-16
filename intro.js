@@ -15,6 +15,7 @@
     var AD_SKIP_AFTER_SECS = 5;    // 6) skip button delay if the VAST doesn't specify one (0 = no skip button)
     var AD_START_TIMEOUT  = 15000;  // 7) ms to wait for the ad to start before falling back to your video
     var LOCK_OTHER_ADS    = true;  // 8) true = block popunders/popups/outside clicks while the layer is open
+    var AD_WAIT_MAX       = 20000; // 9) ms the Play button waits for the ad to load (slow networks need this)
     /* ------------------------------------------ */
 
   var CSS = `
@@ -239,13 +240,30 @@
     v.addEventListener("timeupdate", adTimeUpdate);
 
     // prefetch the VAST now so playback can begin synchronously inside the user's tap
-    if (AD_TAG_URL) { loadVast(AD_TAG_URL, 0).catch(function (err) { ad.ready = false; log("NO AD:", (err && err.message) ? err.message : err); }); }
+    // Play stays locked until the ad is ready (or AD_WAIT_MAX passes), so the ad is never skipped by tapping too early
+    var gateTimer = null, gateOpen = true;
+    function openGate(why) {
+      if (gateOpen) return; gateOpen = true; clearTimeout(gateTimer);
+      playBtn.disabled = false; playBtn.style.opacity = "";
+      if (msg.textContent === "Loading\u2026") msg.textContent = "";
+      if (!ad.ready) v.controls = true;
+      log("Play unlocked:", why);
+    }
+    if (AD_TAG_URL) {
+      gateOpen = false; v.controls = false;
+      playBtn.disabled = true; playBtn.style.opacity = ".55"; msg.textContent = "Loading\u2026";
+      gateTimer = setTimeout(function () { openGate("waited " + (AD_WAIT_MAX / 1000) + "s, ad not ready"); }, AD_WAIT_MAX);
+      loadVast(AD_TAG_URL, 0)
+        .then(function () { openGate("ad ready"); })
+        .catch(function (err) { ad.ready = false; log("NO AD:", (err && err.message) ? err.message : err); openGate("no ad available"); });
+    }
     /* ========================================================== */
 
     playBtn.addEventListener("click", function () {
       startClock(); playBtn.classList.add("intro-hidden");
       if (AD_TAG_URL && !ad.ready && !ad.adDone) log("Play tapped but the ad was not ready, so your video plays instead");
       if (mode === "content" && ad.ready && !ad.fired.start && !ad.adDone) { ad.adDone = true; playAd(); return; }
+      v.controls = true;
       if (v.error) { load(true); }
       tryPlay();
     });
