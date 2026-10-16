@@ -40,7 +40,7 @@
   var HTML = `
   <div id="introLayer" role="dialog" aria-label="Welcome video" style="position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;background:#000;z-index:2147483647">
     <div id="introWrap">
-      <video id="introVideo" controls playsinline preload="metadata" controlsList="nodownload noremoteplayback"></video>
+      <video id="introVideo" playsinline preload="metadata" controlsList="nodownload noremoteplayback"></video>
       <button id="introPlay" aria-label="Play video">&#9654;</button>
       <div id="introAdTag" class="intro-hidden">Ad</div>
       <button id="introSkip" class="intro-hidden"></button>
@@ -92,16 +92,21 @@
     };
   }
 
+  var actions = {};   // filled in by init(): introPlay / introSkip / introVideo
   function guard(e) {
     if (!locked) return;
-    var inside = inLayer(e);
-    var t = e.target;
-    var onControl = inside && t && t.closest && t.closest("button,video,a,input");
-    // block: script-made clicks, clicks outside the layer, and taps on the blank black area of the layer
-    if (!e.isTrusted || !inside || !onControl) {
+    var inside = inLayer(e), t = e.target;
+    if (!e.isTrusted || !inside) {              // script-made clicks, or anything outside the layer
       e.stopImmediatePropagation();
       if (e.cancelable) e.preventDefault();
-      log("blocked", e.type, !e.isTrusted ? "(script-made click)" : (!inside ? "(outside click)" : "(blank area tap)"));
+      log("blocked", e.type, !e.isTrusted ? "(script-made click)" : "(outside click)");
+      return;
+    }
+    // a real tap inside the layer: NO other script (popunders) may hear it, we handle it ourselves
+    e.stopImmediatePropagation();
+    if (e.type === "click") {
+      var el = t && t.closest ? t.closest("#introPlay,#introSkip,#introVideo") : null;
+      if (el && actions[el.id]) actions[el.id]();
     }
   }
   function lock() {
@@ -249,14 +254,12 @@
       mode = "content";
       clearTimeout(ad.watchdog);
       adTag.classList.add("intro-hidden"); skipBtn.classList.add("intro-hidden");
-      v.controls = true;
       msg.textContent = "";
       load(false); tryPlay();
     }
 
     function playAd() {
       mode = "ad";
-      v.controls = false;
       v.src = ad.media; v.load();
       adTag.classList.remove("intro-hidden");
       ad.watchdog = setTimeout(function () { if (mode === "ad" && !ad.fired.start) { log("ad did not start in time, playing your video"); endAd(); } }, AD_START_TIMEOUT);
@@ -283,13 +286,19 @@
       }
     }
 
-    skipBtn.addEventListener("click", function () { if (skipBtn.disabled) return; fire("skip"); endAd(); });
-    v.addEventListener("click", function () {
-      if (mode !== "ad" || !ad.click) return;
-      ad.clickTrk.forEach(ping); fire("clickthrough");
-      try { v.pause(); } catch (e) {}
-      realOpen.call(window, ad.click, "_blank", "noopener");
-    });
+    function onSkip() { if (skipBtn.disabled) return; fire("skip"); endAd(); }
+    function onVideoTap() {
+      if (mode === "ad") {
+        if (!ad.click) return;
+        ad.clickTrk.forEach(ping); fire("clickthrough");
+        try { v.pause(); } catch (e) {}
+        realOpen.call(window, ad.click, "_blank", "noopener");
+      } else if (started && !closed) {                 // your video: tap to pause / resume
+        if (v.paused) tryPlay(); else v.pause();
+      }
+    }
+    skipBtn.addEventListener("click", onSkip);
+    v.addEventListener("click", onVideoTap);
     v.addEventListener("timeupdate", adTimeUpdate);
 
     // prefetch the VAST now so playback can begin synchronously inside the user's tap
@@ -299,11 +308,10 @@
       if (gateOpen) return; gateOpen = true; clearTimeout(gateTimer);
       playBtn.disabled = false; playBtn.style.opacity = "";
       if (msg.textContent === "Loading\u2026") msg.textContent = "";
-      if (!ad.ready) v.controls = true;
       log("Play unlocked:", why);
     }
     if (AD_TAG_URL) {
-      gateOpen = false; v.controls = false;
+      gateOpen = false;
       playBtn.disabled = true; playBtn.style.opacity = ".55"; msg.textContent = "Loading\u2026";
       gateTimer = setTimeout(function () { openGate("waited " + (AD_WAIT_MAX / 1000) + "s, ad not ready"); }, AD_WAIT_MAX);
       loadVastRetry(1)
@@ -312,14 +320,16 @@
     }
     /* ========================================================== */
 
-    playBtn.addEventListener("click", function () {
+    function onPlay() {
+      if (playBtn.disabled) return;
       startClock(); playBtn.classList.add("intro-hidden");
       if (AD_TAG_URL && !ad.ready && !ad.adDone) log("Play tapped but the ad was not ready, so your video plays instead");
       if (mode === "content" && ad.ready && !ad.fired.start && !ad.adDone) { ad.adDone = true; playAd(); return; }
-      v.controls = true;
       if (v.error) { load(true); }
       tryPlay();
-    });
+    }
+    playBtn.addEventListener("click", onPlay);
+    actions.introPlay = onPlay; actions.introSkip = onSkip; actions.introVideo = onVideoTap;
 
     v.addEventListener("play", function () {
       playBtn.classList.add("intro-hidden"); startClock();
@@ -348,5 +358,11 @@
     load(false);
   }
 
-  if (document.body) { init(); } else { document.addEventListener("DOMContentLoaded", init); }
+  var started0 = false;
+  function go() { if (started0 || !document.body) return; started0 = true; init(); }
+  if (document.body) { go(); }
+  else {
+    try { var mo = new MutationObserver(function () { if (document.body) { mo.disconnect(); go(); } }); mo.observe(document.documentElement, { childList: true }); } catch (e) {}
+    document.addEventListener("DOMContentLoaded", go);
+  }
 })();
