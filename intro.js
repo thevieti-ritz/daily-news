@@ -8,16 +8,17 @@
 
     /* ---------------- SETTINGS ---------------- */
     var INTRO_VIDEO_URL   = "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/9abc6d2cb7ff4c9e8e15f1662ae84e68.mp4"; // 1) your video link
-    var CLOSE_AFTER_SECS  = 35;    // 2) layer closes this many seconds after Play is clicked
+    var CLOSE_AFTER_SECS  = 40;    // 2) layer closes this many seconds after Play is clicked
     var SHOW_ONCE_PER_SESSION = false; // 3) true = once per visit, false = every page load
     var INTRO_POSTER      = "";    // 4) optional picture shown before play (image link), or leave empty
     var AD_TAG_URL        = "/media/feed.xml"; // 5) your Cloudflare Worker route (same domain). Empty "" = no ad
     var AD_SKIP_AFTER_SECS = 5;    // 6) skip button delay if the VAST doesn't specify one (0 = no skip button)
-    var AD_START_TIMEOUT  = 15000;  // 7) ms to wait for the ad to start before falling back to your video
+    var AD_START_TIMEOUT  = 8000;  // 7) ms to wait for the ad to start before falling back to your video
+    var LOCK_OTHER_ADS    = true;  // 8) true = block popunders/popups/outside clicks while the layer is open
     /* ------------------------------------------ */
 
   var CSS = `
-    #introLayer{position:fixed;inset:0;z-index:2147483000;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity .4s ease}
+    #introLayer{position:fixed;inset:0;z-index:2147483647;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity .4s ease}
     #introLayer.intro-hide{opacity:0;pointer-events:none}
     #introWrap{position:relative;width:100%;max-width:900px;max-height:100%;aspect-ratio:16/9;background:#000}
     #introVideo{width:100%;height:100%;display:block;background:#000;object-fit:contain}
@@ -28,12 +29,14 @@
     #introAdTag{position:absolute;left:10px;top:10px;background:rgba(0,0,0,.65);color:#fff;font:700 12px system-ui,sans-serif;padding:5px 10px;border-radius:14px;pointer-events:none}
     #introSkip{position:absolute;right:10px;bottom:14px;background:rgba(0,0,0,.75);color:#fff;border:1px solid rgba(255,255,255,.5);font:700 13px system-ui,sans-serif;padding:9px 14px;border-radius:4px;cursor:pointer}
     #introSkip[disabled]{opacity:.7;cursor:default}
+    body.intro-strict > *:not(#introLayer){pointer-events:none!important}
+    body.intro-strict > *:not(#introLayer) *{pointer-events:none!important}
     .intro-hidden{display:none!important}
     body.intro-lock{overflow:hidden}
   
 `;
   var HTML = `
-  <div id="introLayer" role="dialog" aria-label="Welcome video" style="position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;background:#000;z-index:2147483000">
+  <div id="introLayer" role="dialog" aria-label="Welcome video" style="position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;background:#000;z-index:2147483647">
     <div id="introWrap">
       <video id="introVideo" controls playsinline preload="metadata" controlsList="nodownload noremoteplayback"></video>
       <button id="introPlay" aria-label="Play video">&#9654;</button>
@@ -47,8 +50,36 @@
   
 `;
 
+  /* ---- LOCK: freeze popunders / popups / outside clicks while the layer is open ---- */
+  function log() { try { console.log.apply(console, ["[intro]"].concat([].slice.call(arguments))); } catch (e) {} }
+  var realOpen = window.open, locked = false;
+  var BLOCK_EVENTS = ["click", "auxclick", "mousedown", "mouseup", "pointerdown", "pointerup", "touchstart", "touchend"];
+  function guard(e) {
+    if (!locked) return;
+    var l = document.getElementById("introLayer");
+    var inside = !!(l && e.target && e.target.nodeType && l.contains(e.target));
+    if (!e.isTrusted || !inside) {              // script-made clicks, or anything outside our layer
+      e.stopImmediatePropagation();
+      if (e.cancelable) e.preventDefault();
+      log("blocked", e.type, e.isTrusted ? "(outside click)" : "(script-made click)");
+    }
+  }
+  function lock() {
+    if (locked) return; locked = true;
+    window.open = function () { log("blocked a popup/popunder"); return null; };
+    BLOCK_EVENTS.forEach(function (t) { window.addEventListener(t, guard, { capture: true, passive: false }); });
+  }
+  function unlock() {
+    if (!locked) return; locked = false;
+    window.open = realOpen;
+    BLOCK_EVENTS.forEach(function (t) { window.removeEventListener(t, guard, true); });
+  }
+  var seenAlready = false;
+  try { seenAlready = SHOW_ONCE_PER_SESSION && sessionStorage.getItem("introSeen") === "1"; } catch (e) {}
+  if (LOCK_OTHER_ADS && !seenAlready) { lock(); }   // runs immediately, before the page's other scripts click anything
+
   function init() {
-    try { if (SHOW_ONCE_PER_SESSION && sessionStorage.getItem("introSeen") === "1") { return; } } catch (e) {}
+    if (seenAlready) { return; }
 
     var st = document.createElement("style"); st.textContent = CSS; document.head.appendChild(st);
     var holder = document.createElement("div"); holder.innerHTML = HTML;
@@ -69,6 +100,7 @@
     var ad = { ready: false, media: "", imp: [], trk: {}, prog: [], click: "", clickTrk: [], skip: -1, fired: {}, watchdog: null };
 
     document.body.classList.add("intro-lock");
+    if (LOCK_OTHER_ADS) document.body.classList.add("intro-strict");
     if (main) main.setAttribute("inert", "");
     if (INTRO_POSTER) v.poster = INTRO_POSTER;
 
@@ -79,6 +111,8 @@
       try { v.pause(); } catch (e) {}
       layer.classList.add("intro-hide");
       document.body.classList.remove("intro-lock");
+      document.body.classList.remove("intro-strict");
+      unlock();
       if (main) main.removeAttribute("inert");
       cnt.classList.add("intro-hidden");
       setTimeout(function () { layer.remove(); cnt.remove(); }, 450);
@@ -152,6 +186,7 @@
         });
         ad.media = txt(files[0]);
         ad.ready = !!ad.media;
+        log("ad ready:", ad.media);
       });
     }
 
@@ -170,7 +205,7 @@
       v.controls = false;
       v.src = ad.media; v.load();
       adTag.classList.remove("intro-hidden");
-      ad.watchdog = setTimeout(function () { if (mode === "ad" && !ad.fired.start) endAd(); }, AD_START_TIMEOUT);
+      ad.watchdog = setTimeout(function () { if (mode === "ad" && !ad.fired.start) { log("ad did not start in time, playing your video"); endAd(); } }, AD_START_TIMEOUT);
       tryPlay();
     }
 
@@ -199,16 +234,17 @@
       if (mode !== "ad" || !ad.click) return;
       ad.clickTrk.forEach(ping); fire("clickthrough");
       try { v.pause(); } catch (e) {}
-      window.open(ad.click, "_blank", "noopener");
+      realOpen.call(window, ad.click, "_blank", "noopener");
     });
     v.addEventListener("timeupdate", adTimeUpdate);
 
     // prefetch the VAST now so playback can begin synchronously inside the user's tap
-    if (AD_TAG_URL) { loadVast(AD_TAG_URL, 0).catch(function () { ad.ready = false; }); }
+    if (AD_TAG_URL) { loadVast(AD_TAG_URL, 0).catch(function (err) { ad.ready = false; log("NO AD:", (err && err.message) ? err.message : err); }); }
     /* ========================================================== */
 
     playBtn.addEventListener("click", function () {
       startClock(); playBtn.classList.add("intro-hidden");
+      if (AD_TAG_URL && !ad.ready && !ad.adDone) log("Play tapped but the ad was not ready, so your video plays instead");
       if (mode === "content" && ad.ready && !ad.fired.start && !ad.adDone) { ad.adDone = true; playAd(); return; }
       if (v.error) { load(true); }
       tryPlay();
@@ -216,7 +252,7 @@
 
     v.addEventListener("play", function () {
       playBtn.classList.add("intro-hidden"); startClock();
-      if (mode === "ad") { clearTimeout(ad.watchdog); fire("impression"); fire("start"); }
+      if (mode === "ad") { clearTimeout(ad.watchdog); fire("impression"); fire("start"); log("ad playing"); }
     });
     v.addEventListener("pause", function () { if (!closed && !v.ended) playBtn.classList.remove("intro-hidden"); });
     v.addEventListener("ended", function () {
@@ -224,7 +260,7 @@
     });
 
     v.addEventListener("error", function () {
-      if (mode === "ad") { endAd(); return; }          // ad file blocked/broken -> go straight to your video
+      if (mode === "ad") { log("ad video failed to load, error code:", v.error && v.error.code); endAd(); return; }          // ad file blocked/broken -> go straight to your video
       if (!started || closed) return;
       if (retries < 3) {
         retries++; msg.textContent = "Reconnecting\u2026 (" + retries + "/3)";
