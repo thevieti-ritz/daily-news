@@ -1589,10 +1589,6 @@
     1) zone 5980736  — starts immediately on page load
     2) zone 5980738  — starts once zone 5980736 has fired its full
                         frequency_count (3 pops)
-    3) zone 5983060  — starts once zone 5980738 has fired its full
-                        frequency_count (3 pops)
-    4) zone 5987802  — starts once zone 5983060 has fired its full
-                        frequency_count (3 pops)
 
   How the chaining works:
     Each zone writes a "zone-cap-<idzone>" cookie every time it fires,
@@ -1615,10 +1611,6 @@
   Order:
     1) zone 5980736  — starts immediately on page load
     2) zone 5980738  — starts once zone 5980736 has fired its full
-                        frequency_count (3 pops)
-    3) zone 5983060  — starts once zone 5980738 has fired its full
-                        frequency_count (3 pops)
-    4) zone 5987802  — starts once zone 5983060 has fired its full
                         frequency_count (3 pops)
 
   How the chaining works:
@@ -1700,20 +1692,6 @@
             trigger_delay: 0, capping_enabled: true, tcf_enabled: true,
             agego_cross_site_enabled: true, only_inline: true
         },
-        {
-            ads_host: "a.pemsrv.com", syndication_host: "s.pemsrv.com", idzone: 5983060,
-            popup_fallback: false, popup_force: false, chrome_enabled: false, new_tab: false,
-            frequency_period: 1, frequency_count: 3, trigger_method: 1, trigger_class: "",
-            trigger_delay: 0, capping_enabled: true, tcf_enabled: true,
-            agego_cross_site_enabled: true, only_inline: true
-        },
-        {
-            ads_host: "a.pemsrv.com", syndication_host: "s.pemsrv.com", idzone: 5987802,
-            popup_fallback: false, popup_force: false, chrome_enabled: true, new_tab: false,
-            frequency_period: 1, frequency_count: 3, trigger_method: 1, trigger_class: "",
-            trigger_delay: 0, capping_enabled: true, tcf_enabled: true,
-            agego_cross_site_enabled: true, only_inline: true
-        }
     ];
 
     function getCookieValue(name) {

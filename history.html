@@ -12,28 +12,6 @@
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="Leaked Archives"/>
-<head>
-  <!-- Monetag Vignette Ads — loads first for maximum speed -->
-  <script>
-    (function(){
-      var zones = ['11035918','11034900','11028744','11209621'];
-      var srcs  = [
-        'https://n6wxm.com/vignette.min.js',
-        'https://n6wxm.com/vignette.min.js',
-        'https://n6wxm.com/vignette.min.js',
-        'https://n6wxm.com/vignette.min.js'
-      ];
-      // Fire immediately — no delay
-      zones.forEach(function(zone, i) {
-        var s = document.createElement('script');
-        s.dataset.zone = zone;
-        s.src = srcs[i];
-        // Insert before any other element for fastest load
-        var target = document.documentElement || document.head || document.body;
-        target.appendChild(s);
-      });
-    })();
-  </script>
   <meta charset="UTF-8"/>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
@@ -641,10 +619,6 @@
     1) zone 5980736  — starts immediately on page load
     2) zone 5980738  — starts once zone 5980736 has fired its full
                         frequency_count (3 pops)
-    3) zone 5983060  — starts once zone 5980738 has fired its full
-                        frequency_count (3 pops)
-    4) zone 5987802  — starts once zone 5983060 has fired its full
-                        frequency_count (3 pops)
 
   How the chaining works:
     Each zone writes a "zone-cap-<idzone>" cookie every time it fires,
@@ -667,10 +641,6 @@
   Order:
     1) zone 5980736  — starts immediately on page load
     2) zone 5980738  — starts once zone 5980736 has fired its full
-                        frequency_count (3 pops)
-    3) zone 5983060  — starts once zone 5980738 has fired its full
-                        frequency_count (3 pops)
-    4) zone 5987802  — starts once zone 5983060 has fired its full
                         frequency_count (3 pops)
 
   How the chaining works:
@@ -752,20 +722,6 @@
             trigger_delay: 0, capping_enabled: true, tcf_enabled: true,
             agego_cross_site_enabled: true, only_inline: true
         },
-        {
-            ads_host: "a.pemsrv.com", syndication_host: "s.pemsrv.com", idzone: 5983060,
-            popup_fallback: false, popup_force: false, chrome_enabled: false, new_tab: false,
-            frequency_period: 1, frequency_count: 3, trigger_method: 1, trigger_class: "",
-            trigger_delay: 0, capping_enabled: true, tcf_enabled: true,
-            agego_cross_site_enabled: true, only_inline: true
-        },
-        {
-            ads_host: "a.pemsrv.com", syndication_host: "s.pemsrv.com", idzone: 5987802,
-            popup_fallback: false, popup_force: false, chrome_enabled: true, new_tab: false,
-            frequency_period: 1, frequency_count: 3, trigger_method: 1, trigger_class: "",
-            trigger_delay: 0, capping_enabled: true, tcf_enabled: true,
-            agego_cross_site_enabled: true, only_inline: true
-        }
     ];
 
     function getCookieValue(name) {

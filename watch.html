@@ -232,22 +232,6 @@
         <i class="fas fa-chevron-down side-arrow" id="categoriesArrow"></i>
       </button>
       <div class="side-submenu" id="categoriesMenu">
-        <a href="index.html?cat=entertainment" class="side-link sub"><i class="fas fa-film"></i> Entertainment</a>
-        <a href="index.html?cat=milf" class="side-link sub"><i class="fas fa-star"></i> MILF</a>
-        <a href="index.html?cat=viral" class="side-link sub"><i class="fas fa-fire"></i> Viral</a>
-        <a href="index.html?cat=anal" class="side-link sub"><i class="fas fa-circle"></i> Anal</a>
-        <a href="index.html?cat=lesbian" class="side-link sub"><i class="fas fa-venus-double"></i> Lesbian</a>
-        <a href="index.html?cat=uganda" class="side-link sub"><i class="fas fa-globe-africa"></i> Local</a>
-        <a href="index.html?cat=gay" class="side-link sub"><i class="fas fa-mars-double"></i> Gay</a>
-        <a href="index.html?cat=pov" class="side-link sub"><i class="fas fa-eye"></i> POV</a>
-        <a href="index.html?cat=orgasm" class="side-link sub"><i class="fas fa-water"></i> Orgasm</a>
-        <a href="index.html?cat=kenya" class="side-link sub"><i class="fas fa-globe-africa"></i> Kenya</a>
-        <a href="index.html?cat=ebony" class="side-link sub"><i class="fas fa-star"></i> Ebony</a>
-        <a href="index.html?cat=mature" class="side-link sub"><i class="fas fa-user"></i> Mature</a>
-        <a href="index.html?cat=creampie" class="side-link sub"><i class="fas fa-circle"></i> Creampie</a>
-        <a href="index.html?cat=squirt" class="side-link sub"><i class="fas fa-water"></i> Squirt</a>
-        <a href="index.html?cat=doggy" class="side-link sub"><i class="fas fa-paw"></i> Doggy</a>
-        <a href="index.html?cat=rough" class="side-link sub"><i class="fas fa-bolt"></i> Rough</a>
       </div>
       <hr/>
       <a href="index.html" class="side-link"><i class="fas fa-house"></i> Home</a>
@@ -427,10 +411,6 @@
     1) zone 5980736  — starts immediately on page load
     2) zone 5980738  — starts once zone 5980736 has fired its full
                         frequency_count (3 pops)
-    3) zone 5983060  — starts once zone 5980738 has fired its full
-                        frequency_count (3 pops)
-    4) zone 5987802  — starts once zone 5983060 has fired its full
-                        frequency_count (3 pops)
 
   How the chaining works:
     Each zone writes a "zone-cap-<idzone>" cookie every time it fires,
@@ -453,10 +433,6 @@
   Order:
     1) zone 5980736  — starts immediately on page load
     2) zone 5980738  — starts once zone 5980736 has fired its full
-                        frequency_count (3 pops)
-    3) zone 5983060  — starts once zone 5980738 has fired its full
-                        frequency_count (3 pops)
-    4) zone 5987802  — starts once zone 5983060 has fired its full
                         frequency_count (3 pops)
 
   How the chaining works:
@@ -538,20 +514,6 @@
             trigger_delay: 0, capping_enabled: true, tcf_enabled: true,
             agego_cross_site_enabled: true, only_inline: true
         },
-        {
-            ads_host: "a.pemsrv.com", syndication_host: "s.pemsrv.com", idzone: 5983060,
-            popup_fallback: false, popup_force: false, chrome_enabled: false, new_tab: false,
-            frequency_period: 1, frequency_count: 3, trigger_method: 1, trigger_class: "",
-            trigger_delay: 0, capping_enabled: true, tcf_enabled: true,
-            agego_cross_site_enabled: true, only_inline: true
-        },
-        {
-            ads_host: "a.pemsrv.com", syndication_host: "s.pemsrv.com", idzone: 5987802,
-            popup_fallback: false, popup_force: false, chrome_enabled: true, new_tab: false,
-            frequency_period: 1, frequency_count: 3, trigger_method: 1, trigger_class: "",
-            trigger_delay: 0, capping_enabled: true, tcf_enabled: true,
-            agego_cross_site_enabled: true, only_inline: true
-        }
     ];
 
     function getCookieValue(name) {
