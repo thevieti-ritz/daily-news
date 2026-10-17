@@ -205,12 +205,6 @@
 
     var onSkip = function () { if (skipBtn.disabled) return; fire("skip"); endAd(); };
     skipBtn.addEventListener("click", onSkip);
-    v.addEventListener("click", function () {
-      if (mode !== "ad" || !ad.click) return;
-      ad.clickTrk.forEach(ping); fire("clickthrough");
-      try { v.pause(); } catch (e) {}
-      window.open(ad.click, "_blank", "noopener");
-    });
     v.addEventListener("timeupdate", adTimeUpdate);
 
     // prefetch the VAST now so playback can begin synchronously inside the user's tap
