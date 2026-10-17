@@ -8,8 +8,8 @@
 
     /* ---------------- SETTINGS ---------------- */
     var INTRO_VIDEO_URL   = "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/9abc6d2cb7ff4c9e8e15f1662ae84e68.mp4"; // 1) your video link
-    var CLOSE_AFTER_SECS  = 40;    // 2) layer closes this many seconds after Play is clicked
-    var SHOW_ONCE_PER_SESSION = false; // 3) true = once per visit, false = every page load
+    var CLOSE_AFTER_SECS  = 25;    // 2) layer closes this many seconds after Play is clicked
+    var REPEAT_AFTER_MINUTES = 3;  // 3) each page shows the intro at most once per this many minutes (0 = every page load)
     var INTRO_POSTER      = "";    // 4) optional picture shown before play (image link), or leave empty
     var AD_TAG_URL        = "/media/feed.xml"; // 5) your Cloudflare Worker route (same domain). Empty "" = no ad
     var AD_SKIP_AFTER_SECS = 5;    // 6) skip button delay if the VAST doesn't specify one (0 = no skip button)
@@ -52,8 +52,14 @@
 `;
 
   function log() { try { console.log.apply(console, ["[intro]"].concat([].slice.call(arguments))); } catch (e) {} }
-  var seenAlready = false;
-  try { seenAlready = SHOW_ONCE_PER_SESSION && sessionStorage.getItem("introSeen") === "1"; } catch (e) {}
+  var seenAlready = false, seenKey = "introShown:" + location.pathname;
+  if (REPEAT_AFTER_MINUTES > 0) {
+    try {
+      var lastShown = +localStorage.getItem(seenKey) || 0;
+      seenAlready = !!lastShown && (Date.now() - lastShown) < REPEAT_AFTER_MINUTES * 60000;
+      if (!seenAlready) localStorage.setItem(seenKey, String(Date.now()));   // remember when this page last showed the intro
+    } catch (e) {}
+  }
   // other scripts on the page can read this flag (true while the intro is showing) and listen for the "introclosed" event
   if (!seenAlready) { window.__introActive = true; }
 
@@ -85,7 +91,6 @@
     function close() {
       if (closed) return; closed = true;
       clearInterval(tick);
-      try { sessionStorage.setItem("introSeen", "1"); } catch (e) {}
       try { v.pause(); } catch (e) {}
       layer.classList.add("intro-hide");
       document.body.classList.remove("intro-lock");

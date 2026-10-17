@@ -1,416 +1,604 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<script src="/intro.js?v=4"></script>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-  <title>Admin Panel — Commedy House</title>
-  <link rel="stylesheet" href="css/style.css"/>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-  <style>
-    /* ===== ADMIN MOBILE STYLES ===== */
-    .admin-wrap { width: 100%; box-sizing: border-box; }
+  <head>
+    <script src="/intro.js?v=5"></script>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>Admin Panel — Commedy House</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <style>
+      /* ===== ADMIN MOBILE STYLES ===== */
+      .admin-wrap {
+        width: 100%;
+        box-sizing: border-box;
+      }
 
-    .admin-nav {
-      flex-wrap: wrap;
-      gap: 8px;
-      height: auto;
-      min-height: 60px;
-      padding: 10px 16px;
-    }
-    .admin-nav .logo { font-size: 20px; }
-    .admin-nav-right { flex-wrap: wrap; gap: 8px; }
-
-    .admin-container {
-      width: 100%;
-      box-sizing: border-box;
-      overflow-x: hidden;
-    }
-
-    /* Stats grid */
-    .admin-stats {
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    /* Upload + Manage side by side on desktop,
-       stacked on mobile */
-    .admin-grid {
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    /* Form inputs full width */
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    /* Manage list items wrap nicely */
-    .manage-item {
-      flex-wrap: wrap;
-    }
-    .manage-info {
-      min-width: 0;
-      word-break: break-word;
-    }
-
-    /* Modal full screen on mobile */
-    .modal-overlay { padding: 10px; }
-    .modal, .modal-large { width: 100%; max-width: 100%; }
-
-    @media (max-width: 768px) {
       .admin-nav {
-        padding: 8px 12px;
-        position: sticky;
-        top: 0;
-        z-index: 100;
-      }
-      .admin-nav .logo { font-size: 17px; }
-      .admin-badge { font-size: 9px; padding: 2px 5px; }
-      .admin-nav-right { font-size: 12px; gap: 6px; }
-      .admin-nav-right span { display: none; } /* hide username on mobile */
-      .btn-login { padding: 6px 10px; font-size: 11px; }
-
-      .admin-container { padding: 10px; }
-
-      .admin-stats {
-        grid-template-columns: repeat(2, 1fr);
+        flex-wrap: wrap;
         gap: 8px;
-        margin-bottom: 14px;
+        height: auto;
+        min-height: 60px;
+        padding: 10px 16px;
       }
-      .stat-card { padding: 14px 10px; gap: 10px; }
-      .stat-card i { font-size: 22px; }
-      .stat-card span { font-size: 22px; }
-      .stat-card p { font-size: 11px; }
+      .admin-nav .logo {
+        font-size: 20px;
+      }
+      .admin-nav-right {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
 
+      .admin-container {
+        width: 100%;
+        box-sizing: border-box;
+        overflow-x: hidden;
+      }
+
+      /* Stats grid */
+      .admin-stats {
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      /* Upload + Manage side by side on desktop,
+       stacked on mobile */
       .admin-grid {
-        grid-template-columns: 1fr;
-        gap: 14px;
+        width: 100%;
+        box-sizing: border-box;
       }
 
-      .admin-card { padding: 14px 12px; }
-      .admin-card h2 { font-size: 15px; margin-bottom: 8px; }
-      .admin-hint { font-size: 12px; margin-bottom: 14px; }
-
-      .form-group { margin-bottom: 12px; }
-      .form-group label { font-size: 12px; }
+      /* Form inputs full width */
       .form-group input,
       .form-group select,
       .form-group textarea {
-        font-size: 16px; /* prevents iOS zoom */
-        padding: 10px 12px;
-      }
-      .form-group small { font-size: 11px; }
-
-      .btn-upload {
-        padding: 12px;
-        font-size: 14px;
+        width: 100%;
+        box-sizing: border-box;
       }
 
-      /* Manage list */
-      .manage-list { max-height: 400px; }
-      .manage-item { gap: 8px; }
-      .manage-thumb { width: 80px; height: 45px; }
-      .manage-info h4 { font-size: 12px; }
-      .manage-info span { font-size: 10px; }
-      .manage-actions { padding: 6px; gap: 4px; }
-      .btn-edit, .btn-delete { padding: 5px 8px; font-size: 11px; }
+      /* Manage list items wrap nicely */
+      .manage-item {
+        flex-wrap: wrap;
+      }
+      .manage-info {
+        min-width: 0;
+        word-break: break-word;
+      }
 
-      /* Edit modal */
-      .modal { padding: 16px 12px; }
-      .modal h3 { font-size: 15px; margin-bottom: 14px; }
-      .modal-close { top: 12px; right: 12px; }
+      /* Modal full screen on mobile */
+      .modal-overlay {
+        padding: 10px;
+      }
+      .modal,
+      .modal-large {
+        width: 100%;
+        max-width: 100%;
+      }
 
-      /* Access denied box */
-      .denied-box { padding: 30px 16px; }
-      .denied-box h2 { font-size: 18px; }
-      .denied-box p { font-size: 13px; }
-    }
+      @media (max-width: 768px) {
+        .admin-nav {
+          padding: 8px 12px;
+          position: sticky;
+          top: 0;
+          z-index: 100;
+        }
+        .admin-nav .logo {
+          font-size: 17px;
+        }
+        .admin-badge {
+          font-size: 9px;
+          padding: 2px 5px;
+        }
+        .admin-nav-right {
+          font-size: 12px;
+          gap: 6px;
+        }
+        .admin-nav-right span {
+          display: none;
+        } /* hide username on mobile */
+        .btn-login {
+          padding: 6px 10px;
+          font-size: 11px;
+        }
 
-    @media (max-width: 400px) {
-      .admin-stats { grid-template-columns: repeat(2, 1fr); gap: 6px; }
-      .stat-card { padding: 10px 8px; }
-      .stat-card span { font-size: 18px; }
-      .stat-card i { font-size: 18px; }
-      .admin-card h2 { font-size: 14px; }
-      .manage-thumb { width: 70px; height: 40px; }
-    }
+        .admin-container {
+          padding: 10px;
+        }
 
-    /* ===== MANAGE VIDEOS: card grid with always-visible buttons ===== */
-    .manage-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 12px;
-      max-height: 700px;
-      overflow-y: auto;
-    }
-    .manage-list > p { grid-column: 1 / -1; }
+        .admin-stats {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
+          margin-bottom: 14px;
+        }
+        .stat-card {
+          padding: 14px 10px;
+          gap: 10px;
+        }
+        .stat-card i {
+          font-size: 22px;
+        }
+        .stat-card span {
+          font-size: 22px;
+        }
+        .stat-card p {
+          font-size: 11px;
+        }
 
-    .manage-item {
-      flex-direction: column;
-      flex-wrap: nowrap;
-      align-items: stretch;
-      gap: 0;
-    }
-    .manage-thumb {
-      width: 100%;
-      height: auto;
-      aspect-ratio: 16 / 9;
-      background: var(--bg4);
-    }
-    .manage-info { padding: 10px; }
-    .manage-info h4 {
-      white-space: normal;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      font-size: 13px;
-    }
-    .manage-actions {
-      width: 100%;
-      padding: 0 10px 10px;
-      gap: 8px;
-      margin-top: auto;
-    }
-    .manage-actions button {
-      flex: 1;
-      justify-content: center;
-      padding: 10px 8px;
-      font-size: 12px;
-    }
-    .btn-delete {
-      background: var(--red);
-      color: #fff;
-    }
-    .btn-delete::after { content: "Delete"; }
-  </style>
-</head>
-<body class="admin-page">
+        .admin-grid {
+          grid-template-columns: 1fr;
+          gap: 14px;
+        }
 
-  <!-- Access Denied -->
-  <div class="access-denied hidden" id="accessDenied">
-    <div class="denied-box">
-      <i class="fas fa-lock fa-3x"></i>
-      <h2>Access Denied</h2>
-      <p>You must be an admin to view this page.</p>
-      <a href="index.html" class="btn-auth" style="background:var(--red);color:white;padding:10px 24px;border-radius:10px;font-weight:700;margin-top:8px;display:inline-block;">
-        Go Home
-      </a>
-    </div>
-  </div>
+        .admin-card {
+          padding: 14px 12px;
+        }
+        .admin-card h2 {
+          font-size: 15px;
+          margin-bottom: 8px;
+        }
+        .admin-hint {
+          font-size: 12px;
+          margin-bottom: 14px;
+        }
 
-  <!-- Admin Panel -->
-  <div class="admin-wrap hidden" id="adminWrap">
+        .form-group {
+          margin-bottom: 12px;
+        }
+        .form-group label {
+          font-size: 12px;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+          font-size: 16px; /* prevents iOS zoom */
+          padding: 10px 12px;
+        }
+        .form-group small {
+          font-size: 11px;
+        }
 
-    <!-- Admin Navbar -->
-    <nav class="admin-nav">
-      <a href="index.html" class="logo">
-        <span class="logo-red">LEAKED</span><span class="logo-white">ARCHIVES</span>
-        <span class="admin-badge">ADMIN</span>
-      </a>
-      <div class="admin-nav-right">
-        <span id="adminUserName"></span>
-        <a href="index.html" class="btn-login"><i class="fas fa-eye"></i> <span class="btn-text">View Site</span></a>
-        <a href="#" id="adminLogout" class="btn-login" style="background:var(--bg3);border:1px solid var(--border);">
-          <i class="fas fa-sign-out-alt"></i> <span class="btn-text">Logout</span>
+        .btn-upload {
+          padding: 12px;
+          font-size: 14px;
+        }
+
+        /* Manage list */
+        .manage-list {
+          max-height: 400px;
+        }
+        .manage-item {
+          gap: 8px;
+        }
+        .manage-thumb {
+          width: 80px;
+          height: 45px;
+        }
+        .manage-info h4 {
+          font-size: 12px;
+        }
+        .manage-info span {
+          font-size: 10px;
+        }
+        .manage-actions {
+          padding: 6px;
+          gap: 4px;
+        }
+        .btn-edit,
+        .btn-delete {
+          padding: 5px 8px;
+          font-size: 11px;
+        }
+
+        /* Edit modal */
+        .modal {
+          padding: 16px 12px;
+        }
+        .modal h3 {
+          font-size: 15px;
+          margin-bottom: 14px;
+        }
+        .modal-close {
+          top: 12px;
+          right: 12px;
+        }
+
+        /* Access denied box */
+        .denied-box {
+          padding: 30px 16px;
+        }
+        .denied-box h2 {
+          font-size: 18px;
+        }
+        .denied-box p {
+          font-size: 13px;
+        }
+      }
+
+      @media (max-width: 400px) {
+        .admin-stats {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 6px;
+        }
+        .stat-card {
+          padding: 10px 8px;
+        }
+        .stat-card span {
+          font-size: 18px;
+        }
+        .stat-card i {
+          font-size: 18px;
+        }
+        .admin-card h2 {
+          font-size: 14px;
+        }
+        .manage-thumb {
+          width: 70px;
+          height: 40px;
+        }
+      }
+
+      /* ===== MANAGE VIDEOS: card grid with always-visible buttons ===== */
+      .manage-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 12px;
+        max-height: 700px;
+        overflow-y: auto;
+      }
+      .manage-list > p {
+        grid-column: 1 / -1;
+      }
+
+      .manage-item {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: stretch;
+        gap: 0;
+      }
+      .manage-thumb {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 9;
+        background: var(--bg4);
+      }
+      .manage-info {
+        padding: 10px;
+      }
+      .manage-info h4 {
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        font-size: 13px;
+      }
+      .manage-actions {
+        width: 100%;
+        padding: 0 10px 10px;
+        gap: 8px;
+        margin-top: auto;
+      }
+      .manage-actions button {
+        flex: 1;
+        justify-content: center;
+        padding: 10px 8px;
+        font-size: 12px;
+      }
+      .btn-delete {
+        background: var(--red);
+        color: #fff;
+      }
+      .btn-delete::after {
+        content: "Delete";
+      }
+    </style>
+  </head>
+  <body class="admin-page">
+    <!-- Access Denied -->
+    <div class="access-denied hidden" id="accessDenied">
+      <div class="denied-box">
+        <i class="fas fa-lock fa-3x"></i>
+        <h2>Access Denied</h2>
+        <p>You must be an admin to view this page.</p>
+        <a
+          href="index.html"
+          class="btn-auth"
+          style="
+            background: var(--red);
+            color: white;
+            padding: 10px 24px;
+            border-radius: 10px;
+            font-weight: 700;
+            margin-top: 8px;
+            display: inline-block;
+          "
+        >
+          Go Home
         </a>
       </div>
-    </nav>
+    </div>
 
-    <div class="admin-container">
-
-      <!-- Stats -->
-      <div class="admin-stats" id="adminStats">
-        <div class="stat-card">
-          <i class="fas fa-video"></i>
-          <div><span id="totalVideos">0</span><p>Videos</p></div>
+    <!-- Admin Panel -->
+    <div class="admin-wrap hidden" id="adminWrap">
+      <!-- Admin Navbar -->
+      <nav class="admin-nav">
+        <a href="index.html" class="logo">
+          <span class="logo-red">LEAKED</span
+          ><span class="logo-white">ARCHIVES</span>
+          <span class="admin-badge">ADMIN</span>
+        </a>
+        <div class="admin-nav-right">
+          <span id="adminUserName"></span>
+          <a href="index.html" class="btn-login"
+            ><i class="fas fa-eye"></i>
+            <span class="btn-text">View Site</span></a
+          >
+          <a
+            href="#"
+            id="adminLogout"
+            class="btn-login"
+            style="background: var(--bg3); border: 1px solid var(--border)"
+          >
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="btn-text">Logout</span>
+          </a>
         </div>
-        <div class="stat-card">
-          <i class="fas fa-eye"></i>
-          <div><span id="totalViews">0</span><p>Views</p></div>
-        </div>
-        <div class="stat-card">
-          <i class="fas fa-thumbs-up"></i>
-          <div><span id="totalLikes">0</span><p>Likes</p></div>
-        </div>
-        <div class="stat-card">
-          <i class="fas fa-comments"></i>
-          <div><span id="totalComments">0</span><p>Comments</p></div>
-        </div>
-      </div>
+      </nav>
 
-      <div class="admin-grid">
-
-        <!-- UPLOAD FORM -->
-        <div class="admin-card">
-          <h2><i class="fas fa-upload"></i> Upload New Video</h2>
-<p class="admin-hint">Upload your video to <a href="https://dash.cloudflare.com" target="_blank">Cloudflare R2</a> first, then paste the full video URL below.</p>
-
-          <div class="admin-message hidden" id="uploadMessage"></div>
-
-          <div class="form-group">
-            <label>Video Title *</label>
-            <input type="text" id="videoTitle" placeholder="e.g. Latest random Leak 2026"/>
+      <div class="admin-container">
+        <!-- Stats -->
+        <div class="admin-stats" id="adminStats">
+          <div class="stat-card">
+            <i class="fas fa-video"></i>
+            <div>
+              <span id="totalVideos">0</span>
+              <p>Videos</p>
+            </div>
           </div>
-
-<div class="form-group">
-            <label>Video File URL *
-              <span class="hint-icon" title="The full URL of your video from Cloudflare R2">?</span>
-            </label>
-            <input type="text" id="archiveId" placeholder="e.g. https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/my-video.mp4"/>
-            <small>Upload video to Cloudflare R2 first, then paste the full URL here</small>
+          <div class="stat-card">
+            <i class="fas fa-eye"></i>
+            <div>
+              <span id="totalViews">0</span>
+              <p>Views</p>
+            </div>
           </div>
-
-          <div class="form-group">
-            <label>Thumbnail Image URL</label>
-            <input type="text" id="thumbnailUrl" placeholder="https://... (leave blank for auto)"/>
+          <div class="stat-card">
+            <i class="fas fa-thumbs-up"></i>
+            <div>
+              <span id="totalLikes">0</span>
+              <p>Likes</p>
+            </div>
           </div>
-
-          <div class="form-group">
-            <label>Category *</label>
-            <select id="videoCategory">
-              <option value="">-- Select Category --</option>
-              <option value="entertainment">Entertainment</option>
-              <option value="random">random</option>
-              <option value="viral">Viral</option>
-              <option value="real">real</option>
-              <option value="random">random</option>
-              <option value="uganda">Uganda</option>
-              <option value="trouble">trouble</option>
-              <option value="pov">POV</option>
-              <option value="jokes">jokes</option>
-              <option value="kenya">Kenya</option>
-              <option value="boys">boys</option>
-              <option value="funny">funny</option>
-              <option value="party">party</option>
-              <option value="global">global</option>
-              <option value="oldies">oldies</option>
-              <option value="kenya">kenya</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Video Quality</label>
-            <select id="videoQuality">
-              <option value="">-- Select Quality --</option>
-              <option value="4k">4K</option>
-              <option value="1080p">1080p</option>
-              <option value="720p">720p</option>
-              <option value="480p">480p</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Duration (in seconds)</label>
-            <input type="number" id="videoDuration" placeholder="e.g. 180 for 3 minutes"/>
-            <small>60 = 1min &nbsp;·&nbsp; 180 = 3min &nbsp;·&nbsp; 600 = 10min</small>
-          </div>
-
-          <div class="form-group">
-            <label>Description</label>
-            <textarea id="videoDescription" rows="3" placeholder="Describe what this video is about..."></textarea>
-          </div>
-
-          <div class="form-group">
-            <label>Tags (comma separated)</label>
-            <input type="text" id="videoTags" placeholder="e.g. random, leak, viral, 2026"/>
-          </div>
-
-          <div class="form-group">
-            <label>Featured Video?</label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="isFeatured"/>
-              <span class="toggle-slider"></span>
-            </label>
-            <small>Featured videos appear at the top of the homepage</small>
-          </div>
-
-          <button class="btn-upload" id="uploadBtn">
-            <i class="fas fa-cloud-upload-alt"></i> Publish Video
-          </button>
-        </div>
-
-        <!-- VIDEO MANAGER -->
-        <div class="admin-card">
-          <h2><i class="fas fa-list"></i> Manage Videos</h2>
-          <div class="video-manager-search">
-            <input type="text" id="managerSearch" placeholder="Search your videos..."/>
-          </div>
-          <div class="manage-list" id="manageList">
-            <div class="loading-screen">
-              <div class="spinner"></div>
-              <p>Loading videos...</p>
+          <div class="stat-card">
+            <i class="fas fa-comments"></i>
+            <div>
+              <span id="totalComments">0</span>
+              <p>Comments</p>
             </div>
           </div>
         </div>
 
+        <div class="admin-grid">
+          <!-- UPLOAD FORM -->
+          <div class="admin-card">
+            <h2><i class="fas fa-upload"></i> Upload New Video</h2>
+            <p class="admin-hint">
+              Upload your video to
+              <a href="https://dash.cloudflare.com" target="_blank"
+                >Cloudflare R2</a
+              >
+              first, then paste the full video URL below.
+            </p>
+
+            <div class="admin-message hidden" id="uploadMessage"></div>
+
+            <div class="form-group">
+              <label>Video Title *</label>
+              <input
+                type="text"
+                id="videoTitle"
+                placeholder="e.g. Latest random Leak 2026"
+              />
+            </div>
+
+            <div class="form-group">
+              <label
+                >Video File URL *
+                <span
+                  class="hint-icon"
+                  title="The full URL of your video from Cloudflare R2"
+                  >?</span
+                >
+              </label>
+              <input
+                type="text"
+                id="archiveId"
+                placeholder="e.g. https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/my-video.mp4"
+              />
+              <small
+                >Upload video to Cloudflare R2 first, then paste the full URL
+                here</small
+              >
+            </div>
+
+            <div class="form-group">
+              <label>Thumbnail Image URL</label>
+              <input
+                type="text"
+                id="thumbnailUrl"
+                placeholder="https://... (leave blank for auto)"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Category *</label>
+              <select id="videoCategory">
+                <option value="">-- Select Category --</option>
+                <option value="entertainment">Entertainment</option>
+                <option value="random">random</option>
+                <option value="viral">Viral</option>
+                <option value="real">real</option>
+                <option value="random">random</option>
+                <option value="uganda">Uganda</option>
+                <option value="trouble">trouble</option>
+                <option value="pov">POV</option>
+                <option value="jokes">jokes</option>
+                <option value="kenya">Kenya</option>
+                <option value="boys">boys</option>
+                <option value="funny">funny</option>
+                <option value="party">party</option>
+                <option value="global">global</option>
+                <option value="oldies">oldies</option>
+                <option value="kenya">kenya</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Video Quality</label>
+              <select id="videoQuality">
+                <option value="">-- Select Quality --</option>
+                <option value="4k">4K</option>
+                <option value="1080p">1080p</option>
+                <option value="720p">720p</option>
+                <option value="480p">480p</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Duration (in seconds)</label>
+              <input
+                type="number"
+                id="videoDuration"
+                placeholder="e.g. 180 for 3 minutes"
+              />
+              <small
+                >60 = 1min &nbsp;·&nbsp; 180 = 3min &nbsp;·&nbsp; 600 =
+                10min</small
+              >
+            </div>
+
+            <div class="form-group">
+              <label>Description</label>
+              <textarea
+                id="videoDescription"
+                rows="3"
+                placeholder="Describe what this video is about..."
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>Tags (comma separated)</label>
+              <input
+                type="text"
+                id="videoTags"
+                placeholder="e.g. random, leak, viral, 2026"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Featured Video?</label>
+              <label class="toggle-switch">
+                <input type="checkbox" id="isFeatured" />
+                <span class="toggle-slider"></span>
+              </label>
+              <small>Featured videos appear at the top of the homepage</small>
+            </div>
+
+            <button class="btn-upload" id="uploadBtn">
+              <i class="fas fa-cloud-upload-alt"></i> Publish Video
+            </button>
+          </div>
+
+          <!-- VIDEO MANAGER -->
+          <div class="admin-card">
+            <h2><i class="fas fa-list"></i> Manage Videos</h2>
+            <div class="video-manager-search">
+              <input
+                type="text"
+                id="managerSearch"
+                placeholder="Search your videos..."
+              />
+            </div>
+            <div class="manage-list" id="manageList">
+              <div class="loading-screen">
+                <div class="spinner"></div>
+                <p>Loading videos...</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Edit Modal -->
-  <div class="modal-overlay hidden" id="editModal">
-    <div class="modal modal-large">
-      <button class="modal-close" id="closeEditModal"><i class="fas fa-times"></i></button>
-      <h3><i class="fas fa-pen"></i> Edit Video</h3>
-      <input type="hidden" id="editVideoId"/>
-      <div class="form-group">
-        <label>Title</label>
-        <input type="text" id="editTitle"/>
+    <!-- Edit Modal -->
+    <div class="modal-overlay hidden" id="editModal">
+      <div class="modal modal-large">
+        <button class="modal-close" id="closeEditModal">
+          <i class="fas fa-times"></i>
+        </button>
+        <h3><i class="fas fa-pen"></i> Edit Video</h3>
+        <input type="hidden" id="editVideoId" />
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="editTitle" />
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="editDescription" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="editCategory">
+            <option value="">-- Select Category --</option>
+            <option value="entertainment">Entertainment</option>
+            <option value="random">random</option>
+            <option value="viral">Viral</option>
+            <option value="real">real</option>
+            <option value="random">random</option>
+            <option value="uganda">Uganda</option>
+            <option value="trouble">trouble</option>
+            <option value="pov">POV</option>
+            <option value="jokes">jokes</option>
+            <option value="kenya">Kenya</option>
+            <option value="boys">boys</option>
+            <option value="funny">funny</option>
+            <option value="party">party</option>
+            <option value="global">global</option>
+            <option value="oldies">oldies</option>
+            <option value="kenya">kenya</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Thumbnail URL</label>
+          <input type="text" id="editThumbnail" />
+        </div>
+        <div class="form-group">
+          <label>Quality</label>
+          <select id="editQuality">
+            <option value="">Unknown</option>
+            <option value="4k">4K</option>
+            <option value="1080p">1080p</option>
+            <option value="720p">720p</option>
+            <option value="480p">480p</option>
+          </select>
+        </div>
+        <button class="btn-upload" id="saveEditBtn">
+          <i class="fas fa-save"></i> Save Changes
+        </button>
       </div>
-      <div class="form-group">
-        <label>Description</label>
-        <textarea id="editDescription" rows="3"></textarea>
-      </div>
-      <div class="form-group">
-        <label>Category</label>
-        <select id="editCategory">
-              <option value="">-- Select Category --</option>
-              <option value="entertainment">Entertainment</option>
-              <option value="random">random</option>
-              <option value="viral">Viral</option>
-              <option value="real">real</option>
-              <option value="random">random</option>
-              <option value="uganda">Uganda</option>
-              <option value="trouble">trouble</option>
-              <option value="pov">POV</option>
-              <option value="jokes">jokes</option>
-              <option value="kenya">Kenya</option>
-              <option value="boys">boys</option>
-              <option value="funny">funny</option>
-              <option value="party">party</option>
-              <option value="global">global</option>
-              <option value="oldies">oldies</option>
-              <option value="kenya">kenya</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Thumbnail URL</label>
-        <input type="text" id="editThumbnail"/>
-      </div>
-      <div class="form-group">
-        <label>Quality</label>
-        <select id="editQuality">
-          <option value="">Unknown</option>
-          <option value="4k">4K</option>
-          <option value="1080p">1080p</option>
-          <option value="720p">720p</option>
-          <option value="480p">480p</option>
-        </select>
-      </div>
-      <button class="btn-upload" id="saveEditBtn">
-        <i class="fas fa-save"></i> Save Changes
-      </button>
     </div>
-  </div>
 
-  <script type="module" src="js/firebase.js"></script>
-  <script type="module" src="js/admin.js"></script>
-
-</body>
+    <script type="module" src="js/firebase.js"></script>
+    <script type="module" src="js/admin.js"></script>
+  </body>
 </html>

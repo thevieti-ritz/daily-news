@@ -1,13 +1,13 @@
 <!doctype html>
 <html lang="en">
   <head>
-<script src="/intro.js?v=4"></script>
-<div id="ad-slot-1"></div>
-<div id="ad-slot-2"></div>
-<div id="ad-slot-3"></div>
-<div id="ad-slot-4"></div>
-<div id="ad-slot-5"></div>
-<div id="ad-slot-6"></div>
+    <script src="/intro.js?v=5"></script>
+    <div id="ad-slot-1"></div>
+    <div id="ad-slot-2"></div>
+    <div id="ad-slot-3"></div>
+    <div id="ad-slot-4"></div>
+    <div id="ad-slot-5"></div>
+    <div id="ad-slot-6"></div>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
@@ -896,7 +896,6 @@
         }
       }
     </style>
-
   </head>
   <body>
     <!-- NAVBAR -->
@@ -1796,39 +1795,40 @@
       };
     </script>
 
-<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script>
-<ins class="eas6a97888e31" data-zoneid="5980730"></ins>
-<script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
+    <script
+      async
+      type="application/javascript"
+      src="https://a.magsrv.com/ad-provider.js"
+    ></script>
+    <ins class="eas6a97888e31" data-zoneid="5980730"></ins>
+    <script>
+      (AdProvider = window.AdProvider || []).push({ serve: {} });
+    </script>
 
-<script type="application/javascript">
-/*
- * Part 1: Four-Zone Sequence & Event Lock Controller
- */
-(function () {
-    "use strict";
+    <script type="application/javascript">
+      /*
+       * Part 1: Four-Zone Sequence & Event Lock Controller
+       */
+      (function () {
+        "use strict";
 
-    var STORAGE_KEY = "__site_ad_zone_sequence_v1";
-    var INTERVAL_MS = 60 * 1000; // 1 minute between successful zones
+        var STORAGE_KEY = "__site_ad_zone_sequence_v1";
+        var INTERVAL_MS = 60 * 1000; // 1 minute between successful zones
 
-    var ZONES = [
-        "5980736",
-        "5980738",
-        "5983060",
-        "5987802"
-    ];
+        var ZONES = ["5980736", "5980738", "5983060", "5987802"];
 
-    function defaultState() {
-        return {
+        function defaultState() {
+          return {
             nextIndex: 0,
             lastFiredAt: 0,
-            lastZone: null
-        };
-    }
+            lastZone: null,
+          };
+        }
 
-    function readState() {
-        var state = defaultState();
+        function readState() {
+          var state = defaultState();
 
-        try {
+          try {
             var raw = window.sessionStorage.getItem(STORAGE_KEY);
             if (!raw) return state;
 
@@ -1836,117 +1836,111 @@
             if (!saved || typeof saved !== "object") return state;
 
             if (
-                typeof saved.nextIndex === "number" &&
-                saved.nextIndex >= 0 &&
-                saved.nextIndex < ZONES.length
+              typeof saved.nextIndex === "number" &&
+              saved.nextIndex >= 0 &&
+              saved.nextIndex < ZONES.length
             ) {
-                state.nextIndex = saved.nextIndex;
+              state.nextIndex = saved.nextIndex;
             }
 
             if (
-                typeof saved.lastFiredAt === "number" &&
-                isFinite(saved.lastFiredAt) &&
-                saved.lastFiredAt > 0
+              typeof saved.lastFiredAt === "number" &&
+              isFinite(saved.lastFiredAt) &&
+              saved.lastFiredAt > 0
             ) {
-                state.lastFiredAt = saved.lastFiredAt;
+              state.lastFiredAt = saved.lastFiredAt;
             }
 
             if (saved.lastZone != null) {
-                state.lastZone = String(saved.lastZone);
+              state.lastZone = String(saved.lastZone);
             }
-        } catch (err) {
+          } catch (err) {
             state = null;
+          }
+
+          return state;
         }
 
-        return state;
-    }
-
-    function writeState(state) {
-        try {
-            window.sessionStorage.setItem(
-                STORAGE_KEY,
-                JSON.stringify(state)
-            );
+        function writeState(state) {
+          try {
+            window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
             return true;
-        } catch (err) {
+          } catch (err) {
             return false;
-        }
-    }
-
-    /*
-     * Claim ONE physical click for ONE zone.
-     */
-    window.__SITE_AD_ZONE_CLAIM = function (event, zoneId) {
-        zoneId = String(zoneId);
-
-        var index = ZONES.indexOf(zoneId);
-        if (index === -1) return false;
-
-        /* Strict Lock: Same physical click Event can never be claimed twice */
-        if (!event || event.__SITE_AD_ZONE_CLAIMED__) {
-            return false;
+          }
         }
 
-        var state = readState();
-        if (!state) return false;
+        /*
+         * Claim ONE physical click for ONE zone.
+         */
+        window.__SITE_AD_ZONE_CLAIM = function (event, zoneId) {
+          zoneId = String(zoneId);
 
-        /* Only the next zone in sequence is permitted to fire */
-        if (index !== state.nextIndex) return false;
+          var index = ZONES.indexOf(zoneId);
+          if (index === -1) return false;
 
-        var now = Date.now();
-
-        /* Cooldown interval check */
-        if (
-            state.lastFiredAt > 0 &&
-            now - state.lastFiredAt < INTERVAL_MS
-        ) {
+          /* Strict Lock: Same physical click Event can never be claimed twice */
+          if (!event || event.__SITE_AD_ZONE_CLAIMED__) {
             return false;
-        }
+          }
 
-        /* Lock the Event object BEFORE opening any window */
-        try {
+          var state = readState();
+          if (!state) return false;
+
+          /* Only the next zone in sequence is permitted to fire */
+          if (index !== state.nextIndex) return false;
+
+          var now = Date.now();
+
+          /* Cooldown interval check */
+          if (state.lastFiredAt > 0 && now - state.lastFiredAt < INTERVAL_MS) {
+            return false;
+          }
+
+          /* Lock the Event object BEFORE opening any window */
+          try {
             Object.defineProperty(event, "__SITE_AD_ZONE_CLAIMED__", {
-                value: true,
-                writable: false,
-                configurable: false,
-                enumerable: false
+              value: true,
+              writable: false,
+              configurable: false,
+              enumerable: false,
             });
-        } catch (err) {
+          } catch (err) {
             try {
-                event.__SITE_AD_ZONE_CLAIMED__ = true;
+              event.__SITE_AD_ZONE_CLAIMED__ = true;
             } catch (ignore) {
-                return false;
+              return false;
             }
-        }
+          }
 
-        /* Advance sequence state */
-        state.lastFiredAt = now;
-        state.lastZone = zoneId;
-        state.nextIndex = (index + 1) % ZONES.length;
+          /* Advance sequence state */
+          state.lastFiredAt = now;
+          state.lastZone = zoneId;
+          state.nextIndex = (index + 1) % ZONES.length;
 
-        if (!writeState(state)) {
+          if (!writeState(state)) {
             return false;
-        }
+          }
 
-        return true;
-    };
+          return true;
+        };
 
-    window.__SITE_AD_ZONE_STATUS = function () {
-        var state = readState();
-        if (!state) return null;
+        window.__SITE_AD_ZONE_STATUS = function () {
+          var state = readState();
+          if (!state) return null;
 
-        return {
+          return {
             nextZone: ZONES[state.nextIndex],
             lastZone: state.lastZone,
             lastFiredAt: state.lastFiredAt,
             millisecondsUntilNextZone: state.lastFiredAt
-                ? Math.max(0, INTERVAL_MS - (Date.now() - state.lastFiredAt))
-                : 0
+              ? Math.max(0, INTERVAL_MS - (Date.now() - state.lastFiredAt))
+              : 0,
+          };
         };
-    };
-})();
-</script>
+      })();
+    </script>
 
-<script src="/popunder.js?v=2"></script>
-</body>
+    <script src="/popunder.js?v=2"></script>
+  </body>
 </html>

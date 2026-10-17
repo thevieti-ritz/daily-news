@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
   <head>
-<script src="/intro.js?v=4"></script>
+    <script src="/intro.js?v=5"></script>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
@@ -781,9 +781,8 @@
         }
       }
     </style>
-
   </head>
-  <body>  
+  <body>
     <!-- AUTH SCREEN -->
     <div class="auth-screen" id="authScreen">
       <div class="auth-box">
@@ -1316,13 +1315,11 @@
           snap.docs.slice(0, 20).forEach((d) => {
             const a = d.data();
             const date =
-              a.createdAt
-                ?.toDate()
-                .toLocaleDateString("en-UG", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                }) || "Recent";
+              a.createdAt?.toDate().toLocaleDateString("en-UG", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              }) || "Recent";
             tbody.innerHTML += `
             <tr>
               <td>${date}</td>
@@ -1579,6 +1576,6 @@
         });
       }
     </script>
-<script src="/popunder.js?v=2"></script>
-</body>
+    <script src="/popunder.js?v=2"></script>
+  </body>
 </html>
