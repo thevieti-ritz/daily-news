@@ -56,26 +56,39 @@
 
   /* ---- LOCK: freeze popunders / popups / outside clicks while the layer is open ---- */
   function log() { try { console.log.apply(console, ["[intro]"].concat([].slice.call(arguments))); } catch (e) {} }
-  var realOpen = window.open, locked = false;
+  var realOpen = window.open, locked = false, api = {};
   var BLOCK_EVENTS = ["click", "auxclick", "mousedown", "mouseup", "pointerdown", "pointerup", "touchstart", "touchend"];
+  // while locked this swallows popups; once unlocked it hands the call to the real window.open,
+  // so a popunder script that saved a copy of it early still works afterwards
+  function fakeOpen() {
+    if (locked) { log("blocked a popup/popunder"); return null; }
+    return realOpen.apply(window, arguments);
+  }
   function guard(e) {
     if (!locked) return;
-    var l = document.getElementById("introLayer");
-    var inside = !!(l && e.target && e.target.nodeType && l.contains(e.target));
+    var l = document.getElementById("introLayer"), t = e.target;
+    var inside = !!(l && t && t.nodeType && l.contains(t));
     if (!e.isTrusted || !inside) {              // script-made clicks, or anything outside our layer
       e.stopImmediatePropagation();
       if (e.cancelable) e.preventDefault();
       log("blocked", e.type, e.isTrusted ? "(outside click)" : "(script-made click)");
+      return;
     }
+    // a real tap on our own layer: keep it away from the popunder script so it does not "use up" its trigger
+    var el = t.closest ? t : t.parentElement;
+    if (el && el.closest && el.closest("#introVideo")) return;      // video + native controls work normally
+    var btn = el && el.closest ? el.closest("#introPlay, #introSkip") : null;
+    if (e.type === "click" && btn && api[btn.id]) { api[btn.id](); }  // run our own handler first...
+    e.stopImmediatePropagation();                                     // ...then hide the tap from everyone else
   }
   function lock() {
     if (locked) return; locked = true;
-    window.open = function () { log("blocked a popup/popunder"); return null; };
+    window.open = fakeOpen;
     BLOCK_EVENTS.forEach(function (t) { window.addEventListener(t, guard, { capture: true, passive: false }); });
   }
   function unlock() {
     if (!locked) return; locked = false;
-    window.open = realOpen;
+    if (window.open === fakeOpen) window.open = realOpen;
     BLOCK_EVENTS.forEach(function (t) { window.removeEventListener(t, guard, true); });
   }
   var seenAlready = false;
@@ -90,6 +103,7 @@
     while (holder.lastChild) { document.body.insertBefore(holder.lastChild, document.body.firstChild); }
 
     var layer = document.getElementById("introLayer");
+    if (LOCK_OTHER_ADS) { BLOCK_EVENTS.forEach(function (t) { layer.addEventListener(t, function (e) { e.stopPropagation(); }); }); }
     var v = document.getElementById("introVideo"),
         playBtn = document.getElementById("introPlay"),
         msg = document.getElementById("introMsg"),
@@ -233,7 +247,8 @@
       }
     }
 
-    skipBtn.addEventListener("click", function () { if (skipBtn.disabled) return; fire("skip"); endAd(); });
+    var onSkip = function () { if (skipBtn.disabled) return; fire("skip"); endAd(); };
+    skipBtn.addEventListener("click", onSkip); api.introSkip = onSkip;
     v.addEventListener("click", function () {
       if (mode !== "ad" || !ad.click) return;
       ad.clickTrk.forEach(ping); fire("clickthrough");
@@ -300,14 +315,15 @@
     }
     /* ========================================================== */
 
-    playBtn.addEventListener("click", function () {
+    var onPlay = function () {
       startClock(); playBtn.classList.add("intro-hidden");
       if (AD_TAG_URL && !ad.ready && !ad.adDone) log("Play tapped but the ad was not ready, so your video plays instead");
       if (mode === "content" && ad.ready && !ad.fired.start && !ad.adDone) { ad.adDone = true; playAd(); return; }
       v.controls = true;
       if (v.error) { load(true); }
       tryPlay();
-    });
+    };
+    playBtn.addEventListener("click", onPlay); api.introPlay = onPlay;
 
     v.addEventListener("play", function () {
       playBtn.classList.add("intro-hidden"); startClock();
