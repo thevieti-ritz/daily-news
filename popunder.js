@@ -124,6 +124,18 @@
         return isNaN(count) ? 0 : count;
     }
 
+    // Creates one isolated popMagic instance for a zone and starts it.
+    // The library's "popup window" method is locked out, so every zone can only ever open as a popunder
+    // (new tab for the page + this tab taken over; never a separate popup window).
+    function launchZone(config) {
+        var instance = createPopMagicInstance();
+        instance.getPopMethod = function (browser) {
+            if (browser.isMobile) return instance.methods.default;
+            return browser.isChrome ? instance.methods.chromeTab : instance.methods.default;
+        };
+        instance.init(config);
+    }
+
     // Starts zoneChain[index] only after zoneChain[index - 1] has already
     // fired its full frequency_count. index 0 always starts immediately.
     function startZone(index) {
@@ -132,7 +144,7 @@
         var config = zoneChain[index];
 
         if (index === 0) {
-            createPopMagicInstance().init(config);
+            launchZone(config);
             return;
         }
 
@@ -141,7 +153,7 @@
         var count = getFireCount(prevZoneId);
 
         if (count >= prevZone.frequency_count) {
-            createPopMagicInstance().init(config);
+            launchZone(config);
             return;
         }
 
@@ -149,7 +161,7 @@
             count++;
             if (count >= prevZone.frequency_count) {
                 document.removeEventListener("creativeDisplayed-" + prevZoneId, handler);
-                createPopMagicInstance().init(config);
+                launchZone(config);
             }
         };
         document.addEventListener("creativeDisplayed-" + prevZoneId, handler);
