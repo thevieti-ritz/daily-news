@@ -53,6 +53,11 @@ let videoCardCount = 0; // running total of rendered video cards (across pages),
       grid-column: auto !important;
     }
     #videoGrid .video-row > .ad-slot .ad-outstream-wrapper { width: 100% !important; }
+    .ad-slot .ad-retry {
+      display: block; margin: 40px auto 0; padding: 10px 16px;
+      background: #e63946; color: #fff; border: 0; border-radius: 8px;
+      font: inherit; font-weight: 600; cursor: pointer;
+    }
     #videoGrid .video-row > .video-card {
       flex: 1 1 0 !important;
       min-width: 0 !important;
@@ -373,7 +378,7 @@ async function loadVideos() {
 
     // Render cards, inserting an ad slot after every AD_EVERY-th card
     const fragment = document.createDocumentFragment();
-    let newAdSlots = 0;
+    const newAdSlots = [];
     docs.forEach(d => {
       const card = createVideoCard({ id: d.id, ...d.data() });
       videoCardCount++;
@@ -381,20 +386,19 @@ async function loadVideos() {
         // One row: ad on the left, video on the right
         const row = document.createElement("div");
         row.className = "video-row";
-        row.appendChild(createAdSlot());
+        const slot = createAdSlot();
+        row.appendChild(slot);
         row.appendChild(card);
         fragment.appendChild(row);
-        newAdSlots++;
+        newAdSlots.push(slot);
       } else {
         fragment.appendChild(card);
       }
     });
     videoGrid.appendChild(fragment);
 
-    // Ask ExoClick to fill each new slot now that it is in the page
-    for (let i = 0; i < newAdSlots; i++) {
-      (window.AdProvider = window.AdProvider || []).push({ serve: {} });
-    }
+    // Load the new ad slots one at a time (see AD SLOT section)
+    newAdSlots.forEach(queueAd);
 
     // Section title
     if (!currentSearch) {
@@ -529,12 +533,64 @@ function createAdSlot() {
   wrap.className = "ad-slot";
   wrap.dataset.adSlot = adSlotCounter;
 
-  wrap.innerHTML = `
-    <div class="ad-outstream-wrapper">
-      <ins class="eas6a97888e37" data-zoneid="5993834"></ins>
-    </div>`;
+  // The ad itself is added later by loadAd(), one slot at a time
+  wrap.innerHTML = `<div class="ad-outstream-wrapper"></div>`;
 
   return wrap;
+}
+
+// ---- Load ads one by one, with a retry button on failure ----
+const AD_GAP_MS   = 3000; // wait between one ad and the next
+const AD_CHECK_MS = 8000; // if the ad has not appeared by then, offer a retry
+const adQueue = [];
+let adQueueRunning = false;
+
+function queueAd(wrap) {
+  adQueue.push(wrap);
+  if (adQueueRunning) return;
+  adQueueRunning = true;
+  (function next() {
+    const w = adQueue.shift();
+    if (!w) { adQueueRunning = false; return; }
+    if (document.body.contains(w)) loadAd(w);
+    setTimeout(next, AD_GAP_MS);
+  })();
+}
+
+function loadAd(wrap) {
+  const holder = wrap.querySelector(".ad-outstream-wrapper");
+  if (!holder) return;
+  const oldBtn = wrap.querySelector(".ad-retry");
+  if (oldBtn) oldBtn.remove();
+
+  holder.innerHTML = `<ins class="eas6a97888e37" data-zoneid="5993834"></ins>`;
+  const ins = holder.firstElementChild;
+  (window.AdProvider = window.AdProvider || []).push({ serve: {} });
+
+  let failed = false;
+  const fail = () => {
+    if (failed || !document.body.contains(wrap)) return;
+    failed = true;
+    showAdRetry(wrap);
+  };
+  ins.addEventListener("error", fail, true); // ad video failed to load
+  setTimeout(() => {
+    const ok = ins.querySelector("video,iframe,img,canvas") || ins.offsetHeight > 50;
+    if (!ok) fail();
+  }, AD_CHECK_MS);
+}
+
+function showAdRetry(wrap) {
+  if (wrap.querySelector(".ad-retry")) return;
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "ad-retry";
+  btn.textContent = "Ad didn't load. Tap to try again";
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    loadAd(wrap);
+  });
+  wrap.appendChild(btn);
 }
 
 // ============================================
