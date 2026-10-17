@@ -14,7 +14,7 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 // ============================================
 const PAGE_SIZE    = 12;
 const R2_BASE      = "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/";
-const AD_EVERY      = 6; // insert an ad slot after every N video cards
+const AD_EVERY      = 1; // insert an ad slot after every N video cards (1 = after every video)
 let lastDoc        = null;
 let currentSearch  = "";
 let isLoading      = false;
@@ -331,14 +331,21 @@ async function loadVideos() {
 
     // Render cards, inserting an ad slot after every AD_EVERY-th card
     const fragment = document.createDocumentFragment();
+    let newAdSlots = 0;
     docs.forEach(d => {
       fragment.appendChild(createVideoCard({ id: d.id, ...d.data() }));
       videoCardCount++;
       if (videoCardCount % AD_EVERY === 0) {
         fragment.appendChild(createAdSlot());
+        newAdSlots++;
       }
     });
     videoGrid.appendChild(fragment);
+
+    // Ask ExoClick to fill each new slot now that it is in the page
+    for (let i = 0; i < newAdSlots; i++) {
+      (window.AdProvider = window.AdProvider || []).push({ serve: {} });
+    }
 
     // Section title
     if (!currentSearch) {
@@ -477,9 +484,6 @@ function createAdSlot() {
     <div class="ad-outstream-wrapper">
       <ins class="eas6a97888e37" data-zoneid="5993834"></ins>
     </div>`;
-
-  // Fire immediately so the unit loads on page render/refresh
-  (window.AdProvider = window.AdProvider || []).push({ serve: {} });
 
   return wrap;
 }
