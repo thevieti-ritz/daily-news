@@ -19,6 +19,7 @@
     var AD_PRELOAD        = true;  // 10) true = download the ad video while the visitor looks at the page, so it starts instantly
     var AD_BUFFER_WAIT    = 6000;  // 11) extra ms to let the ad video buffer before unlocking Play anyway (iPhones ignore preloading)
     var AD_RETRIES        = 2;     // 12) extra tries when ExoClick answers with no ad (0 = no retries)
+    var BLOCK_POPUPS      = false; // 13) true = also replace window.open while the layer is open. LEAVE FALSE: popunder scripts detect the change and fall back to popups / opening in your page
     /* ------------------------------------------ */
 
   var CSS = `
@@ -83,7 +84,7 @@
   }
   function lock() {
     if (locked) return; locked = true;
-    window.open = fakeOpen;
+    if (BLOCK_POPUPS) window.open = fakeOpen;     // off by default: scripts can detect a replaced window.open
     BLOCK_EVENTS.forEach(function (t) { window.addEventListener(t, guard, { capture: true, passive: false }); });
   }
   function unlock() {
