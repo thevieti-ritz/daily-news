@@ -34,30 +34,35 @@ let videoCardCount = 0; // running total of rendered video cards (across pages),
 (function addRowStyles() {
   const st = document.createElement("style");
   st.textContent = `
-    .video-row {
-      grid-column: 1 / -1;
-      display: flex;
-      align-items: stretch;
-      gap: 12px;
-      width: 100%;
+    #videoGrid .video-row {
+      grid-column: 1 / -1 !important;
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: stretch !important;
+      gap: 12px !important;
+      width: 100% !important;
     }
-    .video-row > .ad-slot {
-      flex: 0 0 300px;
-      width: 300px;
-      max-width: 300px;
-      min-height: 160px;
-      overflow: hidden;
-      margin: 0;
+    #videoGrid .video-row > .ad-slot {
+      flex: 0 0 300px !important;
+      width: 300px !important;
+      max-width: 300px !important;
+      min-height: 250px !important;
+      height: auto !important;
+      overflow: hidden !important;
+      margin: 0 !important;
+      grid-column: auto !important;
     }
-    .video-row > .ad-slot .ad-outstream-wrapper { width: 100%; }
-    .video-row > .video-card {
-      flex: 1 1 0;
-      min-width: 0;
-      width: auto;
+    #videoGrid .video-row > .ad-slot .ad-outstream-wrapper { width: 100% !important; }
+    #videoGrid .video-row > .video-card {
+      flex: 1 1 0 !important;
+      min-width: 0 !important;
+      width: auto !important;
+      max-width: 380px !important;
     }
     @media (max-width: 700px) {
-      .video-row { flex-direction: column; }
-      .video-row > .ad-slot { flex: none; width: 100%; max-width: 100%; }
+      #videoGrid .video-row { flex-direction: column !important; }
+      #videoGrid .video-row > .ad-slot { flex: none !important; width: 100% !important; max-width: 100% !important; }
+      #videoGrid .video-row > .video-card { max-width: 100% !important; }
     }
   `;
   document.head.appendChild(st);
