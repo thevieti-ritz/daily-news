@@ -27,6 +27,43 @@ let activeCategory = null;
 let videoCardCount = 0; // running total of rendered video cards (across pages), used for ad placement
 
 // ============================================
+// AD + VIDEO ROW STYLES (self-contained)
+// Each row = ad on the left, video card on the right.
+// On narrow screens the ad sits above the video.
+// ============================================
+(function addRowStyles() {
+  const st = document.createElement("style");
+  st.textContent = `
+    .video-row {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: stretch;
+      gap: 12px;
+      width: 100%;
+    }
+    .video-row > .ad-slot {
+      flex: 0 0 300px;
+      width: 300px;
+      max-width: 300px;
+      min-height: 160px;
+      overflow: hidden;
+      margin: 0;
+    }
+    .video-row > .ad-slot .ad-outstream-wrapper { width: 100%; }
+    .video-row > .video-card {
+      flex: 1 1 0;
+      min-width: 0;
+      width: auto;
+    }
+    @media (max-width: 700px) {
+      .video-row { flex-direction: column; }
+      .video-row > .ad-slot { flex: none; width: 100%; max-width: 100%; }
+    }
+  `;
+  document.head.appendChild(st);
+})();
+
+// ============================================
 // DOM REFS
 // ============================================
 const videoGrid       = document.getElementById("videoGrid");
@@ -333,11 +370,18 @@ async function loadVideos() {
     const fragment = document.createDocumentFragment();
     let newAdSlots = 0;
     docs.forEach(d => {
-      fragment.appendChild(createVideoCard({ id: d.id, ...d.data() }));
+      const card = createVideoCard({ id: d.id, ...d.data() });
       videoCardCount++;
       if (videoCardCount % AD_EVERY === 0) {
-        fragment.appendChild(createAdSlot());
+        // One row: ad on the left, video on the right
+        const row = document.createElement("div");
+        row.className = "video-row";
+        row.appendChild(createAdSlot());
+        row.appendChild(card);
+        fragment.appendChild(row);
         newAdSlots++;
+      } else {
+        fragment.appendChild(card);
       }
     });
     videoGrid.appendChild(fragment);
