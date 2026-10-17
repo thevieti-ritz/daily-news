@@ -8,7 +8,7 @@
 
     /* ---------------- SETTINGS ---------------- */
     var INTRO_VIDEO_URL   = "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/9abc6d2cb7ff4c9e8e15f1662ae84e68.mp4"; // 1) your video link
-    var CLOSE_AFTER_SECS  = 35;    // 2) layer closes this many seconds after Play is clicked
+    var CLOSE_AFTER_SECS  = 40;    // 2) layer closes this many seconds after Play is clicked (popunders stay asleep until then)
     var SHOW_ONCE_PER_SESSION = false; // 3) true = once per visit, false = every page load
     var INTRO_POSTER      = "";    // 4) optional picture shown before play (image link), or leave empty
     var AD_TAG_URL        = "/media/feed.xml"; // 5) your Cloudflare Worker route (same domain). Empty "" = no ad
@@ -65,6 +65,39 @@
     if (locked) { log("blocked a popup/popunder"); return null; }
     return realOpen.apply(window, arguments);
   }
+  /* ---- PAUSE the popunder while the layer is open ----
+     Every click/tap listener that ANOTHER script (your popunder) attaches to the page is wrapped.
+     While the layer is open the wrapper does nothing, so the popunder never sees a click,
+     never uses up its cap and never hijacks the tab. The moment the layer closes the wrapper
+     simply passes every click through, so the popunder runs exactly as its own script intended. */
+  var origAdd = EventTarget.prototype.addEventListener, origRemove = EventTarget.prototype.removeEventListener;
+  var wrapped = [], patched = false;
+  function isRoot(t) { return t === window || t === document || t === document.documentElement || t === document.body; }
+  function patchListeners() {
+    if (patched) return; patched = true;
+    EventTarget.prototype.addEventListener = function (type, fn, opts) {
+      if (fn && isRoot(this) && BLOCK_EVENTS.indexOf(type) > -1) {
+        var cap = typeof opts === "boolean" ? opts : !!(opts && opts.capture);
+        for (var i = 0; i < wrapped.length; i++) { var x = wrapped[i]; if (x.t === this && x.type === type && x.cap === cap && x.fn === fn) return; }
+        var w = function (e) {
+          if (locked) return;                               // layer open: the popunder hears nothing
+          return typeof fn === "function" ? fn.apply(this, arguments) : fn.handleEvent(e);
+        };
+        wrapped.push({ t: this, type: type, cap: cap, fn: fn, w: w });
+        return origAdd.call(this, type, w, opts);
+      }
+      return origAdd.apply(this, arguments);
+    };
+    EventTarget.prototype.removeEventListener = function (type, fn, opts) {
+      var cap = typeof opts === "boolean" ? opts : !!(opts && opts.capture);
+      for (var i = 0; i < wrapped.length; i++) {
+        var x = wrapped[i];
+        if (x.t === this && x.type === type && x.cap === cap && x.fn === fn) { wrapped.splice(i, 1); return origRemove.call(this, type, x.w, opts); }
+      }
+      return origRemove.apply(this, arguments);
+    };
+  }
+
   function guard(e) {
     if (!locked) return;
     var l = document.getElementById("introLayer"), t = e.target;
@@ -77,20 +110,21 @@
     }
     // a real tap on our own layer: keep it away from the popunder script so it does not "use up" its trigger
     var el = t.closest ? t : t.parentElement;
-    if (el && el.closest && el.closest("#introVideo")) return;      // video + native controls work normally
+    if (el && el.closest && el.closest("#introVideo")) return;      // video + native controls work normally (the layer below hides the tap from the popunder)
     var btn = el && el.closest ? el.closest("#introPlay, #introSkip") : null;
     if (e.type === "click" && btn && api[btn.id]) { api[btn.id](); }  // run our own handler first...
     e.stopImmediatePropagation();                                     // ...then hide the tap from everyone else
   }
   function lock() {
     if (locked) return; locked = true;
+    patchListeners();
     if (BLOCK_POPUPS) window.open = fakeOpen;     // off by default: scripts can detect a replaced window.open
-    BLOCK_EVENTS.forEach(function (t) { window.addEventListener(t, guard, { capture: true, passive: false }); });
+    BLOCK_EVENTS.forEach(function (t) { origAdd.call(window, t, guard, { capture: true, passive: false }); });
   }
   function unlock() {
     if (!locked) return; locked = false;
     if (window.open === fakeOpen) window.open = realOpen;
-    BLOCK_EVENTS.forEach(function (t) { window.removeEventListener(t, guard, true); });
+    BLOCK_EVENTS.forEach(function (t) { origRemove.call(window, t, guard, true); });
   }
   var seenAlready = false;
   try { seenAlready = SHOW_ONCE_PER_SESSION && sessionStorage.getItem("introSeen") === "1"; } catch (e) {}
