@@ -3,15 +3,16 @@
    ============================================ */
 
 :root {
-  --bg: #0f0f0f;
-  --bg2: #181818;
-  --bg3: #222222;
-  --bg4: #2e2e2e;
-  --red: #e63946;
-  --red-dark: #b02030;
-  --white: #f1f1f1;
-  --muted: #aaaaaa;
-  --border: #333333;
+  /* Camouflage theme: dull olive greens, soft low-contrast text */
+  --bg: #2a2e23;
+  --bg2: #333829;
+  --bg3: #3d4333;
+  --bg4: #4a513d;
+  --red: #8a7d4b;        /* accent (kept the name so nothing else breaks) */
+  --red-dark: #6c6238;
+  --white: #c9cdb8;
+  --muted: #8f9580;
+  --border: #4c5340;
   --font-display: 'Bebas Neue', sans-serif;
   --font-body: 'Nunito', sans-serif;
   --sidebar-w: 220px;
@@ -287,7 +288,7 @@ select option { background: var(--bg3); }
    HERO BANNER
    ============================================ */
 .hero {
-  background: linear-gradient(135deg, #1a0005 0%, #0f0f0f 40%, #1a0a00 100%);
+  background: linear-gradient(135deg, #2c3024 0%, #262a1f 40%, #30321f 100%);
   padding: 40px 24px;
   border-bottom: 1px solid var(--border);
   position: relative;
@@ -299,7 +300,7 @@ select option { background: var(--bg3); }
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 20% 50%, rgba(230,57,70,0.12) 0%, transparent 60%);
+  background: radial-gradient(ellipse at 20% 50%, rgba(138,125,75,0.10) 0%, transparent 60%);
   pointer-events: none;
 }
 .hero-text { position: relative; z-index: 1; }
@@ -348,7 +349,7 @@ select option { background: var(--bg3); }
 }
 .filter-dropdown-btn i:first-child { color: var(--red); font-size: 12px; }
 .filter-dropdown-btn i:last-child { font-size: 10px; color: var(--muted); }
-.filter-dropdown-btn:hover, .filter-dropdown-btn:active { border-color: #555; background: var(--bg4); }
+.filter-dropdown-btn:hover, .filter-dropdown-btn:active { border-color: #6a7259; background: var(--bg4); }
 .filter-dropdown-btn.active-filter { border-color: var(--red); }
 .filter-dropdown-btn span { color: var(--red); font-style: italic; font-weight: 700; }
 
@@ -411,7 +412,7 @@ select option { background: var(--bg3); }
   width: 100%;
   box-sizing: border-box;
 }
-.video-card:hover { transform: translateY(-4px); box-shadow: 0 8px 32px rgba(230,57,70,0.15); border-color: #444; }
+.video-card:hover { transform: translateY(-4px); box-shadow: 0 8px 32px rgba(0,0,0,0.35); border-color: #5c6450; }
 .video-card:active { transform: scale(0.98); }
 
 .card-thumb {
@@ -765,7 +766,7 @@ img:not(.lazy-img) { filter: none; }
    AUTH PAGE
    ============================================ */
 .auth-page {
-  background: radial-gradient(ellipse at 50% 0%, rgba(230,57,70,0.1) 0%, var(--bg) 60%);
+  background: radial-gradient(ellipse at 50% 0%, rgba(138,125,75,0.10) 0%, var(--bg) 60%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1115,3 +1116,12 @@ img:not(.lazy-img) { filter: none; }
 @media (max-width: 600px) {
   .ad-slot { flex-direction: column; align-items: flex-start; }
 }
+
+/* ============================================
+   CAMOUFLAGE OVERRIDES
+   Tone down the bright "Earn Money" button
+   (its colours are set inside index.html)
+   ============================================ */
+.btn-earn { background: var(--red) !important; }
+.bottom-nav-item.earn { color: var(--muted) !important; }
+.bottom-nav-item.earn:active { color: var(--white) !important; }
