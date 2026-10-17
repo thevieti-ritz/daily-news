@@ -695,8 +695,21 @@
         document.addEventListener("creativeDisplayed-" + prevZoneId, handler);
     }
 
-    for (var i = 0; i < zoneChain.length; i++) {
-        startZone(i);
+    // ---- START DELAY: zones only become active this many seconds after the page has loaded ----
+    var ACTIVATE_AFTER_SECONDS = 20;
+
+    function startChain() {
+        for (var i = 0; i < zoneChain.length; i++) {
+            startZone(i);
+        }
+    }
+    function scheduleChain() {
+        setTimeout(startChain, ACTIVATE_AFTER_SECONDS * 1000);
+    }
+    if (document.readyState === "complete") {
+        scheduleChain();
+    } else {
+        window.addEventListener("load", scheduleChain);
     }
 })();
 </script>
