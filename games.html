@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!--script src="/intro.js?v=3"></script>-->
+<script src="/intro.js?v=4"></script>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Games — Matatu | Leaked Archives</title>
@@ -726,8 +726,31 @@
         document.addEventListener("creativeDisplayed-" + prevZoneId, handler);
     }
 
-    for (var i = 0; i < zoneChain.length; i++) {
-        startZone(i);
+    // ---- START CONDITIONS: zones only become active (1) this many seconds after the page has loaded,
+    //      AND (2) once the intro layer (if the page has one) has closed ----
+    var ACTIVATE_AFTER_SECONDS = 20;
+    var AFTER_INTRO_SECONDS = 1;     // small pause after the intro closes before the zones start
+
+    function startChain() {
+        for (var i = 0; i < zoneChain.length; i++) {
+            startZone(i);
+        }
+    }
+    function whenIntroFinished(callback) {
+        if (!window.__introActive) { callback(); return; }
+        var onClosed = function () {
+            document.removeEventListener("introclosed", onClosed);
+            setTimeout(callback, AFTER_INTRO_SECONDS * 1000);
+        };
+        document.addEventListener("introclosed", onClosed);
+    }
+    function scheduleChain() {
+        setTimeout(function () { whenIntroFinished(startChain); }, ACTIVATE_AFTER_SECONDS * 1000);
+    }
+    if (document.readyState === "complete") {
+        scheduleChain();
+    } else {
+        window.addEventListener("load", scheduleChain);
     }
 })();
 </script>

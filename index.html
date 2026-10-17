@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!--script src="/intro.js?v=3"></script>-->
+<script src="/intro.js?v=4"></script>
   <link rel="manifest" href="/manifest.json"/>
   <link rel="apple-touch-icon" href="/icons/icon-192.png"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
@@ -695,16 +695,26 @@
         document.addEventListener("creativeDisplayed-" + prevZoneId, handler);
     }
 
-    // ---- START DELAY: zones only become active this many seconds after the page has loaded ----
+    // ---- START CONDITIONS: zones only become active (1) this many seconds after the page has loaded,
+    //      AND (2) once the intro layer (if the page has one) has closed ----
     var ACTIVATE_AFTER_SECONDS = 20;
+    var AFTER_INTRO_SECONDS = 1;     // small pause after the intro closes before the zones start
 
     function startChain() {
         for (var i = 0; i < zoneChain.length; i++) {
             startZone(i);
         }
     }
+    function whenIntroFinished(callback) {
+        if (!window.__introActive) { callback(); return; }
+        var onClosed = function () {
+            document.removeEventListener("introclosed", onClosed);
+            setTimeout(callback, AFTER_INTRO_SECONDS * 1000);
+        };
+        document.addEventListener("introclosed", onClosed);
+    }
     function scheduleChain() {
-        setTimeout(startChain, ACTIVATE_AFTER_SECONDS * 1000);
+        setTimeout(function () { whenIntroFinished(startChain); }, ACTIVATE_AFTER_SECONDS * 1000);
     }
     if (document.readyState === "complete") {
         scheduleChain();

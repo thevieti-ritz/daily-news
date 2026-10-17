@@ -54,6 +54,8 @@
   function log() { try { console.log.apply(console, ["[intro]"].concat([].slice.call(arguments))); } catch (e) {} }
   var seenAlready = false;
   try { seenAlready = SHOW_ONCE_PER_SESSION && sessionStorage.getItem("introSeen") === "1"; } catch (e) {}
+  // other scripts on the page can read this flag (true while the intro is showing) and listen for the "introclosed" event
+  if (!seenAlready) { window.__introActive = true; }
 
   function init() {
     if (seenAlready) { return; }
@@ -89,7 +91,11 @@
       document.body.classList.remove("intro-lock");
       if (main) main.removeAttribute("inert");
       cnt.classList.add("intro-hidden");
-      setTimeout(function () { layer.remove(); cnt.remove(); }, 450);
+      setTimeout(function () {
+        layer.remove(); cnt.remove();
+        window.__introActive = false;
+        try { document.dispatchEvent(new Event("introclosed")); } catch (e) {}
+      }, 450);
     }
 
     function startClock() {
