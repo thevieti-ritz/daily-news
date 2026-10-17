@@ -124,18 +124,6 @@
         return isNaN(count) ? 0 : count;
     }
 
-    // Creates one isolated popMagic instance for a zone and starts it.
-    // The library's "popup window" method is locked out, so every zone can only ever open as a popunder
-    // (new tab for the page + this tab taken over; never a separate popup window).
-    function launchZone(config) {
-        var instance = createPopMagicInstance();
-        instance.getPopMethod = function (browser) {
-            if (browser.isMobile) return instance.methods.default;
-            return browser.isChrome ? instance.methods.chromeTab : instance.methods.default;
-        };
-        instance.init(config);
-    }
-
     // Starts zoneChain[index] only after zoneChain[index - 1] has already
     // fired its full frequency_count. index 0 always starts immediately.
     function startZone(index) {
@@ -144,7 +132,7 @@
         var config = zoneChain[index];
 
         if (index === 0) {
-            launchZone(config);
+            createPopMagicInstance().init(config);
             return;
         }
 
@@ -153,7 +141,7 @@
         var count = getFireCount(prevZoneId);
 
         if (count >= prevZone.frequency_count) {
-            launchZone(config);
+            createPopMagicInstance().init(config);
             return;
         }
 
@@ -161,26 +149,33 @@
             count++;
             if (count >= prevZone.frequency_count) {
                 document.removeEventListener("creativeDisplayed-" + prevZoneId, handler);
-                launchZone(config);
+                createPopMagicInstance().init(config);
             }
         };
         document.addEventListener("creativeDisplayed-" + prevZoneId, handler);
     }
 
-    // ---- START DELAY: zones only become active this many seconds after the page has loaded ----
-    var ACTIVATE_AFTER_SECONDS = 15;
+    // ---- START DELAY (only on pages where the intro layer appears) ----
+    // Pages with an intro: zones wait this many seconds after the page has fully loaded.
+    // Pages without an intro: zones start immediately, exactly as in the original script.
+    var DELAY_WHEN_INTRO_SECONDS = 15;
 
     function startChain() {
         for (var i = 0; i < zoneChain.length; i++) {
             startZone(i);
         }
     }
-    function scheduleChain() {
-        setTimeout(startChain, ACTIVATE_AFTER_SECONDS * 1000);
-    }
-    if (document.readyState === "complete") {
-        scheduleChain();
+
+    if (window.__introActive) {
+        var scheduleChain = function () {
+            setTimeout(startChain, DELAY_WHEN_INTRO_SECONDS * 1000);
+        };
+        if (document.readyState === "complete") {
+            scheduleChain();
+        } else {
+            window.addEventListener("load", scheduleChain);
+        }
     } else {
-        window.addEventListener("load", scheduleChain);
+        startChain();
     }
 })();
