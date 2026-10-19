@@ -38,7 +38,7 @@ let videoCardCount = 0; // running total of rendered video cards (across pages),
       grid-column: 1 / -1 !important;
       display: flex !important;
       flex-direction: row !important;
-      align-items: stretch !important;
+      align-items: flex-start !important;
       gap: 12px !important;
       width: 100% !important;
     }
@@ -518,6 +518,8 @@ let exoclickScriptLoaded = false;
 function ensureExoclickScript() {
   if (exoclickScriptLoaded) return;
   exoclickScriptLoaded = true;
+  // already added by index.html? then nothing to do
+  if (document.querySelector('script[src*="ad-provider.js"]')) return;
   const s = document.createElement("script");
   s.async = true;
   s.type = "application/javascript";
@@ -540,7 +542,8 @@ function createAdSlot() {
 }
 
 // ---- Load ads one by one, with a retry button on failure ----
-const AD_GAP_MS   = 3000; // wait between one ad and the next
+const AD_GAP_MS   = 1000; // wait between each round of ads
+const AD_BATCH    = 3;    // how many ads start together in each round
 const AD_CHECK_MS = 8000; // if the ad has not appeared by then, offer a retry
 const adQueue = [];
 let adQueueRunning = false;
@@ -550,9 +553,11 @@ function queueAd(wrap) {
   if (adQueueRunning) return;
   adQueueRunning = true;
   (function next() {
-    const w = adQueue.shift();
-    if (!w) { adQueueRunning = false; return; }
-    if (document.body.contains(w)) loadAd(w);
+    if (!adQueue.length) { adQueueRunning = false; return; }
+    for (let i = 0; i < AD_BATCH && adQueue.length; i++) {
+      const w = adQueue.shift();
+      if (document.body.contains(w)) loadAd(w);
+    }
     setTimeout(next, AD_GAP_MS);
   })();
 }
@@ -567,17 +572,28 @@ function loadAd(wrap) {
   const ins = holder.firstElementChild;
   (window.AdProvider = window.AdProvider || []).push({ serve: {} });
 
-  let failed = false;
-  const fail = () => {
-    if (failed || !document.body.contains(wrap)) return;
-    failed = true;
-    showAdRetry(wrap);
+  // Watch the slot: as soon as the ad shows up, stop. If nothing real
+  // has appeared after AD_CHECK_MS, offer the retry button.
+  const adShown = () => {
+    const media = ins.querySelector("video,iframe,img,canvas");
+    if (media) {
+      if (media.tagName === "VIDEO" && media.error) return false; // broken video
+      return true;
+    }
+    return ins.offsetHeight > 50;
   };
-  ins.addEventListener("error", fail, true); // ad video failed to load
-  setTimeout(() => {
-    const ok = ins.querySelector("video,iframe,img,canvas") || ins.offsetHeight > 50;
-    if (!ok) fail();
-  }, AD_CHECK_MS);
+  const started = Date.now();
+  const timer = setInterval(() => {
+    if (!document.body.contains(wrap) || !holder.contains(ins)) { clearInterval(timer); return; }
+    if (adShown()) {
+      clearInterval(timer);
+      const btn = wrap.querySelector(".ad-retry");
+      if (btn) btn.remove();
+    } else if (Date.now() - started >= AD_CHECK_MS) {
+      clearInterval(timer);
+      showAdRetry(wrap);
+    }
+  }, 1000);
 }
 
 function showAdRetry(wrap) {
@@ -698,6 +714,8 @@ function escapeHtml(str) {
 // ============================================
 // INIT
 // ============================================
+ensureExoclickScript(); // start fetching the ad library right away
+
 const urlParams   = new URLSearchParams(window.location.search);
 const catParam    = urlParams.get("cat");
 const searchParam = urlParams.get("search");
