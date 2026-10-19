@@ -35,42 +35,57 @@ let videoCardCount = 0; // running total of rendered video cards (across pages),
 // card, so the grid reads: ad, video, ad, video...
 // Each slot holds AD_PER_SLOT ads in one horizontal row
 // (like a chain), each capped at AD_WIDTH.
-// The slot is AD_SLOT_SPAN grid columns wide so both fit.
-// On phones the slot takes the full row.
+// On laptops/desktops the slot is AD_SLOT_SPAN grid columns
+// wide so both fit. On phones it takes the full row.
+// Rules use !important so the site stylesheet cannot override them.
 // ============================================
 (function addAdStyles() {
   const st = document.createElement("style");
   st.textContent = `
+    /* base rules - !important so the site stylesheet cannot override them on laptops/desktops */
     #videoGrid > .ad-slot {
-      display: flex;
-      flex-direction: row;
-      flex-wrap: nowrap;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      box-sizing: border-box;
-      grid-column: span ${AD_SLOT_SPAN};
-      min-width: 0;
-      min-height: 100px;
-      padding: 8px;
-      overflow: hidden;
-      border-radius: 12px;
-      background: rgba(127,127,127,.08);
+      display: flex !important;
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 8px !important;
+      box-sizing: border-box !important;
+      width: auto !important;
+      max-width: none !important;
+      min-width: 0 !important;
+      min-height: 100px !important;
+      height: auto !important;
+      margin: 0 !important;
+      padding: 8px !important;
+      overflow: hidden !important;
+      border-radius: 12px !important;
+      background: rgba(127,127,127,.08) !important;
     }
     #videoGrid > .ad-slot .ad-outstream-wrapper {
-      flex: 0 1 ${AD_WIDTH}px;
-      width: ${AD_WIDTH}px;
-      max-width: 100%;
-      min-width: 0;
-    }
-    @media (max-width: 700px) {
-      #videoGrid > .ad-slot { grid-column: 1 / -1; }
+      flex: 0 1 ${AD_WIDTH}px !important;
+      width: ${AD_WIDTH}px !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
     }
     #videoGrid > .ad-slot ins {
-      display: block;
-      width: 100%;
-      max-width: ${AD_WIDTH}px;
-      margin: 0 auto;
+      display: block !important;
+      width: 100% !important;
+      max-width: ${AD_WIDTH}px !important;
+      margin: 0 auto !important;
+    }
+
+    /* laptops and desktops: slot spans several grid columns so both ads sit in one row */
+    @media (min-width: 701px) {
+      #videoGrid > .ad-slot {
+        grid-column: span ${AD_SLOT_SPAN} !important;
+        min-height: ${Math.round(AD_WIDTH * 9 / 16) + 32}px !important;
+      }
+    }
+
+    /* phones: slot takes the full row */
+    @media (max-width: 700px) {
+      #videoGrid > .ad-slot { grid-column: 1 / -1 !important; }
     }
   `;
   document.head.appendChild(st);
