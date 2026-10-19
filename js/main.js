@@ -540,8 +540,9 @@ function createAdSlot() {
 const AD_GAP_MS   = 1000; // wait between each round of ads
 const AD_BATCH    = 3;    // how many ads start in each round
 const AD_STAGGER  = 500;  // ms between ads inside one round (avoids ExoClick mix-ups)
-const AD_RETRY_MAX_MS = 30000; // longest wait between retries (waits grow a little each time)
-const AD_CHECK_MS = 2000; // first wait before asking again; each retry waits 2 seconds longer
+const AD_WAIT_MS = 8000;    // an ad that has not appeared after this long counts as FAILED
+const AD_MAX_RETRIES = 5;   // a failed ad is asked for again this many times, then we stop
+const AD_DEBUG = true;      // short "[ads]" messages in the browser console (set false when happy)
 const adQueue = [];
 let adQueueRunning = false;
 
@@ -559,45 +560,59 @@ function queueAd(wrap) {
   })();
 }
 
+function adLog(...args) { if (AD_DEBUG && window.console) console.log("[ads]", ...args); }
+let adSlotNo = 0;
+
+// Ask ONCE, wait patiently, ask again ONLY if the ad failed to show.
 function loadAd(wrap, attempt) {
   attempt = attempt || 0;
   if (wrap.__adShown) return; // this space already has its ad: never touch it again
   const holder = wrap.querySelector(".ad-outstream-wrapper");
   if (!holder) return;
+  const no = wrap.__adNo = wrap.__adNo || ++adSlotNo;
 
   holder.innerHTML = `<ins class="eas6a97888e37" data-zoneid="5993834"></ins>`;
   const ins = holder.firstElementChild;
   (window.AdProvider = window.AdProvider || []).push({ serve: {} });
+  adLog(`slot ${no}: asked for an ad` + (attempt ? ` (retry ${attempt}/${AD_MAX_RETRIES})` : ""));
 
   // An ad counts as shown once ExoClick has put anything inside the space.
-  const adShown = () => ins.childElementCount > 0 || !!ins.shadowRoot;
+  const adShown = () => {
+    if (!holder.contains(ins)) return holder.childElementCount > 0; // library swapped our <ins> for its own element
+    return ins.childElementCount > 0 || !!ins.shadowRoot;
+  };
 
-  let timer = null;
-  let watcher = null;
+  let timer = null, watcher = null, waited = 0, last = Date.now();
+  const stop = () => { clearInterval(timer); if (watcher) watcher.disconnect(); };
   const lockIn = () => {
     // Ad is in: lock this space. It will never be reloaded or retried again,
     // even if the visitor scrolls away and back.
     wrap.__adShown = true;
-    clearInterval(timer);
-    if (watcher) watcher.disconnect();
+    stop();
+    adLog(`slot ${no}: ad loaded after about ${Math.round(waited / 100) / 10}s - locked, it will not reload`);
   };
 
   // react the moment the ad appears
   watcher = new MutationObserver(() => { if (adShown()) lockIn(); });
-  watcher.observe(ins, { childList: true, subtree: true });
+  watcher.observe(holder, { childList: true, subtree: true });
 
-  // only spaces that have NOT shown an ad get asked again
-  const started = Date.now();
-  const waitMs = Math.min(AD_CHECK_MS + attempt * 2000, AD_RETRY_MAX_MS);
+  // Only a space that is STILL empty after AD_WAIT_MS gets asked again.
+  // Time spent in a background tab does not count against the ad.
   timer = setInterval(() => {
-    if (wrap.__adShown) { lockIn(); return; }
-    if (!document.body.contains(wrap) || !holder.contains(ins)) { clearInterval(timer); watcher.disconnect(); return; }
-    if (adShown()) {
-      lockIn();
-    } else if (Date.now() - started >= waitMs) {
-      clearInterval(timer);
-      watcher.disconnect();
-      loadAd(wrap, attempt + 1); // still empty: ask again, quietly
+    const now = Date.now();
+    if (!document.hidden) waited += Math.min(now - last, 1000);
+    last = now;
+    if (wrap.__adShown) { stop(); return; }
+    if (!document.body.contains(wrap)) { stop(); return; }
+    if (adShown()) { lockIn(); return; }
+    if (waited >= AD_WAIT_MS) {
+      stop();
+      if (attempt >= AD_MAX_RETRIES) {
+        adLog(`slot ${no}: still no ad after ${attempt + 1} tries - stopped asking`);
+        return;
+      }
+      adLog(`slot ${no}: no ad after ${AD_WAIT_MS / 1000}s - asking again`);
+      loadAd(wrap, attempt + 1);
     }
   }, 500);
 }
