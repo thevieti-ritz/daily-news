@@ -301,7 +301,8 @@ async function loadVideos() {
     const snapshot   = await getDocs(buildQuery(fetchLimit));
     let docs         = snapshot.docs;
     const rawLastDoc = snapshot.docs[snapshot.docs.length - 1];
-// Hide videos still pending admin approval
+
+    // Hide videos still pending admin approval
     docs = docs.filter(d => d.data().status !== "pending");
 
     // Search filter
@@ -505,7 +506,6 @@ function createVideoCard(video) {
 // Inserted into the video grid after every
 // AD_EVERY-th video card. Single unit:
 //   ExoClick outstream video (zone 5993834)
-// Loads immediately on page render (no lazy-load).
 // ============================================
 let adSlotCounter = 0;
 let exoclickScriptLoaded = false;
@@ -536,15 +536,11 @@ function createAdSlot() {
   return wrap;
 }
 
-// ---- Load ads one by one, with a retry button on failure ----
-const AD_GAP_MS   = 1000; // wait between each round of ads
-const AD_BATCH    = 3;    // how many ads start in each round
-const AD_STAGGER  = 500;  // ms between ads inside one round (avoids ExoClick mix-ups)
-const AD_WAIT_MS = 8000;    // an ad that has not appeared after this long counts as FAILED
-const AD_MAX_RETRIES = 5;   // a failed ad is asked for again this many times, then we stop
-const AD_DEBUG = true;      // short "[ads]" messages in the browser console (set false when happy)
-const AD_FREEZE_LOADED = true;  // once an ad has loaded, remove its zone tag so ExoClick cannot pick it up and replace it
-const AD_FREEZE_DELAY_MS = 3000; // let the ad settle in for this long before freezing it
+// ---- Load ads one by one: first immediately, then one every 0.5s ----
+const AD_GAP_MS  = 500;   // wait between each ad
+const AD_BATCH   = 1;     // one ad per round
+const AD_STAGGER = 500;   // ms between ads inside one round
+const AD_DEBUG   = true;  // short "[ads]" messages in the browser console (set false when happy)
 const adQueue = [];
 let adQueueRunning = false;
 
@@ -556,7 +552,7 @@ function queueAd(wrap) {
     if (!adQueue.length) { adQueueRunning = false; return; }
     for (let i = 0; i < AD_BATCH && adQueue.length; i++) {
       const w = adQueue.shift();
-      setTimeout(() => { if (document.body.contains(w)) loadAd(w, 0); }, i * AD_STAGGER);
+      setTimeout(() => { if (document.body.contains(w)) loadAd(w); }, i * AD_STAGGER);
     }
     setTimeout(next, AD_GAP_MS);
   })();
@@ -565,18 +561,18 @@ function queueAd(wrap) {
 function adLog(...args) { if (AD_DEBUG && window.console) console.log("[ads]", ...args); }
 let adSlotNo = 0;
 
-// Ask ONCE, wait patiently, ask again ONLY if the ad failed to show.
-function loadAd(wrap, attempt) {
-  attempt = attempt || 0;
-  if (wrap.__adShown) return; // this space already has its ad: never touch it again
+// Ask ONCE. No retries, no reloads, no freezing.
+function loadAd(wrap) {
+  if (wrap.__adShown || wrap.__adAsked) return; // already asked: never touch this slot again
   const holder = wrap.querySelector(".ad-outstream-wrapper");
   if (!holder) return;
+  wrap.__adAsked = true;
   const no = wrap.__adNo = wrap.__adNo || ++adSlotNo;
 
   holder.innerHTML = `<ins class="eas6a97888e37" data-zoneid="5993834"></ins>`;
   const ins = holder.firstElementChild;
   (window.AdProvider = window.AdProvider || []).push({ serve: {} });
-  adLog(`slot ${no}: asked for an ad` + (attempt ? ` (retry ${attempt}/${AD_MAX_RETRIES})` : ""));
+  adLog(`slot ${no}: asked for an ad (one time only)`);
 
   // An ad counts as shown once ExoClick has put anything inside the space.
   const adShown = () => {
@@ -584,64 +580,30 @@ function loadAd(wrap, attempt) {
     return ins.childElementCount > 0 || !!ins.shadowRoot;
   };
 
-  let timer = null, watcher = null, waited = 0, last = Date.now();
-  const stop = () => { clearInterval(timer); if (watcher) watcher.disconnect(); };
-  const lockIn = () => {
-    // Ad is in: lock this space. It will never be reloaded or retried again,
-    // even if the visitor scrolls away and back.
-    wrap.__adShown = true;
-    stop();
-    adLog(`slot ${no}: ad loaded after about ${Math.round(waited / 100) / 10}s - locked, it will not reload`);
-    protect();
-  };
+  const started = Date.now();
+  const watcher = new MutationObserver(() => { if (adShown()) lockIn(); });
+  watcher.observe(holder, { childList: true, subtree: true });
 
-  // After lock-in: (1) take the zone tag off the loaded ad so a later ExoClick pass cannot re-serve it,
-  // (2) report if the ad is replaced anyway, which would prove ExoClick did it by itself.
-  function protect() {
+  function lockIn() {
+    wrap.__adShown = true;
+    watcher.disconnect();
+    adLog(`slot ${no}: ad loaded after about ${Math.round((Date.now() - started) / 100) / 10}s`);
+    logIfReplaced();
+  }
+
+  // Log only (changes nothing): reports if ExoClick replaces the ad after it loaded
+  function logIfReplaced() {
     const lockedAt = Date.now();
     let noted = 0;
     const el = holder.contains(ins) ? ins : holder.firstElementChild;
-    if (AD_FREEZE_LOADED && el) {
-      setTimeout(() => {
-        if (el.hasAttribute("data-zoneid")) {
-          el.removeAttribute("data-zoneid");
-          el.setAttribute("data-ad-frozen", "1");
-          adLog(`slot ${no}: ad frozen (zone tag removed so it cannot be re-served)`);
-        }
-      }, AD_FREEZE_DELAY_MS);
-    }
     new MutationObserver((ms) => {
-      if (Date.now() - lockedAt < AD_FREEZE_DELAY_MS + 1000) return;           // still settling in
+      if (Date.now() - lockedAt < 4000) return; // still settling in
       const swapped = ms.some(m => (m.target === holder || m.target === el) && (m.addedNodes.length || m.removedNodes.length));
       if (!swapped || Date.now() - noted < 5000) return;
       noted = Date.now();
-      adLog(`slot ${no}: the ad was REPLACED after it loaded (done by ExoClick itself, our code did not touch it) at scroll position ${Math.round(window.pageYOffset)}`);
+      adLog(`slot ${no}: the ad was REPLACED after it loaded (done by ExoClick itself) at scroll position ${Math.round(window.pageYOffset)}`);
     }).observe(holder, { childList: true, subtree: true });
   }
-
-  // react the moment the ad appears
-  watcher = new MutationObserver(() => { if (adShown()) lockIn(); });
-  watcher.observe(holder, { childList: true, subtree: true });
-
-  // Only a space that is STILL empty after AD_WAIT_MS gets asked again.
-  // Time spent in a background tab does not count against the ad.
-  timer = setInterval(() => {
-    const now = Date.now();
-    if (!document.hidden) waited += Math.min(now - last, 1000);
-    last = now;
-    if (wrap.__adShown) { stop(); return; }
-    if (!document.body.contains(wrap)) { stop(); return; }
-    if (adShown()) { lockIn(); return; }
-    if (waited >= AD_WAIT_MS) {
-      stop();
-      if (attempt >= AD_MAX_RETRIES) {
-        adLog(`slot ${no}: still no ad after ${attempt + 1} tries - stopped asking`);
-        return;
-      }
-      adLog(`slot ${no}: no ad after ${AD_WAIT_MS / 1000}s - asking again`);
-      loadAd(wrap, attempt + 1);
-    }
-  }, 500);
 }
 
 // ============================================
