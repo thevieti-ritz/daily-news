@@ -2,12 +2,13 @@
 <html lang="en">
   <head>
     <script src="/intro.js?v=6"></script>
+    <script src="/ads.js?v=1" defer></script>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
-    <title>Games — Matatu | Leaked Archives</title>
+    <title>Games — Matatu | Football Hub</title>
     <link rel="stylesheet" href="css/style.css" />
     <link
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap"
@@ -19,7 +20,7 @@
     />
     <style>
       .game-page {
-        max-width: 900px;
+        max-width: 1240px;
         margin: 0 auto;
         padding: 24px 16px 80px;
       }
@@ -255,6 +256,7 @@
       .btn-game.secondary {
         background: var(--bg3, #222);
         border: 1px solid var(--border, #333);
+        color: var(--white, #f1f1f1);
       }
       .btn-game.secondary:hover {
         background: var(--bg4, #2e2e2e);
@@ -344,14 +346,21 @@
 
     <main class="main-content">
       <div class="game-page">
-        <div class="game-header">
+        <div class="ad-row">
+<div class="page-ad" data-ad-slot></div>
+<div class="ad-col">
+<div class="game-header">
           <h1><span>Matatu</span> Card Game</h1>
           <p>You vs Computer &middot; First to empty your hand wins</p>
         </div>
 
         <div class="status-bar" id="statusBar">Dealing cards...</div>
+</div>
+</div>
 
-        <div class="game-board">
+<div class="ad-row">
+<div class="ad-col">
+<div class="game-board">
           <div class="cpu-zone">
             <div class="zone-label">
               <i class="fas fa-robot"></i> Computer's Hand
@@ -376,8 +385,14 @@
             <div class="player-hand" id="playerHand"></div>
           </div>
         </div>
+</div>
+<div class="page-ad" data-ad-slot></div>
+</div>
 
-        <div class="game-controls">
+<div class="ad-row">
+<div class="page-ad" data-ad-slot></div>
+<div class="ad-col">
+<div class="game-controls">
           <button class="btn-game" id="newGameBtn">
             <i class="fas fa-rotate-right"></i> New Game
           </button>
@@ -398,6 +413,8 @@
           a skip — you go again.<br /><br />
           First player to play all their cards wins!
         </div>
+</div>
+</div>
       </div>
     </main>
 

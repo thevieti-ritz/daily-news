@@ -1,7 +1,8 @@
 <!doctype html>
 <html lang="en">
     <head>
-<script src="/intro.js?v=5"></script>  
+<script src="/intro.js?v=5"></script>
+<script src="/ads.js?v=1" defer></script>  
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
 <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
@@ -58,7 +59,7 @@
         <button
           class="btn-login"
           id="logoutBtn"
-          style="background: var(--bg3); border: 1px solid var(--border)"
+          style="background: var(--bg3); border: 1px solid var(--border); color: var(--white)"
         >
           <i class="fas fa-sign-out-alt"></i> Sign Out
         </button>
@@ -67,8 +68,10 @@
 
     <!-- MAIN -->
     <main class="profile-page">
-      <!-- Profile Header -->
-      <div class="profile-header">
+      <div class="ad-row">
+<div class="page-ad" data-ad-slot></div>
+<div class="ad-col">
+<div class="profile-header">
         <div class="profile-avatar-wrap">
           <img
             id="profileAvatar"
@@ -87,8 +90,12 @@
           </p>
         </div>
       </div>
+</div>
+</div>
 
-      <!-- Edit Name -->
+<div class="ad-row">
+<div class="ad-col">
+<!-- Edit Name -->
       <div class="profile-section">
         <h2><i class="fas fa-pen"></i> Edit Display Name</h2>
         <div class="profile-edit-row">
@@ -103,8 +110,14 @@
         </div>
         <div class="profile-msg hidden" id="profileMsg"></div>
       </div>
+</div>
+<div class="page-ad" data-ad-slot></div>
+</div>
 
-      <!-- My Comments -->
+<div class="ad-row">
+<div class="page-ad" data-ad-slot></div>
+<div class="ad-col">
+<!-- My Comments -->
       <div class="profile-section">
         <h2><i class="fas fa-comments"></i> My Comments</h2>
         <div id="myCommentsList" class="profile-list">
@@ -114,8 +127,12 @@
           </div>
         </div>
       </div>
+</div>
+</div>
 
-      <!-- My Downloads -->
+<div class="ad-row">
+<div class="ad-col">
+<!-- My Downloads -->
       <div class="profile-section">
         <h2><i class="fas fa-download"></i> Downloaded Videos</h2>
         <div id="myDownloadsList" class="profile-list">
@@ -125,6 +142,9 @@
           </div>
         </div>
       </div>
+</div>
+<div class="page-ad" data-ad-slot></div>
+</div>
     </main>
 
     <!-- Add profile styles -->
@@ -132,7 +152,7 @@
       .profile-page {
         margin-top: var(--nav-h);
         padding: 32px 24px 60px;
-        max-width: 800px;
+        max-width: 1240px;
         margin-left: auto;
         margin-right: auto;
       }
@@ -341,7 +361,25 @@
 
       // Redirect if not logged in
       onAuthStateChanged(auth, async (user) => {
-        if (!user) return (window.location.href = "login.html");
+        if (!user) {
+          // Not signed in: stay on the page (ads stay visible) and ask to sign in
+          document.getElementById("profileName").textContent =
+            "Sign in to view your profile";
+          document.getElementById("profileUsername").textContent = "";
+          document.getElementById("profileEmail").innerHTML =
+            '<a href="login.html" class="btn-save" style="display:inline-flex;margin-top:6px"><i class="fas fa-sign-in-alt"></i> Sign In</a>';
+          document.getElementById("profileJoined").style.display = "none";
+          document.querySelector(".profile-edit-row").style.display = "none";
+          const pm = document.getElementById("profileMsg");
+          pm.textContent = "Sign in to edit your display name.";
+          pm.className = "profile-msg";
+          document.querySelector("#myCommentsList p").textContent =
+            "Sign in to see your comments";
+          document.querySelector("#myDownloadsList p").textContent =
+            "Sign in to see your downloads";
+          document.getElementById("logoutBtn").style.display = "none";
+          return;
+        }
 
         // Fill profile info
         document.getElementById("profileName").textContent =

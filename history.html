@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <script src="/intro.js?v=6"></script>
+    <script src="/ads.js?v=1" defer></script>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
@@ -36,7 +37,7 @@
       .history-page {
         margin-top: var(--nav-h);
         padding: 24px 20px 80px;
-        max-width: 900px;
+        max-width: 1240px;
         margin-left: auto;
         margin-right: auto;
         box-sizing: border-box;
@@ -436,19 +437,29 @@
     <!-- MAIN -->
     <main class="main-content">
       <div class="history-page">
-        <div class="history-header">
+        <div class="ad-row">
+<div class="page-ad" data-ad-slot></div>
+<div class="ad-col">
+<div class="history-header">
           <h1><i class="fas fa-clock-rotate-left"></i> Watch History</h1>
           <button class="btn-clear-history hidden" id="clearHistoryBtn">
             <i class="fas fa-trash"></i> Clear All
           </button>
         </div>
+</div>
+</div>
 
-        <div id="historyContent">
+<div class="ad-row">
+<div class="ad-col">
+<div id="historyContent">
           <div class="history-loading">
             <div class="spinner"></div>
             <p>Loading history...</p>
           </div>
         </div>
+</div>
+<div class="page-ad" data-ad-slot></div>
+</div>
       </div>
     </main>
 
