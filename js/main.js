@@ -14,7 +14,10 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 // ============================================
 const PAGE_SIZE    = 12;
 const R2_BASE      = "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/";
-const AD_EVERY      = 1; // insert an ad slot after every N video cards (1 = after every video)
+const AD_EVERY     = 1;   // one ad slot before every N video cards (1 = ad, video, ad, video...)
+const AD_PER_SLOT  = 2;   // how many ads sit side by side inside one ad slot
+const AD_WIDTH     = 200; // max width of EACH ad in px - keep equal to "Maximum Width" in the ExoClick zone
+const AD_SLOT_SPAN = 2;   // how many grid columns wide an ad slot is (2 gives room for two 200px ads in a row)
 let lastDoc        = null;
 let currentSearch  = "";
 let isLoading      = false;
@@ -27,42 +30,47 @@ let activeCategory = null;
 let videoCardCount = 0; // running total of rendered video cards (across pages), used for ad placement
 
 // ============================================
-// AD + VIDEO ROW STYLES (self-contained)
-// Each row = ad on the left, video card on the right.
-// On narrow screens the ad sits above the video.
+// AD SLOT STYLES (self-contained)
+// Ad slots are normal grid cells, same size as a video
+// card, so the grid reads: ad, video, ad, video...
+// Each slot holds AD_PER_SLOT ads in one horizontal row
+// (like a chain), each capped at AD_WIDTH.
+// The slot is AD_SLOT_SPAN grid columns wide so both fit.
+// On phones the slot takes the full row.
 // ============================================
-(function addRowStyles() {
+(function addAdStyles() {
   const st = document.createElement("style");
   st.textContent = `
-    #videoGrid .video-row {
-      grid-column: 1 / -1 !important;
-      display: flex !important;
-      flex-direction: row !important;
-      align-items: flex-start !important;
-      gap: 12px !important;
-      width: 100% !important;
+    #videoGrid > .ad-slot {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-sizing: border-box;
+      grid-column: span ${AD_SLOT_SPAN};
+      min-width: 0;
+      min-height: 100px;
+      padding: 8px;
+      overflow: hidden;
+      border-radius: 12px;
+      background: rgba(127,127,127,.08);
     }
-    #videoGrid .video-row > .ad-slot {
-      flex: 0 0 300px !important;
-      width: 300px !important;
-      max-width: 300px !important;
-      min-height: 250px !important;
-      height: auto !important;
-      overflow: hidden !important;
-      margin: 0 !important;
-      grid-column: auto !important;
-    }
-    #videoGrid .video-row > .ad-slot .ad-outstream-wrapper { width: 100% !important; }
-    #videoGrid .video-row > .video-card {
-      flex: 1 1 0 !important;
-      min-width: 0 !important;
-      width: auto !important;
-      max-width: 380px !important;
+    #videoGrid > .ad-slot .ad-outstream-wrapper {
+      flex: 0 1 ${AD_WIDTH}px;
+      width: ${AD_WIDTH}px;
+      max-width: 100%;
+      min-width: 0;
     }
     @media (max-width: 700px) {
-      #videoGrid .video-row { flex-direction: column !important; }
-      #videoGrid .video-row > .ad-slot { flex: none !important; width: 100% !important; max-width: 100% !important; }
-      #videoGrid .video-row > .video-card { max-width: 100% !important; }
+      #videoGrid > .ad-slot { grid-column: 1 / -1; }
+    }
+    #videoGrid > .ad-slot ins {
+      display: block;
+      width: 100%;
+      max-width: ${AD_WIDTH}px;
+      margin: 0 auto;
     }
   `;
   document.head.appendChild(st);
@@ -372,28 +380,23 @@ async function loadVideos() {
     // Clear grid on first page only
     if (!lastDoc) videoGrid.innerHTML = "";
 
-    // Render cards, inserting an ad slot after every AD_EVERY-th card
+    // Render cards: an ad slot comes BEFORE every AD_EVERY-th card,
+    // so the grid starts with an ad: ad, video, ad, video...
     const fragment = document.createDocumentFragment();
     const newAdSlots = [];
     docs.forEach(d => {
-      const card = createVideoCard({ id: d.id, ...d.data() });
-      videoCardCount++;
       if (videoCardCount % AD_EVERY === 0) {
-        // One row: ad on the left, video on the right
-        const row = document.createElement("div");
-        row.className = "video-row";
         const slot = createAdSlot();
-        row.appendChild(slot);
-        row.appendChild(card);
-        fragment.appendChild(row);
-        newAdSlots.push(slot);
-      } else {
-        fragment.appendChild(card);
+        fragment.appendChild(slot);
+        // each ad inside the slot is queued separately
+        slot.querySelectorAll(".ad-outstream-wrapper").forEach(u => newAdSlots.push(u));
       }
+      fragment.appendChild(createVideoCard({ id: d.id, ...d.data() }));
+      videoCardCount++;
     });
     videoGrid.appendChild(fragment);
 
-    // Load the new ad slots one at a time (see AD SLOT section)
+    // Load the new ads one at a time (see AD SLOT section)
     newAdSlots.forEach(queueAd);
 
     // Section title
@@ -503,7 +506,7 @@ function createVideoCard(video) {
 
 // ============================================
 // AD SLOT
-// Inserted into the video grid after every
+// Inserted into the video grid before every
 // AD_EVERY-th video card. Single unit:
 //   ExoClick outstream video (zone 5993834)
 // ============================================
@@ -530,8 +533,8 @@ function createAdSlot() {
   wrap.className = "ad-slot";
   wrap.dataset.adSlot = adSlotCounter;
 
-  // The ad itself is added later by loadAd(), one slot at a time
-  wrap.innerHTML = `<div class="ad-outstream-wrapper"></div>`;
+  // The ads themselves are added later by loadAd(), one at a time
+  wrap.innerHTML = `<div class="ad-outstream-wrapper"></div>`.repeat(AD_PER_SLOT);
 
   return wrap;
 }
@@ -564,8 +567,7 @@ let adSlotNo = 0;
 // Ask ONCE. No retries, no reloads, no freezing.
 function loadAd(wrap) {
   if (wrap.__adShown || wrap.__adAsked) return; // already asked: never touch this slot again
-  const holder = wrap.querySelector(".ad-outstream-wrapper");
-  if (!holder) return;
+  const holder = wrap; // "wrap" is one .ad-outstream-wrapper (one ad)
   wrap.__adAsked = true;
   const no = wrap.__adNo = wrap.__adNo || ++adSlotNo;
 
