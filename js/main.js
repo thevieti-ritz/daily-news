@@ -543,6 +543,8 @@ const AD_STAGGER  = 500;  // ms between ads inside one round (avoids ExoClick mi
 const AD_WAIT_MS = 8000;    // an ad that has not appeared after this long counts as FAILED
 const AD_MAX_RETRIES = 5;   // a failed ad is asked for again this many times, then we stop
 const AD_DEBUG = true;      // short "[ads]" messages in the browser console (set false when happy)
+const AD_FREEZE_LOADED = true;  // once an ad has loaded, remove its zone tag so ExoClick cannot pick it up and replace it
+const AD_FREEZE_DELAY_MS = 3000; // let the ad settle in for this long before freezing it
 const adQueue = [];
 let adQueueRunning = false;
 
@@ -590,7 +592,32 @@ function loadAd(wrap, attempt) {
     wrap.__adShown = true;
     stop();
     adLog(`slot ${no}: ad loaded after about ${Math.round(waited / 100) / 10}s - locked, it will not reload`);
+    protect();
   };
+
+  // After lock-in: (1) take the zone tag off the loaded ad so a later ExoClick pass cannot re-serve it,
+  // (2) report if the ad is replaced anyway, which would prove ExoClick did it by itself.
+  function protect() {
+    const lockedAt = Date.now();
+    let noted = 0;
+    const el = holder.contains(ins) ? ins : holder.firstElementChild;
+    if (AD_FREEZE_LOADED && el) {
+      setTimeout(() => {
+        if (el.hasAttribute("data-zoneid")) {
+          el.removeAttribute("data-zoneid");
+          el.setAttribute("data-ad-frozen", "1");
+          adLog(`slot ${no}: ad frozen (zone tag removed so it cannot be re-served)`);
+        }
+      }, AD_FREEZE_DELAY_MS);
+    }
+    new MutationObserver((ms) => {
+      if (Date.now() - lockedAt < AD_FREEZE_DELAY_MS + 1000) return;           // still settling in
+      const swapped = ms.some(m => (m.target === holder || m.target === el) && (m.addedNodes.length || m.removedNodes.length));
+      if (!swapped || Date.now() - noted < 5000) return;
+      noted = Date.now();
+      adLog(`slot ${no}: the ad was REPLACED after it loaded (done by ExoClick itself, our code did not touch it) at scroll position ${Math.round(window.pageYOffset)}`);
+    }).observe(holder, { childList: true, subtree: true });
+  }
 
   // react the moment the ad appears
   watcher = new MutationObserver(() => { if (adShown()) lockIn(); });
