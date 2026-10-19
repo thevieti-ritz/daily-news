@@ -2,7 +2,7 @@
 // SERVICE WORKER — Leaked Archives PWA
 // ============================================
 
-const CACHE_NAME = "leaked-archives-v2";
+const CACHE_NAME = "leaked-archives-v3";
 
 // Core files to cache immediately for offline shell
 const CORE_ASSETS = [
@@ -10,7 +10,7 @@ const CORE_ASSETS = [
   "/css/style.css",
   "/js/firebase.js",
   "/js/main.js",
-  "/manifest.json"
+  "/manifest.json",
 ];
 
 // ---- INSTALL ----
@@ -20,7 +20,7 @@ self.addEventListener("install", (event) => {
       return cache.addAll(CORE_ASSETS).catch(() => {
         // If any asset fails, don't block install
       });
-    })
+    }),
   );
   self.skipWaiting();
 });
@@ -32,9 +32,9 @@ self.addEventListener("activate", (event) => {
       Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) return caches.delete(key);
-        })
-      )
-    )
+        }),
+      ),
+    ),
   );
   self.clients.claim();
 });
@@ -43,7 +43,8 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // Never cache Firebase, R2 videos, or ad scripts — always go to network
+  // Never touch Firebase, R2 videos, ad scripts or video files:
+  // let the browser handle them normally.
   if (
     url.hostname.includes("firestore") ||
     url.hostname.includes("firebaseapp") ||
@@ -53,18 +54,26 @@ self.addEventListener("fetch", (event) => {
     url.hostname.includes("al5sm") ||
     url.hostname.includes("pemsrv") ||
     url.hostname.includes("magsrv") ||
-    event.request.method !== "GET"
+    url.hostname.includes("bxcdn") ||
+    url.hostname.includes("routr") ||
+    event.request.method !== "GET" ||
+    event.request.headers.has("range") || // partial video downloads (the 206 error)
+    url.pathname.startsWith("/media/") || // your ad-video proxy
+    /\.(mp4|webm|m3u8|mov|m4s|ts)$/i.test(url.pathname)
   ) {
-    return; // let browser handle it normally
+    return;
   }
 
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Cache a copy of successful same-origin responses
-        if (response.ok && url.origin === self.location.origin) {
+        // Only cache complete (200) same-origin responses
+        if (response.status === 200 && url.origin === self.location.origin) {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          caches
+            .open(CACHE_NAME)
+            .then((cache) => cache.put(event.request, clone))
+            .catch(() => {});
         }
         return response;
       })
@@ -73,6 +82,6 @@ self.addEventListener("fetch", (event) => {
         return caches.match(event.request).then((cached) => {
           return cached || caches.match("/index.html");
         });
-      })
+      }),
   );
 });
