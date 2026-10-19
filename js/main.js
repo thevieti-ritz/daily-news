@@ -541,7 +541,7 @@ const AD_GAP_MS   = 1000; // wait between each round of ads
 const AD_BATCH    = 3;    // how many ads start in each round
 const AD_STAGGER  = 500;  // ms between ads inside one round (avoids ExoClick mix-ups)
 const AD_RETRY_MAX_MS = 30000; // longest wait between retries (waits grow a little each time)
-const AD_CHECK_MS = 8000; // if the ad has not appeared by then, offer a retry
+const AD_CHECK_MS = 2000; // first wait before asking again; each retry waits 2 seconds longer
 const adQueue = [];
 let adQueueRunning = false;
 
@@ -561,6 +561,7 @@ function queueAd(wrap) {
 
 function loadAd(wrap, attempt) {
   attempt = attempt || 0;
+  if (wrap.__adShown) return; // this space already has its ad: never touch it again
   const holder = wrap.querySelector(".ad-outstream-wrapper");
   if (!holder) return;
 
@@ -568,27 +569,37 @@ function loadAd(wrap, attempt) {
   const ins = holder.firstElementChild;
   (window.AdProvider = window.AdProvider || []).push({ serve: {} });
 
-  // Watch the slot: as soon as the ad shows up, stop. If nothing real
-  // has appeared after AD_CHECK_MS, offer the retry button.
-  const adShown = () => {
-    const media = ins.querySelector("video,iframe,img,canvas");
-    if (media) {
-      if (media.tagName === "VIDEO" && media.error) return false; // broken video
-      return true;
-    }
-    return ins.offsetHeight > 50;
+  // An ad counts as shown once ExoClick has put anything inside the space.
+  const adShown = () => ins.childElementCount > 0 || !!ins.shadowRoot;
+
+  let timer = null;
+  let watcher = null;
+  const lockIn = () => {
+    // Ad is in: lock this space. It will never be reloaded or retried again,
+    // even if the visitor scrolls away and back.
+    wrap.__adShown = true;
+    clearInterval(timer);
+    if (watcher) watcher.disconnect();
   };
+
+  // react the moment the ad appears
+  watcher = new MutationObserver(() => { if (adShown()) lockIn(); });
+  watcher.observe(ins, { childList: true, subtree: true });
+
+  // only spaces that have NOT shown an ad get asked again
   const started = Date.now();
   const waitMs = Math.min(AD_CHECK_MS + attempt * 2000, AD_RETRY_MAX_MS);
-  const timer = setInterval(() => {
-    if (!document.body.contains(wrap) || !holder.contains(ins)) { clearInterval(timer); return; }
+  timer = setInterval(() => {
+    if (wrap.__adShown) { lockIn(); return; }
+    if (!document.body.contains(wrap) || !holder.contains(ins)) { clearInterval(timer); watcher.disconnect(); return; }
     if (adShown()) {
-      clearInterval(timer);
+      lockIn();
     } else if (Date.now() - started >= waitMs) {
       clearInterval(timer);
-      loadAd(wrap, attempt + 1); // no ad yet: ask again, quietly, until one shows
+      watcher.disconnect();
+      loadAd(wrap, attempt + 1); // still empty: ask again, quietly
     }
-  }, 1000);
+  }, 500);
 }
 
 // ============================================

@@ -69,6 +69,7 @@
   // ---------- one ad: ask, watch, ask again until it shows ----------
   function loadAd(slot, attempt) {
     attempt = attempt || 0;
+    if (slot.__adShown) return; // already has its ad: never touch it again
     var holder = slot.querySelector(".page-ad-holder");
     if (!holder) return;
 
@@ -78,26 +79,39 @@
     var ins = holder.firstElementChild;
     (window.AdProvider = window.AdProvider || []).push({ serve: {} });
 
-    function shown() {
-      var media = ins.querySelector("video,iframe,img,canvas");
-      if (media) {
-        if (media.tagName === "VIDEO" && media.error) return false;
-        return true;
-      }
-      return ins.offsetHeight > 50;
+    // An ad counts as shown once ExoClick has put anything inside the space.
+    function shown() { return ins.childElementCount > 0 || !!ins.shadowRoot; }
+
+    var timer = null, watcher = null;
+    function lockIn() {
+      // Ad is in: lock this space. It is never reloaded or retried again,
+      // even if the visitor scrolls away and back.
+      slot.__adShown = true;
+      clearInterval(timer);
+      if (watcher) watcher.disconnect();
     }
 
+    // react the moment the ad appears
+    if (window.MutationObserver) {
+      watcher = new MutationObserver(function () { if (shown()) lockIn(); });
+      watcher.observe(ins, { childList: true, subtree: true });
+    }
+
+    // only spaces that have NOT shown an ad get asked again
     var started = Date.now();
     var waitMs = Math.min(CHECK_MS + attempt * STEP_MS, MAX_WAIT_MS);
-    var timer = setInterval(function () {
-      if (!document.body.contains(slot) || !holder.contains(ins)) { clearInterval(timer); return; }
-      if (shown()) {
-        clearInterval(timer);
-      } else if (Date.now() - started >= waitMs) {
-        clearInterval(timer);
-        loadAd(slot, attempt + 1);
+    timer = setInterval(function () {
+      if (slot.__adShown) { lockIn(); return; }
+      if (!document.body.contains(slot) || !holder.contains(ins)) {
+        clearInterval(timer); if (watcher) watcher.disconnect(); return;
       }
-    }, 1000);
+      if (shown()) {
+        lockIn();
+      } else if (Date.now() - started >= waitMs) {
+        clearInterval(timer); if (watcher) watcher.disconnect();
+        loadAd(slot, attempt + 1); // still empty: ask again, quietly
+      }
+    }, 500);
   }
 
   // ---------- queue: a few ads per second, slightly staggered ----------
