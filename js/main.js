@@ -543,7 +543,9 @@ function createAdSlot() {
 
 // ---- Load ads one by one, with a retry button on failure ----
 const AD_GAP_MS   = 1000; // wait between each round of ads
-const AD_BATCH    = 3;    // how many ads start together in each round
+const AD_BATCH    = 3;    // how many ads start in each round
+const AD_STAGGER  = 500;  // ms between ads inside one round (avoids ExoClick mix-ups)
+const AD_AUTO_RETRIES = 2; // silent automatic retries before showing the button
 const AD_CHECK_MS = 8000; // if the ad has not appeared by then, offer a retry
 const adQueue = [];
 let adQueueRunning = false;
@@ -556,13 +558,14 @@ function queueAd(wrap) {
     if (!adQueue.length) { adQueueRunning = false; return; }
     for (let i = 0; i < AD_BATCH && adQueue.length; i++) {
       const w = adQueue.shift();
-      if (document.body.contains(w)) loadAd(w);
+      setTimeout(() => { if (document.body.contains(w)) loadAd(w, 0); }, i * AD_STAGGER);
     }
     setTimeout(next, AD_GAP_MS);
   })();
 }
 
-function loadAd(wrap) {
+function loadAd(wrap, attempt) {
+  attempt = attempt || 0;
   const holder = wrap.querySelector(".ad-outstream-wrapper");
   if (!holder) return;
   const oldBtn = wrap.querySelector(".ad-retry");
@@ -591,7 +594,8 @@ function loadAd(wrap) {
       if (btn) btn.remove();
     } else if (Date.now() - started >= AD_CHECK_MS) {
       clearInterval(timer);
-      showAdRetry(wrap);
+      if (attempt < AD_AUTO_RETRIES) loadAd(wrap, attempt + 1); // try again quietly
+      else showAdRetry(wrap);
     }
   }, 1000);
 }
@@ -604,7 +608,7 @@ function showAdRetry(wrap) {
   btn.textContent = "Ad didn't load. Tap to try again";
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
-    loadAd(wrap);
+    loadAd(wrap, 0);
   });
   wrap.appendChild(btn);
 }
