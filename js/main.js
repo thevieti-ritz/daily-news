@@ -53,11 +53,6 @@ let videoCardCount = 0; // running total of rendered video cards (across pages),
       grid-column: auto !important;
     }
     #videoGrid .video-row > .ad-slot .ad-outstream-wrapper { width: 100% !important; }
-    .ad-slot .ad-retry {
-      display: block; margin: 40px auto 0; padding: 10px 16px;
-      background: #e63946; color: #fff; border: 0; border-radius: 8px;
-      font: inherit; font-weight: 600; cursor: pointer;
-    }
     #videoGrid .video-row > .video-card {
       flex: 1 1 0 !important;
       min-width: 0 !important;
@@ -545,7 +540,7 @@ function createAdSlot() {
 const AD_GAP_MS   = 1000; // wait between each round of ads
 const AD_BATCH    = 3;    // how many ads start in each round
 const AD_STAGGER  = 500;  // ms between ads inside one round (avoids ExoClick mix-ups)
-const AD_AUTO_RETRIES = 2; // silent automatic retries before showing the button
+const AD_RETRY_MAX_MS = 30000; // longest wait between retries (waits grow a little each time)
 const AD_CHECK_MS = 8000; // if the ad has not appeared by then, offer a retry
 const adQueue = [];
 let adQueueRunning = false;
@@ -568,8 +563,6 @@ function loadAd(wrap, attempt) {
   attempt = attempt || 0;
   const holder = wrap.querySelector(".ad-outstream-wrapper");
   if (!holder) return;
-  const oldBtn = wrap.querySelector(".ad-retry");
-  if (oldBtn) oldBtn.remove();
 
   holder.innerHTML = `<ins class="eas6a97888e37" data-zoneid="5993834"></ins>`;
   const ins = holder.firstElementChild;
@@ -586,31 +579,16 @@ function loadAd(wrap, attempt) {
     return ins.offsetHeight > 50;
   };
   const started = Date.now();
+  const waitMs = Math.min(AD_CHECK_MS + attempt * 2000, AD_RETRY_MAX_MS);
   const timer = setInterval(() => {
     if (!document.body.contains(wrap) || !holder.contains(ins)) { clearInterval(timer); return; }
     if (adShown()) {
       clearInterval(timer);
-      const btn = wrap.querySelector(".ad-retry");
-      if (btn) btn.remove();
-    } else if (Date.now() - started >= AD_CHECK_MS) {
+    } else if (Date.now() - started >= waitMs) {
       clearInterval(timer);
-      if (attempt < AD_AUTO_RETRIES) loadAd(wrap, attempt + 1); // try again quietly
-      else showAdRetry(wrap);
+      loadAd(wrap, attempt + 1); // no ad yet: ask again, quietly, until one shows
     }
   }, 1000);
-}
-
-function showAdRetry(wrap) {
-  if (wrap.querySelector(".ad-retry")) return;
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "ad-retry";
-  btn.textContent = "Ad didn't load. Tap to try again";
-  btn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    loadAd(wrap, 0);
-  });
-  wrap.appendChild(btn);
 }
 
 // ============================================
