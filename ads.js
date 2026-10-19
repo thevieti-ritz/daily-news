@@ -5,8 +5,7 @@
    HOW TO USE ON A PAGE
    1) Add  <script src="/ads.js?v=1" defer></script>  in <head>
    2) Put an empty  <div class="page-ad" data-ad-slot></div>  where an ad should appear
-   3) Every page that loads this file also gets the bottom-of-page ad (zone 5980730)
-   4) Optional: ads inside an article, after every N elements. Add to <body>:
+   3) Optional: ads inside an article, after every N elements. Add to <body>:
         data-ad-inject="#articleBody p"  data-ad-every="2"
       (the ad goes after every 2nd element that matches the selector)
    ============================================ */
@@ -15,8 +14,6 @@
 
   var ZONE = "5993834";
   var INS_CLASS = "eas6a97888e37";
-  var BOTTOM_ZONE = "5980730";            // ad shown at the bottom of every page
-  var BOTTOM_CLASS = "eas6a97888e31";
 
   var GAP_MS = 500;         // wait between each ad (first ad starts immediately)
   var BATCH = 1;            // ads started per round
@@ -32,10 +29,6 @@
     "  font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:.6}",
     ".page-ad-holder{width:300px;max-width:100%;height:250px;overflow:hidden;margin:0 auto}",
     ".page-ad-holder ins." + INS_CLASS + "{width:100%!important;height:100%!important}",
-    /* bottom-of-page ad: leave room for any banner size */
-    ".page-ad-bottom{min-height:120px;margin:24px auto 80px}",
-    ".page-ad-bottom .page-ad-holder{width:100%;height:auto;min-height:100px;overflow:visible}",
-    ".page-ad-bottom .page-ad-holder ins{display:block;margin:0 auto}",
     /* side-by-side rows: ad on one side, content on the other */
     ".ad-row{display:flex;gap:16px;align-items:flex-start;width:100%;margin:0 0 20px}",
     ".ad-row>.ad-col{flex:1 1 0;min-width:0}",
@@ -133,18 +126,6 @@
     }
   }
 
-  // the ad that sits at the very bottom of every page
-  function addBottomAd() {
-    if (document.querySelector('ins[data-zoneid="' + BOTTOM_ZONE + '"]')) return; // page already has it
-    var d = document.createElement("div");
-    d.className = "page-ad page-ad-bottom";
-    d.setAttribute("data-zone", BOTTOM_ZONE);
-    d.setAttribute("data-ins-class", BOTTOM_CLASS);
-    d.innerHTML = '<div class="page-ad-holder"></div>';
-    document.body.appendChild(d);
-    add(d);
-  }
-
   window.AdSlots = { add: add, create: create, inject: inject };
 
   function init() {
@@ -155,7 +136,6 @@
     if (sel) inject(sel, parseInt(b.getAttribute("data-ad-every"), 10) || 2);
     var slots = document.querySelectorAll("[data-ad-slot]");
     for (var i = 0; i < slots.length; i++) add(slots[i]);
-    addBottomAd();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
