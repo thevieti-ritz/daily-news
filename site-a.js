@@ -1,9 +1,9 @@
 /* ============================================
-   ads.js — shared ExoClick outstream video ad slots
+   site-a.js — shared ExoClick outstream video ad slots
    Zone 5993834. Loaded by every page that shows ads.
 
    HOW TO USE ON A PAGE
-   1) Add  <script src="/ads.js?v=1" defer></script>  in <head>
+   1) Add  <script src="/site-a.js?v=2" defer></script>  in <head>
    2) Put an empty  <div class="page-ad" data-ad-slot></div>  where an ad should appear
    3) Optional: ads inside an article, after every N elements. Add to <body>:
         data-ad-inject="#articleBody p"  data-ad-every="2"
@@ -45,14 +45,16 @@
     document.head.appendChild(st);
   }
 
-  // ---------- load the ExoClick library ----------
+  // ---------- load the ad library through our own domain ----------
   function ensureLibrary() {
     window.AdProvider = window.AdProvider || [];
-    if (document.querySelector('script[src*="ad-provider.js"]')) return;
+    if (window.__adLibLoaded) return;
+    if (document.querySelector('script[src*="ad-provider.js"], script[src*="/js/sdk.js"]')) return;
+    window.__adLibLoaded = true;
     var s = document.createElement("script");
     s.async = true;
     s.type = "application/javascript";
-    s.src = "https://a.magsrv.com/ad-provider.js";
+    s.src = "/js/sdk.js";
     document.head.appendChild(s);
   }
 

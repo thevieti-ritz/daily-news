@@ -531,12 +531,15 @@ let exoclickScriptLoaded = false;
 function ensureExoclickScript() {
   if (exoclickScriptLoaded) return;
   exoclickScriptLoaded = true;
-  // already added by index.html? then nothing to do
-  if (document.querySelector('script[src*="ad-provider.js"]')) return;
+  window.AdProvider = window.AdProvider || [];
+  // already loaded by another file or by index.html? then nothing to do
+  if (window.__adLibLoaded) return;
+  if (document.querySelector('script[src*="ad-provider.js"], script[src*="/js/sdk.js"]')) return;
+  window.__adLibLoaded = true;
   const s = document.createElement("script");
   s.async = true;
   s.type = "application/javascript";
-  s.src = "https://a.magsrv.com/ad-provider.js";
+  s.src = "/js/sdk.js";
   document.head.appendChild(s);
 }
 
