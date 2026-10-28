@@ -127,6 +127,12 @@
     position: absolute; inset: 0; display: grid; place-items: center; text-align: center;
     padding: 24px; color: #bbb; font-size: 15px; z-index: 3;
   }
+  .center-msg[hidden] { display: none; }
+  .ad-note {
+    position: absolute; left: 10px; right: 10px; top: calc(112px + env(safe-area-inset-top)); z-index: 7;
+    background: rgba(0,0,0,.75); color: #ffe9a8; font-size: 12px; line-height: 1.4;
+    padding: 6px 9px; border-radius: 8px; word-break: break-word; pointer-events: none;
+  }
   .spinner {
     width: 34px; height: 34px; border-radius: 50%; margin: 0 auto 12px;
     border: 3px solid rgba(255,255,255,.2); border-top-color: #fff; animation: spin .8s linear infinite;
@@ -427,6 +433,12 @@ function buildVideoSlide(v) {
 }
 
 /* ---------------- Ad slide ---------------- */
+const DEBUG = params.get("debug") === "1";   // add ?debug=1 to the page address to see why an ad failed
+const AD_TRIES = 3;                          // ask for an ad up to 3 times before giving up
+function adLog() {
+  try { console.warn.apply(console, ["[ad]"].concat([].slice.call(arguments))); } catch (e) { /* ignore */ }
+}
+
 function buildAdSlide() {
   const slide = h("section", "slide");
   const frame = h("div", "frame");
@@ -443,39 +455,92 @@ function buildAdSlide() {
   const msg = h("div", "center-msg");
   const spin = h("div"); spin.innerHTML = '<div class="spinner"></div>Loading sponsored video…';
   msg.appendChild(spin);
-  frame.append(video, badge, skip, cta, msg);
+  const note = h("div", "ad-note"); note.hidden = !DEBUG;
+  frame.append(video, badge, skip, cta, msg, note);
   slide.appendChild(frame);
 
   const c = {
     type: "ad", slide, video, status: "idle", ad: null,
-    fired: {}, started: false, skipAt: CONFIG.skipAfter, timer: null,
+    fired: {}, started: false, skipAt: CONFIG.skipAfter,
+    timer: null, playTimer: null, advTimer: null, tries: 0, usedProxy: false,
 
     near(isNear) { if (isNear) this.prefetch(); },
+    prefetch() { if (this.status === "idle") this.request(); },
 
-    prefetch() {
-      if (this.status !== "idle") return;
-      this.status = "loading";
-      this.timer = setTimeout(() => { if (this.status === "loading") this.fail(); }, CONFIG.adTimeoutMs);
+    request() {
+      this.tries++;
+      this.status = "loading"; this.ad = null; this.started = false;
+      this.fired = {}; this.usedProxy = false;
+      note.textContent = "Asking for an ad (try " + this.tries + " of " + AD_TRIES + ")";
+      clearTimeout(this.timer);
+      this.timer = setTimeout(() => {
+        if (this.status === "loading") this.fail("the ad request took too long");
+      }, CONFIG.adTimeoutMs);
       loadVast(CONFIG.vastEndpoint + "?t=" + Date.now()).then(ad => {
         if (this.status !== "loading") return;
         clearTimeout(this.timer);
         this.ad = ad;
         this.skipAt = ad.skipOffset != null ? ad.skipOffset : CONFIG.skipAfter;
         this.status = "ready";
+        note.textContent = "Ad received, loading video from " + (function () {
+          try { return new URL(ad.mediaUrl).hostname; } catch (e) { return "?"; }
+        })();
         video.src = viaSite(ad.mediaUrl);
         if (active === this) this.activate();
-      }).catch(() => { clearTimeout(this.timer); this.fail(); });
+      }).catch(e => {
+        if (this.status !== "loading") return;
+        this.fail(e && e.message ? e.message : "the ad request failed");
+      });
     },
 
-    fail() {
-      if (this.status === "failed") return;
+    fail(reason) {
+      clearTimeout(this.timer); clearTimeout(this.playTimer);
+      adLog("no ad:", reason, "(try " + this.tries + " of " + AD_TRIES + ")");
       if (this.ad) fire(this.ad.err, { err: "405", asset: this.ad.mediaUrl });
+      if (this.tries < AD_TRIES) {
+        this.status = "retry";
+        note.textContent = "Problem: " + reason + ". Trying again…";
+        setTimeout(() => { if (this.status === "retry") this.request(); }, 800);
+        return;
+      }
       this.status = "failed";
-      slide.hidden = true;       // no ad available -> the slot simply disappears
+      note.textContent = "Gave up: " + reason;
+      this.showUnavailable();
+      if (active === this) this.autoAdvance();
+    },
+
+    mediaFailed(reason) {
+      if (this.status !== "ready") return;
+      clearTimeout(this.playTimer);
+      if (!this.usedProxy && this.ad) {      // first try the same video through your own site
+        this.usedProxy = true;
+        adLog("ad video did not load directly, trying through your site:", reason);
+        note.textContent = "Video blocked (" + reason + "), trying through your site…";
+        video.src = "/js/media?u=" + encodeURIComponent(this.ad.mediaUrl);
+        if (active === this) this.activate();
+        return;
+      }
+      this.fail(reason);
+    },
+
+    showUnavailable() {
+      video.pause();
+      msg.hidden = false;
+      msg.innerHTML = "";
+      msg.appendChild(h("div", "", "Sponsored video isn’t available right now."));
+      skip.hidden = false; skip.disabled = false; skip.textContent = "Continue ›";
+      cta.hidden = true;
+    },
+    autoAdvance() {
+      clearTimeout(this.advTimer);
+      this.advTimer = setTimeout(() => {
+        if (active === this && this.status === "failed") goNext(slide);
+      }, 3000);
     },
 
     activate() {
       if (this.status === "idle") this.prefetch();
+      if (this.status === "failed") { this.autoAdvance(); return; }
       if (this.status === "ready" || this.status === "playing") {
         video.muted = state.muted;
         const p = video.play();
@@ -483,6 +548,12 @@ function buildAdSlide() {
           video.muted = true; setMuted(true);
           video.play().catch(() => {});
         });
+        if (!this.started) {
+          clearTimeout(this.playTimer);
+          this.playTimer = setTimeout(() => {
+            if (!this.started && this.status === "ready") this.mediaFailed("the video did not start");
+          }, 8000);
+        }
       }
     },
     deactivate() { video.pause(); },
@@ -497,14 +568,16 @@ function buildAdSlide() {
   video.addEventListener("playing", () => {
     if (c.started || !c.ad) return;
     c.started = true; c.status = "playing";
+    clearTimeout(c.playTimer);
     msg.hidden = true;
     cta.hidden = !c.ad.clickThrough;
     skip.hidden = false; skip.disabled = true;
+    note.textContent = "Ad playing" + (c.usedProxy ? " (through your site)" : "");
     fire(c.ad.imp, { asset: c.ad.mediaUrl });
     c.quartile("creativeView"); c.quartile("start");
   });
   video.addEventListener("timeupdate", () => {
-    if (!c.ad) return;
+    if (!c.ad || !c.started) return;
     const left = c.skipAt - video.currentTime;
     if (left > 0) { skip.disabled = true; skip.textContent = "Skip in " + Math.ceil(left); }
     else { skip.disabled = false; skip.textContent = "Skip ›"; }
@@ -517,14 +590,16 @@ function buildAdSlide() {
     }
   });
   video.addEventListener("ended", () => {
-    if (!c.ad) return;
+    if (!c.ad || !c.started) return;
     c.quartile("complete"); c.status = "done";
     if (active === c) setTimeout(() => goNext(slide), 250);
   });
-  video.addEventListener("error", () => { if (!c.started) c.fail(); });
+  video.addEventListener("error", () => { if (!c.started) c.mediaFailed("the video file would not load"); });
 
   skip.addEventListener("click", () => {
-    if (skip.disabled || !c.ad) return;
+    if (skip.disabled) return;
+    if (c.status === "failed") { goNext(slide); return; }
+    if (!c.ad) return;
     c.quartile("skip"); c.status = "done"; video.pause();
     goNext(slide);
   });
