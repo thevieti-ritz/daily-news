@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Videos</title>
+<link rel="preconnect" href="https://firestore.googleapis.com">
+<link rel="preconnect" href="https://pub-947189f89d8c4deba38620dab133e00a.r2.dev">
+<style>
+  :root { --accent: #e63946; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%; background: #000; color: #fff;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  body { overflow: hidden; }
+
+  /* ---------- Feed ---------- */
+  #feed {
+    height: 100vh; height: 100dvh;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+  #feed::-webkit-scrollbar { display: none; }
+  .slide {
+    height: 100vh; height: 100dvh;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    display: flex; justify-content: center;
+    background: #000;
+  }
+  .slide[hidden] { display: none; }
+  .frame {
+    position: relative; height: 100%; width: 100%;
+    max-width: calc(100vh * 9 / 16);
+    max-width: calc(100dvh * 9 / 16);
+    overflow: hidden; background: #111;
+  }
+  .frame video {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; background: #000;
+  }
+  .frame video.wide { object-fit: contain; }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 20;
+    padding: env(safe-area-inset-top) 0 0;
+    background: linear-gradient(rgba(0,0,0,.65), rgba(0,0,0,0));
+    pointer-events: none;
+  }
+  .topbar-in {
+    max-width: calc(100vh * 9 / 16); max-width: calc(100dvh * 9 / 16);
+    margin: 0 auto; padding: 12px 14px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .topbar a, .topbar button { pointer-events: auto; }
+  .back {
+    color: #fff; text-decoration: none; font-weight: 700; font-size: 16px;
+    text-shadow: 0 1px 4px rgba(0,0,0,.6);
+  }
+  .iconbtn {
+    width: 42px; height: 42px; border-radius: 50%; border: 0;
+    background: rgba(0,0,0,.45); color: #fff; font-size: 19px;
+    display: grid; place-items: center; cursor: pointer;
+    backdrop-filter: blur(4px);
+  }
+
+  /* ---------- Video slide overlays ---------- */
+  .info {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    padding: 70px 76px calc(24px + env(safe-area-inset-bottom)) 16px;
+    background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.8));
+    pointer-events: none;
+  }
+  .chip {
+    display: inline-block; background: var(--accent); color: #fff;
+    font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+    margin-bottom: 8px; text-transform: uppercase; letter-spacing: .4px;
+  }
+  .title { font-size: 17px; line-height: 1.35; font-weight: 600; text-shadow: 0 1px 4px rgba(0,0,0,.7); }
+  .meta { margin-top: 6px; font-size: 13px; color: #ddd; text-shadow: 0 1px 4px rgba(0,0,0,.7); }
+  .side {
+    position: absolute; right: 12px; bottom: calc(40px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 14px; z-index: 5;
+  }
+  .bar { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--accent); z-index: 6; }
+  .flash {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(.6);
+    font-size: 64px; opacity: 0; pointer-events: none; z-index: 4;
+    text-shadow: 0 2px 12px rgba(0,0,0,.6);
+  }
+  .flash.go { animation: pop .6s ease-out; }
+  @keyframes pop {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(.6); }
+    30% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.15); }
+  }
+  .buffer {
+    position: absolute; top: 50%; left: 50%; width: 38px; height: 38px; margin: -19px 0 0 -19px;
+    border-radius: 50%; border: 3px solid rgba(255,255,255,.2); border-top-color: #fff;
+    animation: spin .8s linear infinite; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 4;
+  }
+  .buffer.on { opacity: 1; }
+
+  /* ---------- Ad slide ---------- */
+  .badge {
+    position: absolute; top: calc(70px + env(safe-area-inset-top)); left: 14px; z-index: 6;
+    background: rgba(0,0,0,.55); color: #fff; font-size: 12px; font-weight: 700;
+    padding: 4px 10px; border-radius: 999px; letter-spacing: .4px; text-transform: uppercase;
+  }
+  .skip {
+    position: absolute; top: calc(70px + env(safe-area-inset-top)); right: 14px; z-index: 6;
+    background: rgba(0,0,0,.65); color: #fff; border: 1px solid rgba(255,255,255,.35);
+    font-size: 14px; font-weight: 600; padding: 7px 14px; border-radius: 999px; cursor: pointer;
+  }
+  .skip:disabled { opacity: .7; cursor: default; }
+  .cta {
+    position: absolute; left: 16px; right: 16px; bottom: calc(28px + env(safe-area-inset-bottom)); z-index: 6;
+    background: var(--accent); color: #fff; border: 0; font-size: 17px; font-weight: 700;
+    padding: 14px; border-radius: 12px; cursor: pointer;
+  }
+  .center-msg {
+    position: absolute; inset: 0; display: grid; place-items: center; text-align: center;
+    padding: 24px; color: #bbb; font-size: 15px; z-index: 3;
+  }
+  .spinner {
+    width: 34px; height: 34px; border-radius: 50%; margin: 0 auto 12px;
+    border: 3px solid rgba(255,255,255,.2); border-top-color: #fff; animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- End / message slide ---------- */
+  .end-card {
+    width: 100%; max-width: calc(100vh * 9 / 16); max-width: calc(100dvh * 9 / 16);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; text-align: center; padding: 24px;
+  }
+  .end-card h2 { margin: 0; font-size: 22px; }
+  .end-card p { margin: 0; color: #aaa; }
+  .btn {
+    display: inline-block; background: var(--accent); color: #fff; text-decoration: none; border: 0;
+    padding: 12px 22px; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer;
+  }
+  .btn.ghost { background: #222; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <a class="back" href="index.html">&lsaquo; Home</a>
+    <button id="muteBtn" class="iconbtn" aria-label="Toggle sound">&#128263;</button>
+  </div>
+</div>
+
+<main id="feed"></main>
+
+<script src="js/hls.min.js"></script>
+<script type="module">
+import { db } from "./js/firebase.js";
+import {
+  collection, query, orderBy, limit, startAfter, getDocs, where, doc, getDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+/* ================= SETTINGS (change these if needed) ================= */
+const CONFIG = {
+  r2Base: "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/", // same as main.js
+  pageSize: 10,                 // how many videos to load at a time
+  vastEndpoint: "/api/vast",    // your ad proxy (Cloudflare Worker route)
+  adEvery: 1,                   // 1 = an ad after every video, 2 = after every 2nd video
+  skipAfter: 5,                 // seconds before the Skip button works
+  adTimeoutMs: 7000             // give up on an ad that takes longer than this
+};
+/* ===================================================================== */
+
+const params = new URLSearchParams(location.search);
+const category = params.get("cat");      // videos.html?cat=viral  shows only that category
+const startId = params.get("v");         // videos.html?v=VIDEO_ID starts on that video
+
+const state = { muted: true };
+const feed = document.getElementById("feed");
+const muteBtn = document.getElementById("muteBtn");
+const ctls = new Map();   // slide element -> controller
+let active = null;
+
+function h(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+function formatNumber(n) {
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + "M";
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + "K";
+  return String(n);
+}
+function timeAgo(date) {
+  const s = Math.floor((new Date() - date) / 1000);
+  if (s < 60) return "Just now";
+  if (s < 3600) return Math.floor(s / 60) + "m ago";
+  if (s < 86400) return Math.floor(s / 3600) + "h ago";
+  if (s < 2592000) return Math.floor(s / 86400) + "d ago";
+  return date.toLocaleDateString();
+}
+function videoUrl(archiveId) {
+  if (!archiveId) return "";
+  return archiveId.startsWith("http") ? archiveId : CONFIG.r2Base + archiveId;
+}
+
+/* ---------------- Mute ---------------- */
+function setMuted(m) {
+  state.muted = m;
+  muteBtn.innerHTML = m ? "&#128263;" : "&#128266;";
+  if (active && active.video) active.video.muted = m;
+}
+muteBtn.addEventListener("click", () => setMuted(!state.muted));
+setMuted(true);
+
+function goNext(slide) {
+  let n = slide.nextElementSibling;
+  while (n && n.hidden) n = n.nextElementSibling;
+  if (n) n.scrollIntoView({ behavior: "smooth" });
+}
+function flashIcon(el, icon) {
+  el.textContent = icon;
+  el.classList.remove("go");
+  void el.offsetWidth;
+  el.classList.add("go");
+}
+
+/* ---------------- Ad tracking helpers ---------------- */
+function macro(u, x) {
+  x = x || {};
+  return u
+    .replace(/\[TIMESTAMP\]/g, encodeURIComponent(new Date().toISOString()))
+    .replace(/\[(CACHEBUSTING|CACHEBUSTER)\]/g, String(Math.floor(Math.random() * 1e8)))
+    .replace(/\[ERRORCODE\]/g, x.err || "900")
+    .replace(/\[CONTENTPLAYHEAD\]/g, "00:00:00.000")
+    .replace(/\[ASSETURI\]/g, encodeURIComponent(x.asset || ""));
+}
+function fire(urls, x) {
+  (urls || []).forEach(u => {
+    try { new Image().src = macro(u, x); } catch (e) { /* ignore */ }
+  });
+}
+
+/* ---------------- VAST loader ---------------- */
+function texts(doc, tag) {
+  return Array.from(doc.getElementsByTagName(tag))
+    .map(n => (n.textContent || "").trim()).filter(Boolean);
+}
+function toSeconds(t) {
+  if (!t) return null;
+  const m = /^(\d+):(\d+):(\d+(?:\.\d+)?)$/.exec(t.trim());
+  return m ? (+m[1]) * 3600 + (+m[2]) * 60 + parseFloat(m[3]) : null;
+}
+
+async function loadVast(url, depth, acc) {
+  depth = depth || 0;
+  acc = acc || { imp: [], err: [], track: {}, click: [] };
+
+  const res = await fetch(url, { credentials: "omit", cache: "no-store" });
+  if (!res.ok) throw new Error("vast http " + res.status);
+  const xml = await res.text();
+  const d = new DOMParser().parseFromString(xml, "text/xml");
+  if (d.getElementsByTagName("parsererror").length) throw new Error("vast parse");
+
+  const ad = d.getElementsByTagName("Ad")[0];
+  if (!ad) throw new Error("no ad");
+
+  acc.imp.push(...texts(d, "Impression"));
+  acc.err.push(...texts(d, "Error"));
+  acc.click.push(...texts(d, "ClickTracking"));
+  Array.from(d.getElementsByTagName("Tracking")).forEach(t => {
+    const ev = t.getAttribute("event");
+    const u = (t.textContent || "").trim();
+    if (ev && u) (acc.track[ev] = acc.track[ev] || []).push(u);
+  });
+
+  const wrapper = ad.getElementsByTagName("Wrapper")[0];
+  if (wrapper) {
+    const next = texts(wrapper, "VASTAdTagURI")[0];
+    if (!next || depth >= 3) throw new Error("wrapper");
+    return loadVast(CONFIG.vastEndpoint + "?u=" + encodeURIComponent(next), depth + 1, acc);
+  }
+
+  const linear = ad.getElementsByTagName("Linear")[0];
+  if (!linear) throw new Error("no linear");
+
+  let files = Array.from(linear.getElementsByTagName("MediaFile")).map(m => ({
+    url: (m.textContent || "").trim(),
+    type: (m.getAttribute("type") || "").toLowerCase(),
+    w: parseInt(m.getAttribute("width"), 10) || 0,
+    h: parseInt(m.getAttribute("height"), 10) || 0,
+    br: parseInt(m.getAttribute("bitrate"), 10) || 0,
+    delivery: (m.getAttribute("delivery") || "progressive").toLowerCase()
+  })).filter(f => f.url && /mp4|webm/.test(f.type) && f.delivery !== "streaming");
+  if (!files.length) throw new Error("no media");
+
+  const vertical = files.filter(f => f.h > f.w);
+  if (vertical.length) files = vertical;
+  files.sort((a, b) => a.br - b.br);                 // light files first (saves data)
+  const media = files.find(f => f.h >= 480) || files[files.length - 1];
+
+  const duration = toSeconds(texts(linear, "Duration")[0]);
+  let skip = null;
+  const so = linear.getAttribute("skipoffset");
+  if (so) {
+    if (so.endsWith("%") && duration) skip = duration * parseFloat(so) / 100;
+    else skip = toSeconds(so);
+  }
+
+  return {
+    mediaUrl: media.url,
+    imp: acc.imp, err: acc.err, track: acc.track,
+    clickTracking: acc.click,
+    clickThrough: texts(linear, "ClickThrough")[0] || "",
+    skipOffset: skip,
+    duration: duration
+  };
+}
+
+/* ---------------- Video slide ---------------- */
+function attach(video, src, c) {
+  const isHls = /\.m3u8(\?|$)/i.test(src);
+  if (isHls && !video.canPlayType("application/vnd.apple.mpegurl") && window.Hls && Hls.isSupported()) {
+    c.hls = new Hls();
+    c.hls.loadSource(src);
+    c.hls.attachMedia(video);
+  } else {
+    video.src = src;
+  }
+}
+function detach(video, c) {
+  if (c.hls) { c.hls.destroy(); c.hls = null; }
+  video.removeAttribute("src");
+  video.load();
+}
+
+function buildVideoSlide(v) {
+  const slide = h("section", "slide");
+  const frame = h("div", "frame");
+  const src = videoUrl(v.archiveId);
+
+  const video = document.createElement("video");
+  video.playsInline = true;
+  video.setAttribute("playsinline", "");
+  video.loop = true;
+  video.muted = true;
+  video.preload = "none";
+  if (v.thumbnail) video.poster = v.thumbnail;
+
+  const flash = h("div", "flash");
+  const buffer = h("div", "buffer");
+  const info = h("div", "info");
+  if (v.category) info.appendChild(h("span", "chip", v.category));
+  info.appendChild(h("div", "title", v.title || ""));
+  const bits = [];
+  if (v.views) bits.push(formatNumber(v.views) + " views");
+  if (v.createdAt && v.createdAt.toDate) bits.push(timeAgo(v.createdAt.toDate()));
+  if (bits.length) info.appendChild(h("div", "meta", bits.join(" · ")));
+
+  const side = h("div", "side");
+  const share = h("button", "iconbtn", "⤴");
+  share.setAttribute("aria-label", "Share");
+  side.appendChild(share);
+
+  const bar = h("div", "bar");
+  frame.append(video, flash, buffer, info, side, bar);
+  slide.appendChild(frame);
+
+  const c = {
+    type: "video", slide, video, loaded: false, hls: null,
+    near(isNear) {
+      if (isNear && !this.loaded) { attach(video, src, this); this.loaded = true; }
+      if (!isNear && this.loaded && active !== this) {
+        video.pause(); detach(video, this);
+        this.loaded = false; bar.style.width = "0";
+      }
+    },
+    activate() {
+      this.near(true);
+      video.muted = state.muted;
+      const p = video.play();
+      if (p && p.catch) p.catch(() => {
+        video.muted = true; setMuted(true);
+        video.play().catch(() => flashIcon(flash, "▶"));
+      });
+    },
+    deactivate() { video.pause(); }
+  };
+
+  video.addEventListener("loadedmetadata", () => {
+    if (video.videoWidth > video.videoHeight) video.classList.add("wide");
+  });
+  video.addEventListener("waiting", () => buffer.classList.add("on"));
+  video.addEventListener("playing", () => buffer.classList.remove("on"));
+  video.addEventListener("pause", () => buffer.classList.remove("on"));
+  video.addEventListener("timeupdate", () => {
+    if (video.duration) bar.style.width = (video.currentTime / video.duration * 100) + "%";
+  });
+  frame.addEventListener("click", (e) => {
+    if (e.target.closest("button")) return;
+    if (video.paused) { video.play(); flashIcon(flash, "▶"); }
+    else { video.pause(); flashIcon(flash, "⏸"); }
+  });
+  share.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const url = location.origin + location.pathname + "?v=" + encodeURIComponent(v.id);
+    try {
+      if (navigator.share) await navigator.share({ title: v.title || "Video", url });
+      else { await navigator.clipboard.writeText(url); flashIcon(flash, "✓"); }
+    } catch (err) { /* cancelled */ }
+  });
+
+  ctls.set(slide, c);
+  return slide;
+}
+
+/* ---------------- Ad slide ---------------- */
+function buildAdSlide() {
+  const slide = h("section", "slide");
+  const frame = h("div", "frame");
+
+  const video = document.createElement("video");
+  video.playsInline = true;
+  video.setAttribute("playsinline", "");
+  video.muted = true;
+  video.preload = "auto";
+
+  const badge = h("div", "badge", "Sponsored");
+  const skip = h("button", "skip"); skip.hidden = true;
+  const cta = h("button", "cta", "Learn more"); cta.hidden = true;
+  const msg = h("div", "center-msg");
+  const spin = h("div"); spin.innerHTML = '<div class="spinner"></div>Loading sponsored video…';
+  msg.appendChild(spin);
+  frame.append(video, badge, skip, cta, msg);
+  slide.appendChild(frame);
+
+  const c = {
+    type: "ad", slide, video, status: "idle", ad: null,
+    fired: {}, started: false, skipAt: CONFIG.skipAfter, timer: null,
+
+    near(isNear) { if (isNear) this.prefetch(); },
+
+    prefetch() {
+      if (this.status !== "idle") return;
+      this.status = "loading";
+      this.timer = setTimeout(() => { if (this.status === "loading") this.fail(); }, CONFIG.adTimeoutMs);
+      loadVast(CONFIG.vastEndpoint + "?t=" + Date.now()).then(ad => {
+        if (this.status !== "loading") return;
+        clearTimeout(this.timer);
+        this.ad = ad;
+        this.skipAt = ad.skipOffset != null ? ad.skipOffset : CONFIG.skipAfter;
+        this.status = "ready";
+        video.src = ad.mediaUrl;
+        if (active === this) this.activate();
+      }).catch(() => { clearTimeout(this.timer); this.fail(); });
+    },
+
+    fail() {
+      if (this.status === "failed") return;
+      if (this.ad) fire(this.ad.err, { err: "405", asset: this.ad.mediaUrl });
+      this.status = "failed";
+      slide.hidden = true;       // no ad available -> the slot simply disappears
+    },
+
+    activate() {
+      if (this.status === "idle") this.prefetch();
+      if (this.status === "ready" || this.status === "playing") {
+        video.muted = state.muted;
+        const p = video.play();
+        if (p && p.catch) p.catch(() => {
+          video.muted = true; setMuted(true);
+          video.play().catch(() => {});
+        });
+      }
+    },
+    deactivate() { video.pause(); },
+
+    quartile(name) {
+      if (this.fired[name]) return;
+      this.fired[name] = true;
+      fire(this.ad.track[name]);
+    }
+  };
+
+  video.addEventListener("playing", () => {
+    if (c.started || !c.ad) return;
+    c.started = true; c.status = "playing";
+    msg.hidden = true;
+    cta.hidden = !c.ad.clickThrough;
+    skip.hidden = false; skip.disabled = true;
+    fire(c.ad.imp, { asset: c.ad.mediaUrl });
+    c.quartile("creativeView"); c.quartile("start");
+  });
+  video.addEventListener("timeupdate", () => {
+    if (!c.ad) return;
+    const left = c.skipAt - video.currentTime;
+    if (left > 0) { skip.disabled = true; skip.textContent = "Skip in " + Math.ceil(left); }
+    else { skip.disabled = false; skip.textContent = "Skip ›"; }
+    const d = video.duration;
+    if (d) {
+      const p = video.currentTime / d;
+      if (p >= .25) c.quartile("firstQuartile");
+      if (p >= .5) c.quartile("midpoint");
+      if (p >= .75) c.quartile("thirdQuartile");
+    }
+  });
+  video.addEventListener("ended", () => {
+    if (!c.ad) return;
+    c.quartile("complete"); c.status = "done";
+    if (active === c) setTimeout(() => goNext(slide), 250);
+  });
+  video.addEventListener("error", () => { if (!c.started) c.fail(); });
+
+  skip.addEventListener("click", () => {
+    if (skip.disabled || !c.ad) return;
+    c.quartile("skip"); c.status = "done"; video.pause();
+    goNext(slide);
+  });
+  cta.addEventListener("click", () => {
+    if (!c.ad || !c.ad.clickThrough) return;
+    fire(c.ad.clickTracking);
+    window.open(macro(c.ad.clickThrough), "_blank", "noopener");
+  });
+
+  ctls.set(slide, c);
+  return slide;
+}
+
+/* ---------------- End / message slides ---------------- */
+function buildEndSlide() {
+  const slide = h("section", "slide");
+  const card = h("div", "end-card");
+  card.innerHTML = "<h2>You’re all caught up</h2><p>New videos are added regularly.</p>";
+  const home = h("a", "btn", "Back to Home"); home.href = "index.html";
+  const top = h("button", "btn ghost", "Watch again");
+  top.addEventListener("click", () => feed.scrollTo({ top: 0, behavior: "smooth" }));
+  card.append(home, top);
+  slide.appendChild(card);
+  return slide;
+}
+function buildMessage(text) {
+  const slide = h("section", "slide");
+  const card = h("div", "end-card");
+  card.appendChild(h("p", "", text));
+  const home = h("a", "btn ghost", "Back to Home"); home.href = "index.html";
+  card.appendChild(home);
+  slide.appendChild(card);
+  return slide;
+}
+
+/* ---------------- Observers ---------------- */
+function maybeLoadMore(slide) {
+  let n = 0, s = slide.nextElementSibling;
+  while (s && n < 7) { n++; s = s.nextElementSibling; }
+  if (n < 7) loadMore();
+}
+const ioActive = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    const c = ctls.get(e.target);
+    if (!c) return;
+    if (e.intersectionRatio >= 0.6) {
+      if (active && active !== c) active.deactivate();
+      active = c;
+      c.activate();
+      maybeLoadMore(c.slide);
+    } else if (active === c) {
+      c.deactivate();
+      active = null;
+    }
+  });
+}, { root: feed, threshold: [0.6] });
+
+const ioNear = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    const c = ctls.get(e.target);
+    if (c) c.near(e.isIntersecting);
+  });
+}, { root: feed, rootMargin: "100% 0px 100% 0px", threshold: 0 });
+
+/* ---------------- Loading videos from Firebase ---------------- */
+const seen = new Set();
+let lastDoc = null, exhausted = false, loading = false, shown = 0;
+
+async function fetchPage() {
+  const parts = [];
+  if (category) parts.push(where("category", "==", category));
+  parts.push(orderBy("createdAt", "desc"));
+  if (lastDoc) parts.push(startAfter(lastDoc));
+  parts.push(limit(CONFIG.pageSize));
+  const snap = await getDocs(query(collection(db, "videos"), ...parts));
+  if (snap.docs.length) lastDoc = snap.docs[snap.docs.length - 1];
+  if (snap.docs.length < CONFIG.pageSize) exhausted = true;
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .filter(v => v.status !== "pending" && v.archiveId);   // same rule as the home page
+}
+
+function addVideos(list) {
+  const frag = document.createDocumentFragment();
+  const added = [];
+  list.forEach(v => {
+    if (seen.has(v.id)) return;
+    seen.add(v.id);
+    const vs = buildVideoSlide(v);
+    frag.appendChild(vs); added.push(vs);
+    shown++;
+    if (shown % CONFIG.adEvery === 0) {
+      const as = buildAdSlide();
+      frag.appendChild(as); added.push(as);
+    }
+  });
+  feed.appendChild(frag);
+  added.forEach(s => { ioActive.observe(s); ioNear.observe(s); });
+  return added.length;
+}
+
+async function loadMore() {
+  if (loading || exhausted) return;
+  loading = true;
+  try {
+    let added = 0;
+    while (!exhausted && added === 0) added = addVideos(await fetchPage());
+  } catch (e) {
+    console.error("Load error:", e);
+    exhausted = true;
+    if (!shown) feed.appendChild(buildMessage("Could not load videos right now. Please try again shortly."));
+  }
+  loading = false;
+  if (exhausted) {
+    if (!shown && !feed.children.length) feed.appendChild(buildMessage("No videos yet. Check back soon."));
+    else if (shown && !feed.querySelector(".end-card")) feed.appendChild(buildEndSlide());
+  }
+}
+
+async function start() {
+  // A shared link (?v=ID) starts on that video
+  if (startId) {
+    try {
+      const snap = await getDoc(doc(db, "videos", startId));
+      if (snap.exists()) {
+        const v = { id: snap.id, ...snap.data() };
+        if (v.status !== "pending" && v.archiveId) addVideos([v]);
+      }
+    } catch (e) { /* ignore, just start from the top */ }
+  }
+  await loadMore();
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (!active) return;
+  if (document.hidden) active.deactivate(); else active.activate();
+});
+
+start();
+</script>
+</body>
+</html>
