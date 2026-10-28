@@ -170,7 +170,7 @@ import {
 const CONFIG = {
   r2Base: "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/", // same as main.js
   pageSize: 10,                 // how many videos to load at a time
-  vastEndpoint: "/api/vast",    // your ad proxy (Cloudflare Worker route)
+  vastEndpoint: "/js/vast",     // ad link, served by your site-assets Worker
   adEvery: 1,                   // 1 = an ad after every video, 2 = after every 2nd video
   skipAfter: 5,                 // seconds before the Skip button works
   adTimeoutMs: 7000             // give up on an ad that takes longer than this
@@ -242,9 +242,14 @@ function macro(u, x) {
     .replace(/\[CONTENTPLAYHEAD\]/g, "00:00:00.000")
     .replace(/\[ASSETURI\]/g, encodeURIComponent(x.asset || ""));
 }
+// ExoClick addresses are sent through your own domain (same trick as your ad library)
+function viaSite(u) {
+  return u.replace(/^https?:\/\/s\.magsrv\.com\//i, "/js/v1/s/")
+          .replace(/^https?:\/\/a\.magsrv\.com\//i, "/js/v1/a/");
+}
 function fire(urls, x) {
   (urls || []).forEach(u => {
-    try { new Image().src = macro(u, x); } catch (e) { /* ignore */ }
+    try { new Image().src = viaSite(macro(u, x)); } catch (e) { /* ignore */ }
   });
 }
 
@@ -457,7 +462,7 @@ function buildAdSlide() {
         this.ad = ad;
         this.skipAt = ad.skipOffset != null ? ad.skipOffset : CONFIG.skipAfter;
         this.status = "ready";
-        video.src = ad.mediaUrl;
+        video.src = viaSite(ad.mediaUrl);
         if (active === this) this.activate();
       }).catch(() => { clearTimeout(this.timer); this.fail(); });
     },
@@ -526,7 +531,7 @@ function buildAdSlide() {
   cta.addEventListener("click", () => {
     if (!c.ad || !c.ad.clickThrough) return;
     fire(c.ad.clickTracking);
-    window.open(macro(c.ad.clickThrough), "_blank", "noopener");
+    window.open(macro(c.ad.clickThrough), "_blank", "noopener");  // goes straight to the advertiser
   });
 
   ctls.set(slide, c);
