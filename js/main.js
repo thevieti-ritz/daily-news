@@ -513,12 +513,10 @@ function createAdSlot() {
   return wrap;
 }
 
-// ---- Load ads one by one, with a retry button on failure ----
+// ---- Load ads one by one. Each slot asks ONCE and is never refreshed or retried ----
 const AD_GAP_MS   = 1000; // wait between each round of ads
 const AD_BATCH    = 3;    // how many ads start in each round
 const AD_STAGGER  = 500;  // ms between ads inside one round (avoids ExoClick mix-ups)
-const AD_RETRY_MAX_MS = 30000; // longest wait between retries (waits grow a little each time)
-const AD_CHECK_MS = 2000; // first wait before asking again; each retry waits 2 seconds longer
 const adQueue = [];
 let adQueueRunning = false;
 
@@ -530,55 +528,21 @@ function queueAd(wrap) {
     if (!adQueue.length) { adQueueRunning = false; return; }
     for (let i = 0; i < AD_BATCH && adQueue.length; i++) {
       const w = adQueue.shift();
-      setTimeout(() => { if (document.body.contains(w)) loadAd(w, 0); }, i * AD_STAGGER);
+      setTimeout(() => { if (document.body.contains(w)) loadAd(w); }, i * AD_STAGGER);
     }
     setTimeout(next, AD_GAP_MS);
   })();
 }
 
-function loadAd(wrap, attempt) {
-  attempt = attempt || 0;
-  if (wrap.__adShown) return; // this space already has its ad: never touch it again
+function loadAd(wrap) {
+  if (wrap.__adAsked) return; // already asked: never touch this slot again
   const holder = wrap.querySelector(".ad-outstream-wrapper");
   if (!holder) return;
+  wrap.__adAsked = true;
+  wrap.__adShown = true;
 
-  // exactly ONE ad unit per slot: clear the space, then add a single <ins>
   holder.innerHTML = `<ins class="eas6a97888e31" data-zoneid="5980730"></ins>`;
-  const ins = holder.firstElementChild;
   (window.AdProvider = window.AdProvider || []).push({ serve: {} });
-
-  // An ad counts as shown once ExoClick has put anything inside the space.
-  const adShown = () => ins.childElementCount > 0 || !!ins.shadowRoot;
-
-  let timer = null;
-  let watcher = null;
-  const lockIn = () => {
-    // Ad is in: lock this space. It will never be reloaded or retried again,
-    // even if the visitor scrolls away and back.
-    wrap.__adShown = true;
-    holder.querySelectorAll("ins").forEach(x => { if (x !== ins) x.remove(); }); // keep only this one ad
-    clearInterval(timer);
-    if (watcher) watcher.disconnect();
-  };
-
-  // react the moment the ad appears
-  watcher = new MutationObserver(() => { if (adShown()) lockIn(); });
-  watcher.observe(ins, { childList: true, subtree: true });
-
-  // only spaces that have NOT shown an ad get asked again
-  const started = Date.now();
-  const waitMs = Math.min(AD_CHECK_MS + attempt * 2000, AD_RETRY_MAX_MS);
-  timer = setInterval(() => {
-    if (wrap.__adShown) { lockIn(); return; }
-    if (!document.body.contains(wrap) || !holder.contains(ins)) { clearInterval(timer); watcher.disconnect(); return; }
-    if (adShown()) {
-      lockIn();
-    } else if (Date.now() - started >= waitMs) {
-      clearInterval(timer);
-      watcher.disconnect();
-      loadAd(wrap, attempt + 1); // still empty: ask again, quietly
-    }
-  }, 500);
 }
 
 // ============================================

@@ -11,8 +11,8 @@
    4) The bottom ad is added automatically at the end of every page.
 
    An empty slot is asked again (waits 2s, then 4s, 6s ... up to 30s).
-   Every slot runs the video slider ad (zone 5980730). A slot that has shown an
-   ad is locked and never reloaded.
+   Every slot runs the video slider ad (zone 5980730). Each slot asks once and
+   is never retried or refreshed.
    ============================================ */
 (function () {
   "use strict";
@@ -25,9 +25,6 @@
   var GAP_MS = 500;         // wait between each ad (first ad starts immediately)
   var BATCH = 1;            // ads started per round
   var STAGGER_MS = 500;     // gap between ads inside a round
-  var CHECK_MS = 2000;      // first wait before asking again
-  var STEP_MS = 2000;       // each retry waits this much longer
-  var MAX_WAIT_MS = 30000;  // longest wait between retries
 
   // ---------- styles (self-contained) ----------
   var css = [
@@ -69,49 +66,18 @@
     document.head.appendChild(s);
   }
 
-  // ---------- one ad: retry while empty, lock once shown ----------
-  function loadAd(slot, attempt) {
-    attempt = attempt || 0;
-    if (slot.__adShown) return; // already has its ad: never touch it again
+  // ---------- one ad: ask once, never retry or refresh ----------
+  function loadAd(slot) {
+    if (slot.__adAsked) return; // asked already: never touch it again
     var holder = slot.querySelector(".page-ad-holder");
     if (!holder) return;
+    slot.__adAsked = true;
+    slot.__adShown = true;
 
     var zone = slot.getAttribute("data-zone") || ZONE;
     var cls = slot.getAttribute("data-ins-class") || INS_CLASS;
     holder.innerHTML = '<ins class="' + cls + '" data-zoneid="' + zone + '"></ins>';
-    var ins = holder.firstElementChild;
     (window.AdProvider = window.AdProvider || []).push({ serve: {} });
-
-    var shown = function () { return ins.childElementCount > 0 || !!ins.shadowRoot; };
-    var timer = null, watcher = null;
-    var lock = function () {
-      slot.__adShown = true;
-      clearInterval(timer);
-      if (watcher) watcher.disconnect();
-    };
-
-    if (window.MutationObserver) {
-      watcher = new MutationObserver(function () { if (shown()) lock(); });
-      watcher.observe(ins, { childList: true, subtree: true });
-    }
-
-    var started = Date.now();
-    var waitMs = Math.min(CHECK_MS + attempt * STEP_MS, MAX_WAIT_MS);
-    timer = setInterval(function () {
-      if (slot.__adShown) { lock(); return; }
-      if (!document.body.contains(slot) || !holder.contains(ins)) {
-        clearInterval(timer);
-        if (watcher) watcher.disconnect();
-        return;
-      }
-      if (shown()) {
-        lock();
-      } else if (Date.now() - started >= waitMs) {
-        clearInterval(timer);
-        if (watcher) watcher.disconnect();
-        loadAd(slot, attempt + 1); // still empty: ask again, quietly
-      }
-    }, 500);
   }
 
   // ---------- queue: one ad at a time, first one immediately ----------
@@ -133,7 +99,7 @@
       if (!queue.length) { running = false; return; }
       for (var i = 0; i < BATCH && queue.length; i++) {
         (function (s, delay) {
-          setTimeout(function () { if (document.body.contains(s)) loadAd(s, 0); }, delay);
+          setTimeout(function () { if (document.body.contains(s)) loadAd(s); }, delay);
         })(queue.shift(), i * STAGGER_MS);
       }
       setTimeout(next, GAP_MS);
