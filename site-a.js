@@ -1,6 +1,6 @@
 /* ============================================
    site-a.js — shared ExoClick ad slots
-   Video slider ad zone 5980730 (in every slot and at the bottom of the page).
+   Video slider ad zones (5980730, 6073390, 6073392, 6073394, 6073396) (in every slot and at the bottom of the page).
    Loaded by every page that shows ads.
 
    HOW TO USE ON A PAGE
@@ -16,9 +16,8 @@
    ============================================ */
 (function () {
   "use strict";
-
   // video slider ad zones: slots take them in turn (1st slot = 1st zone, 2nd = 2nd ...)
-  var ZONES = ["5980730", "6073390", "6073392", "6073394", "6073396"];
+  var ZONES = ["5980730", "6073390", "6073392", "6073394", "6073396"]; 
   var zoneCounter = 0;
   var INS_CLASS = "eas6a97888e31";
   var BOTTOM_ZONE = "5980730";
@@ -27,7 +26,6 @@
   var GAP_MS = 500;         // wait between each ad (first ad starts immediately)
   var BATCH = 1;            // ads started per round
   var STAGGER_MS = 500;     // gap between ads inside a round
-  var WINDOW_MS = 8000;     // ads are only requested within 8 seconds; later ones are skipped (saves data)
 
   // ---------- styles (self-contained) ----------
   var css = [
@@ -72,13 +70,12 @@
   // ---------- one ad: ask once, never retry or refresh ----------
   function loadAd(slot) {
     if (slot.__adAsked) return; // asked already: never touch it again
-    if (Date.now() - (slot.__queuedAt || 0) > WINDOW_MS) return; // too late: skip to save data
     var holder = slot.querySelector(".page-ad-holder");
     if (!holder) return;
     slot.__adAsked = true;
     slot.__adShown = true;
 
-    var zone = slot.getAttribute("data-zone") || ZONES[zoneCounter++ % ZONES.length];
+    var zone = slot.getAttribute("data-zone") || ZONES[zoneCounter % ZONES.length];
     var cls = slot.getAttribute("data-ins-class") || INS_CLASS;
     holder.innerHTML = '<ins class="' + cls + '" data-zoneid="' + zone + '"></ins>';
     (window.AdProvider = window.AdProvider || []).push({ serve: {} });
@@ -91,7 +88,6 @@
   function add(slot) {
     if (!slot || slot.__adQueued) return;
     slot.__adQueued = true;
-    slot.__queuedAt = Date.now();
     if (!slot.querySelector(".page-ad-holder")) {
       var h = document.createElement("div");
       h.className = "page-ad-holder";

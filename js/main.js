@@ -519,12 +519,10 @@ let adZoneCounter = 0;
 const AD_GAP_MS   = 1000; // wait between each round of ads
 const AD_BATCH    = 3;    // how many ads start in each round
 const AD_STAGGER  = 500;  // ms between ads inside one round (avoids ExoClick mix-ups)
-const AD_WINDOW_MS = 8000; // ads are only requested within 8 seconds of their slot appearing; later ones are skipped (saves data)
 const adQueue = [];
 let adQueueRunning = false;
 
 function queueAd(wrap) {
-  wrap.__queuedAt = Date.now();
   adQueue.push(wrap);
   if (adQueueRunning) return;
   adQueueRunning = true;
@@ -540,14 +538,12 @@ function queueAd(wrap) {
 
 function loadAd(wrap) {
   if (wrap.__adAsked) return; // already asked: never touch this slot again
-  if (Date.now() - (wrap.__queuedAt || 0) > AD_WINDOW_MS) return; // too late: skip to save data
   const holder = wrap.querySelector(".ad-outstream-wrapper");
   if (!holder) return;
   wrap.__adAsked = true;
   wrap.__adShown = true;
 
-  const zone = AD_ZONES[adZoneCounter++ % AD_ZONES.length];
-  holder.innerHTML = `<ins class="eas6a97888e31" data-zoneid="${zone}"></ins>`;
+  holder.innerHTML = `<ins class="eas6a97888e31" data-zoneid="5980730"></ins>`;
   (window.AdProvider = window.AdProvider || []).push({ serve: {} });
 }
 
