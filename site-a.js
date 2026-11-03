@@ -1,23 +1,33 @@
 /* ============================================
-   site-a.js — shared ExoClick outstream video ad slots
-   Zone 5993834. Loaded by every page that shows ads.
+   site-a.js — shared ExoClick ad slots
+   Video slider ad zone 5980730 (in every slot and at the bottom of the page).
+   Loaded by every page that shows ads.
 
    HOW TO USE ON A PAGE
-   1) Add  <script src="/site-a.js?v=2" defer></script>  in <head>
+   1) Add  <script src="/site-a.js" defer></script>  in <head>
    2) Put an empty  <div class="page-ad" data-ad-slot></div>  where an ad should appear
    3) Optional: ads inside an article, after every N elements. Add to <body>:
         data-ad-inject="#articleBody p"  data-ad-every="2"
-      (the ad goes after every 2nd element that matches the selector)
+   4) The bottom ad is added automatically at the end of every page.
+
+   An empty slot is asked again (waits 2s, then 4s, 6s ... up to 30s).
+   Every slot runs the video slider ad (zone 5980730). A slot that has shown an
+   ad is locked and never reloaded.
    ============================================ */
 (function () {
   "use strict";
 
-  var ZONE = "5993834";
-  var INS_CLASS = "eas6a97888e37";
+  var ZONE = "5980730";           // video slider ad: used in every slot
+  var INS_CLASS = "eas6a97888e31";
+  var BOTTOM_ZONE = "5980730";
+  var BOTTOM_CLASS = "eas6a97888e31";
 
   var GAP_MS = 500;         // wait between each ad (first ad starts immediately)
   var BATCH = 1;            // ads started per round
   var STAGGER_MS = 500;     // gap between ads inside a round
+  var CHECK_MS = 2000;      // first wait before asking again
+  var STEP_MS = 2000;       // each retry waits this much longer
+  var MAX_WAIT_MS = 30000;  // longest wait between retries
 
   // ---------- styles (self-contained) ----------
   var css = [
@@ -29,6 +39,7 @@
     "  font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:.6}",
     ".page-ad-holder{width:300px;max-width:100%;height:250px;overflow:hidden;margin:0 auto}",
     ".page-ad-holder ins." + INS_CLASS + "{width:100%!important;height:100%!important}",
+    ".page-ad-bottom{margin-bottom:80px}",
     /* side-by-side rows: ad on one side, content on the other */
     ".ad-row{display:flex;gap:16px;align-items:flex-start;width:100%;margin:0 0 20px}",
     ".ad-row>.ad-col{flex:1 1 0;min-width:0}",
@@ -58,12 +69,12 @@
     document.head.appendChild(s);
   }
 
-  // ---------- one ad: ask once, never ask again ----------
-  function loadAd(slot) {
-    if (slot.__adShown || slot.__adAsked) return; // asked already: never touch it again
+  // ---------- one ad: retry while empty, lock once shown ----------
+  function loadAd(slot, attempt) {
+    attempt = attempt || 0;
+    if (slot.__adShown) return; // already has its ad: never touch it again
     var holder = slot.querySelector(".page-ad-holder");
     if (!holder) return;
-    slot.__adAsked = true;
 
     var zone = slot.getAttribute("data-zone") || ZONE;
     var cls = slot.getAttribute("data-ins-class") || INS_CLASS;
@@ -71,16 +82,36 @@
     var ins = holder.firstElementChild;
     (window.AdProvider = window.AdProvider || []).push({ serve: {} });
 
-    // Mark the slot as shown once ExoClick puts anything inside it
+    var shown = function () { return ins.childElementCount > 0 || !!ins.shadowRoot; };
+    var timer = null, watcher = null;
+    var lock = function () {
+      slot.__adShown = true;
+      clearInterval(timer);
+      if (watcher) watcher.disconnect();
+    };
+
     if (window.MutationObserver) {
-      var watcher = new MutationObserver(function () {
-        if (ins.childElementCount > 0 || ins.shadowRoot) {
-          slot.__adShown = true;
-          watcher.disconnect();
-        }
-      });
+      watcher = new MutationObserver(function () { if (shown()) lock(); });
       watcher.observe(ins, { childList: true, subtree: true });
     }
+
+    var started = Date.now();
+    var waitMs = Math.min(CHECK_MS + attempt * STEP_MS, MAX_WAIT_MS);
+    timer = setInterval(function () {
+      if (slot.__adShown) { lock(); return; }
+      if (!document.body.contains(slot) || !holder.contains(ins)) {
+        clearInterval(timer);
+        if (watcher) watcher.disconnect();
+        return;
+      }
+      if (shown()) {
+        lock();
+      } else if (Date.now() - started >= waitMs) {
+        clearInterval(timer);
+        if (watcher) watcher.disconnect();
+        loadAd(slot, attempt + 1); // still empty: ask again, quietly
+      }
+    }, 500);
   }
 
   // ---------- queue: one ad at a time, first one immediately ----------
@@ -102,7 +133,7 @@
       if (!queue.length) { running = false; return; }
       for (var i = 0; i < BATCH && queue.length; i++) {
         (function (s, delay) {
-          setTimeout(function () { if (document.body.contains(s)) loadAd(s); }, delay);
+          setTimeout(function () { if (document.body.contains(s)) loadAd(s, 0); }, delay);
         })(queue.shift(), i * STAGGER_MS);
       }
       setTimeout(next, GAP_MS);
@@ -128,6 +159,17 @@
     }
   }
 
+  // ---------- bottom ad on every page ----------
+  function addBottomAd() {
+    if (document.querySelector(".page-ad-bottom")) return;
+    var slot = create();
+    slot.className += " page-ad-bottom";
+    slot.setAttribute("data-zone", BOTTOM_ZONE);
+    slot.setAttribute("data-ins-class", BOTTOM_CLASS);
+    document.body.appendChild(slot);
+    add(slot);
+  }
+
   window.AdSlots = { add: add, create: create, inject: inject };
 
   function init() {
@@ -138,6 +180,7 @@
     if (sel) inject(sel, parseInt(b.getAttribute("data-ad-every"), 10) || 2);
     var slots = document.querySelectorAll("[data-ad-slot]");
     for (var i = 0; i < slots.length; i++) add(slots[i]);
+    addBottomAd();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

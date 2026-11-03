@@ -480,7 +480,7 @@ function createVideoCard(video) {
 // ============================================
 // AD SLOT
 // Inserted into the video grid right after every
-// AD_EVERY-th video card. One ad per slot:
+// AD_EVERY-th video card. One ad per slot (video slider ad, zone 5980730):
 //   ExoClick outstream video (zone 5993834)
 // Loads immediately on page render (no lazy-load).
 // ============================================
@@ -491,11 +491,11 @@ function ensureExoclickScript() {
   if (exoclickScriptLoaded) return;
   exoclickScriptLoaded = true;
   // already added by index.html? then nothing to do
-  if (document.querySelector('script[src*="ad-provider.js"]')) return;
+  if (document.querySelector('script[src*="ad-provider.js"], script[src*="/js/sdk.js"]')) return;
   const s = document.createElement("script");
   s.async = true;
   s.type = "application/javascript";
-  s.src = "https://a.magsrv.com/ad-provider.js";
+  s.src = "/js/sdk.js";
   document.head.appendChild(s);
 }
 
@@ -543,7 +543,7 @@ function loadAd(wrap, attempt) {
   if (!holder) return;
 
   // exactly ONE ad unit per slot: clear the space, then add a single <ins>
-  holder.innerHTML = `<ins class="eas6a97888e37" data-zoneid="5993834"></ins>`;
+  holder.innerHTML = `<ins class="eas6a97888e31" data-zoneid="5980730"></ins>`;
   const ins = holder.firstElementChild;
   (window.AdProvider = window.AdProvider || []).push({ serve: {} });
 
