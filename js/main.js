@@ -14,10 +14,7 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 // ============================================
 const PAGE_SIZE    = 12;
 const R2_BASE      = "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/";
-const AD_EVERY     = 1;   // one ad slot before every N video cards (1 = ad, video, ad, video...)
-const AD_PER_SLOT  = 2;   // how many ads sit side by side inside one ad slot
-const AD_WIDTH     = 200; // max width of EACH ad in px - keep equal to "Maximum Width" in the ExoClick zone
-const AD_SLOT_SPAN = 2;   // how many grid columns wide an ad slot is (2 gives room for two 200px ads in a row)
+const AD_EVERY      = 1; // insert an ad slot after every N video cards (1 = after every video)
 let lastDoc        = null;
 let currentSearch  = "";
 let isLoading      = false;
@@ -30,63 +27,26 @@ let activeCategory = null;
 let videoCardCount = 0; // running total of rendered video cards (across pages), used for ad placement
 
 // ============================================
-// AD SLOT STYLES (self-contained)
-// Ad slots are normal grid cells, same size as a video
-// card, so the grid reads: ad, video, ad, video...
-// Each slot holds AD_PER_SLOT ads in one horizontal row
-// (like a chain), each capped at AD_WIDTH.
-// On laptops/desktops the slot is AD_SLOT_SPAN grid columns
-// wide so both fit. On phones it takes the full row.
-// Rules use !important so the site stylesheet cannot override them.
+// AD STYLES (self-contained)
+// Each ad slot sits right AFTER its video card.
 // ============================================
 (function addAdStyles() {
   const st = document.createElement("style");
   st.textContent = `
-    /* base rules - !important so the site stylesheet cannot override them on laptops/desktops */
     #videoGrid > .ad-slot {
       display: flex !important;
-      flex-direction: row !important;
-      flex-wrap: nowrap !important;
-      align-items: center !important;
       justify-content: center !important;
-      gap: 8px !important;
-      box-sizing: border-box !important;
-      width: auto !important;
-      max-width: none !important;
-      min-width: 0 !important;
-      min-height: 100px !important;
-      height: auto !important;
-      margin: 0 !important;
-      padding: 8px !important;
-      overflow: hidden !important;
-      border-radius: 12px !important;
-      background: rgba(127,127,127,.08) !important;
-    }
-    #videoGrid > .ad-slot .ad-outstream-wrapper {
-      flex: 0 1 ${AD_WIDTH}px !important;
-      width: ${AD_WIDTH}px !important;
-      max-width: 100% !important;
-      min-width: 0 !important;
-    }
-    #videoGrid > .ad-slot ins {
-      display: block !important;
+      align-items: flex-start !important;
       width: 100% !important;
-      max-width: ${AD_WIDTH}px !important;
-      margin: 0 auto !important;
+      min-height: 250px !important;
+      height: auto !important;
+      overflow: hidden !important;
+      margin: 0 !important;
+      grid-column: auto !important;
     }
-
-    /* laptops and desktops: slot spans several grid columns so both ads sit in one row */
-    @media (min-width: 701px) {
-      #videoGrid > .ad-slot {
-        grid-column: span ${AD_SLOT_SPAN} !important;
-        min-height: ${Math.round(AD_WIDTH * 9 / 16) + 32}px !important;
-      }
-    }
-
-    /* phones: slot takes the full row */
-    @media (max-width: 700px) {
-      #videoGrid > .ad-slot { grid-column: 1 / -1 !important; }
-    }
+    #videoGrid > .ad-slot .ad-outstream-wrapper { width: 100% !important; max-width: 300px !important; margin: 0 auto !important; }
+    /* only ONE ad per slot: anything extra is hidden */
+    #videoGrid > .ad-slot .ad-outstream-wrapper > ins ~ ins { display: none !important; }
   `;
   document.head.appendChild(st);
 })();
@@ -324,8 +284,7 @@ async function loadVideos() {
     const snapshot   = await getDocs(buildQuery(fetchLimit));
     let docs         = snapshot.docs;
     const rawLastDoc = snapshot.docs[snapshot.docs.length - 1];
-
-    // Hide videos still pending admin approval
+// Hide videos still pending admin approval
     docs = docs.filter(d => d.data().status !== "pending");
 
     // Search filter
@@ -395,23 +354,22 @@ async function loadVideos() {
     // Clear grid on first page only
     if (!lastDoc) videoGrid.innerHTML = "";
 
-    // Render cards: an ad slot comes BEFORE every AD_EVERY-th card,
-    // so the grid starts with an ad: ad, video, ad, video...
+    // Render cards, putting one ad slot right after every AD_EVERY-th card
     const fragment = document.createDocumentFragment();
     const newAdSlots = [];
     docs.forEach(d => {
+      const card = createVideoCard({ id: d.id, ...d.data() });
+      videoCardCount++;
+      fragment.appendChild(card);
       if (videoCardCount % AD_EVERY === 0) {
         const slot = createAdSlot();
         fragment.appendChild(slot);
-        // each ad inside the slot is queued separately
-        slot.querySelectorAll(".ad-outstream-wrapper").forEach(u => newAdSlots.push(u));
+        newAdSlots.push(slot);
       }
-      fragment.appendChild(createVideoCard({ id: d.id, ...d.data() }));
-      videoCardCount++;
     });
     videoGrid.appendChild(fragment);
 
-    // Load the new ads one at a time (see AD SLOT section)
+    // Load the new ad slots one at a time (see AD SLOT section)
     newAdSlots.forEach(queueAd);
 
     // Section title
@@ -521,9 +479,10 @@ function createVideoCard(video) {
 
 // ============================================
 // AD SLOT
-// Inserted into the video grid before every
-// AD_EVERY-th video card. Single unit:
+// Inserted into the video grid right after every
+// AD_EVERY-th video card. One ad per slot:
 //   ExoClick outstream video (zone 5993834)
+// Loads immediately on page render (no lazy-load).
 // ============================================
 let adSlotCounter = 0;
 let exoclickScriptLoaded = false;
@@ -531,15 +490,12 @@ let exoclickScriptLoaded = false;
 function ensureExoclickScript() {
   if (exoclickScriptLoaded) return;
   exoclickScriptLoaded = true;
-  window.AdProvider = window.AdProvider || [];
-  // already loaded by another file or by index.html? then nothing to do
-  if (window.__adLibLoaded) return;
-  if (document.querySelector('script[src*="ad-provider.js"], script[src*="/js/sdk.js"]')) return;
-  window.__adLibLoaded = true;
+  // already added by index.html? then nothing to do
+  if (document.querySelector('script[src*="ad-provider.js"]')) return;
   const s = document.createElement("script");
   s.async = true;
   s.type = "application/javascript";
-  s.src = "/js/sdk.js";
+  s.src = "https://a.magsrv.com/ad-provider.js";
   document.head.appendChild(s);
 }
 
@@ -551,17 +507,18 @@ function createAdSlot() {
   wrap.className = "ad-slot";
   wrap.dataset.adSlot = adSlotCounter;
 
-  // The ads themselves are added later by loadAd(), one at a time
-  wrap.innerHTML = `<div class="ad-outstream-wrapper"></div>`.repeat(AD_PER_SLOT);
+  // The ad itself is added later by loadAd(), one slot at a time
+  wrap.innerHTML = `<div class="ad-outstream-wrapper"></div>`;
 
   return wrap;
 }
 
-// ---- Load ads one by one: first immediately, then one every 0.5s ----
-const AD_GAP_MS  = 500;   // wait between each ad
-const AD_BATCH   = 1;     // one ad per round
-const AD_STAGGER = 500;   // ms between ads inside one round
-const AD_DEBUG   = true;  // short "[ads]" messages in the browser console (set false when happy)
+// ---- Load ads one by one, with a retry button on failure ----
+const AD_GAP_MS   = 1000; // wait between each round of ads
+const AD_BATCH    = 3;    // how many ads start in each round
+const AD_STAGGER  = 500;  // ms between ads inside one round (avoids ExoClick mix-ups)
+const AD_RETRY_MAX_MS = 30000; // longest wait between retries (waits grow a little each time)
+const AD_CHECK_MS = 2000; // first wait before asking again; each retry waits 2 seconds longer
 const adQueue = [];
 let adQueueRunning = false;
 
@@ -573,57 +530,55 @@ function queueAd(wrap) {
     if (!adQueue.length) { adQueueRunning = false; return; }
     for (let i = 0; i < AD_BATCH && adQueue.length; i++) {
       const w = adQueue.shift();
-      setTimeout(() => { if (document.body.contains(w)) loadAd(w); }, i * AD_STAGGER);
+      setTimeout(() => { if (document.body.contains(w)) loadAd(w, 0); }, i * AD_STAGGER);
     }
     setTimeout(next, AD_GAP_MS);
   })();
 }
 
-function adLog(...args) { if (AD_DEBUG && window.console) console.log("[ads]", ...args); }
-let adSlotNo = 0;
+function loadAd(wrap, attempt) {
+  attempt = attempt || 0;
+  if (wrap.__adShown) return; // this space already has its ad: never touch it again
+  const holder = wrap.querySelector(".ad-outstream-wrapper");
+  if (!holder) return;
 
-// Ask ONCE. No retries, no reloads, no freezing.
-function loadAd(wrap) {
-  if (wrap.__adShown || wrap.__adAsked) return; // already asked: never touch this slot again
-  const holder = wrap; // "wrap" is one .ad-outstream-wrapper (one ad)
-  wrap.__adAsked = true;
-  const no = wrap.__adNo = wrap.__adNo || ++adSlotNo;
-
+  // exactly ONE ad unit per slot: clear the space, then add a single <ins>
   holder.innerHTML = `<ins class="eas6a97888e37" data-zoneid="5993834"></ins>`;
   const ins = holder.firstElementChild;
   (window.AdProvider = window.AdProvider || []).push({ serve: {} });
-  adLog(`slot ${no}: asked for an ad (one time only)`);
 
   // An ad counts as shown once ExoClick has put anything inside the space.
-  const adShown = () => {
-    if (!holder.contains(ins)) return holder.childElementCount > 0; // library swapped our <ins> for its own element
-    return ins.childElementCount > 0 || !!ins.shadowRoot;
+  const adShown = () => ins.childElementCount > 0 || !!ins.shadowRoot;
+
+  let timer = null;
+  let watcher = null;
+  const lockIn = () => {
+    // Ad is in: lock this space. It will never be reloaded or retried again,
+    // even if the visitor scrolls away and back.
+    wrap.__adShown = true;
+    holder.querySelectorAll("ins").forEach(x => { if (x !== ins) x.remove(); }); // keep only this one ad
+    clearInterval(timer);
+    if (watcher) watcher.disconnect();
   };
 
+  // react the moment the ad appears
+  watcher = new MutationObserver(() => { if (adShown()) lockIn(); });
+  watcher.observe(ins, { childList: true, subtree: true });
+
+  // only spaces that have NOT shown an ad get asked again
   const started = Date.now();
-  const watcher = new MutationObserver(() => { if (adShown()) lockIn(); });
-  watcher.observe(holder, { childList: true, subtree: true });
-
-  function lockIn() {
-    wrap.__adShown = true;
-    watcher.disconnect();
-    adLog(`slot ${no}: ad loaded after about ${Math.round((Date.now() - started) / 100) / 10}s`);
-    logIfReplaced();
-  }
-
-  // Log only (changes nothing): reports if ExoClick replaces the ad after it loaded
-  function logIfReplaced() {
-    const lockedAt = Date.now();
-    let noted = 0;
-    const el = holder.contains(ins) ? ins : holder.firstElementChild;
-    new MutationObserver((ms) => {
-      if (Date.now() - lockedAt < 4000) return; // still settling in
-      const swapped = ms.some(m => (m.target === holder || m.target === el) && (m.addedNodes.length || m.removedNodes.length));
-      if (!swapped || Date.now() - noted < 5000) return;
-      noted = Date.now();
-      adLog(`slot ${no}: the ad was REPLACED after it loaded (done by ExoClick itself) at scroll position ${Math.round(window.pageYOffset)}`);
-    }).observe(holder, { childList: true, subtree: true });
-  }
+  const waitMs = Math.min(AD_CHECK_MS + attempt * 2000, AD_RETRY_MAX_MS);
+  timer = setInterval(() => {
+    if (wrap.__adShown) { lockIn(); return; }
+    if (!document.body.contains(wrap) || !holder.contains(ins)) { clearInterval(timer); watcher.disconnect(); return; }
+    if (adShown()) {
+      lockIn();
+    } else if (Date.now() - started >= waitMs) {
+      clearInterval(timer);
+      watcher.disconnect();
+      loadAd(wrap, attempt + 1); // still empty: ask again, quietly
+    }
+  }, 500);
 }
 
 // ============================================
