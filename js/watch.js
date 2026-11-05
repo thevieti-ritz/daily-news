@@ -159,7 +159,7 @@ function initPlayer(videoUrl, posterUrl, video, videoRef) {
   // HTML5 fallback if Video.js not loaded
   if (typeof videojs === "undefined") {
     const wrap = document.querySelector(".player-wrap");
-    wrap.innerHTML = `<video controls playsinline preload="auto"
+    wrap.innerHTML = `<video controls playsinline preload="metadata"
       src="${videoUrl}" poster="${posterUrl}"
       style="width:100%;height:100%;background:#000;">
     </video>`;
@@ -173,13 +173,13 @@ function initPlayer(videoUrl, posterUrl, video, videoRef) {
   const wrap = document.querySelector(".player-wrap");
   wrap.innerHTML = `<video id="myPlayer"
     class="video-js vjs-default-skin vjs-big-play-centered vjs-16-9"
-    controls playsinline preload="auto">
+    controls playsinline preload="metadata">
   </video>`;
 
   player = videojs("myPlayer", {
     controls:    true,
     autoplay:    false,
-    preload:     "auto",
+    preload:     "metadata",
     fluid:       true,
     playsinline: true,
     poster:      posterUrl || "",
@@ -354,16 +354,15 @@ function createRelatedCard(video) {
   const videoUrl = getVideoUrl(video.archiveId);
   const thumb    = getThumbnail(video);
 
-  // Thumbnail — image if available, video frame fallback
+  // Thumbnail — lazy image if available, light placeholder otherwise (never downloads the video)
+  const placeholderHtml = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a1a1a,#2b2b2b);color:#555;font-size:22px;"><i class="fas fa-film"></i></div>`;
   const thumbHtml = thumb
     ? `<img src="${thumb}"
            alt="${escapeHtml(video.title)}"
+           loading="lazy" decoding="async"
            style="width:100%;height:100%;object-fit:cover;display:block;"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
-       <video src="${videoUrl}#t=3" muted preload="metadata"
-           style="display:none;width:100%;height:100%;object-fit:cover;"></video>`
-    : `<video src="${videoUrl}#t=3" muted preload="metadata"
-           style="width:100%;height:100%;object-fit:cover;display:block;"></video>`;
+           onerror="this.style.display='none'"/>`
+    : placeholderHtml;
 
   card.innerHTML = `
     <div class="related-thumb-wrap">

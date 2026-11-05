@@ -445,15 +445,10 @@ function createVideoCard(video) {
          class="lazy-img card-thumb-img"
          loading="lazy"
          decoding="async"/>`
-    : `<video
-         class="card-thumb-video"
-         data-src="${videoUrl}#t=3"
-         preload="none"
-         muted
-         playsinline
-         crossorigin="anonymous"
-         style="width:100%;height:100%;object-fit:cover;display:block;">
-       </video>`;
+    : `<div class="card-thumb-placeholder"
+         style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a1a1a,#2b2b2b);color:#555;font-size:34px;">
+         <i class="fas fa-film"></i>
+       </div>`;
 
   card.innerHTML = `
     <div class="card-thumb">
