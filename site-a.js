@@ -1,6 +1,6 @@
 /* ============================================
    site-a.js — shared ExoClick ad slots
-   Video slider ad zones (5980730, 6073390, 6073392, 6073394, 6073396) (in every slot and at the bottom of the page).
+   Video slider ad zones (5980730, 6073390, 6073392, 6073394) (in every slot and at the bottom of the page).
    Loaded by every page that shows ads.
 
    HOW TO USE ON A PAGE
@@ -11,13 +11,13 @@
    4) The bottom ad is added automatically at the end of every page.
 
    An empty slot is asked again (waits 2s, then 4s, 6s ... up to 30s).
-   Slots run the video slider ads, rotating through 5 zones. The bottom of the page always uses 5980730. Each slot asks once and
+   Slots run the video slider ads, rotating through 4 zones (including the bottom ad). Each slot asks once and
    is never retried or refreshed.
    ============================================ */
 (function () {
   "use strict";
   // video slider ad zones: slots take them in turn (1st slot = 1st zone, 2nd = 2nd ...)
-  var ZONES = ["5980730", "6073390", "6073392", "6073394", "6073396"]; 
+  var ZONES = ["5980730", "6073390", "6073392", "6073394"]; 
   var zoneCounter = 0;
   var INS_CLASS = "eas6a97888e31";
   var BOTTOM_ZONE = "5980730";
@@ -30,12 +30,12 @@
   // ---------- styles (self-contained) ----------
   var css = [
     ".page-ad{position:relative;display:flex;align-items:center;justify-content:center;",
-    "  min-height:270px;padding:22px 12px 12px;box-sizing:border-box;border-radius:12px;",
+    "  min-height:420px;padding:22px 12px 12px;box-sizing:border-box;border-radius:12px;",
     "  background:rgba(127,127,127,.08);border:1px dashed rgba(127,127,127,.35);",
     "  margin:24px auto;width:min(1100px,92%);overflow:hidden}",
     ".page-ad::before{content:'Advertisement';position:absolute;top:6px;left:12px;font-size:10px;",
     "  font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:.6}",
-    ".page-ad-holder{width:300px;max-width:100%;height:250px;overflow:hidden;margin:0 auto}",
+    ".page-ad-holder{width:100%;max-width:640px;height:360px;overflow:hidden;margin:0 auto}",
     ".page-ad-holder ins." + INS_CLASS + "{width:100%!important;height:100%!important}",
     ".page-ad-bottom{margin-bottom:80px}",
     /* side-by-side rows: ad on one side, content on the other */
@@ -76,6 +76,7 @@
     slot.__adShown = true;
 
     var zone = slot.getAttribute("data-zone") || ZONES[zoneCounter % ZONES.length];
+    if (!slot.getAttribute("data-zone")) zoneCounter++; // next slot takes the next zone
     var cls = slot.getAttribute("data-ins-class") || INS_CLASS;
     holder.innerHTML = '<ins class="' + cls + '" data-zoneid="' + zone + '"></ins>';
     (window.AdProvider = window.AdProvider || []).push({ serve: {} });
@@ -131,7 +132,6 @@
     if (document.querySelector(".page-ad-bottom")) return;
     var slot = create();
     slot.className += " page-ad-bottom";
-    slot.setAttribute("data-zone", BOTTOM_ZONE);
     slot.setAttribute("data-ins-class", BOTTOM_CLASS);
     document.body.appendChild(slot);
     add(slot);

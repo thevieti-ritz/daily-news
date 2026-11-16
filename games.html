@@ -307,7 +307,7 @@
       .page-ad.inline-ad {
         width: 100% !important;
         max-width: none !important;
-        min-height: 250px !important;
+        min-height: 420px !important;
         height: auto !important;
         margin: 12px 0 !important;
         overflow: hidden !important;
@@ -322,8 +322,8 @@
       }
       .page-ad.inline-ad .page-ad-holder {
         width: 100% !important;
-        max-width: 300px !important;
-        height: 250px !important;
+        max-width: 640px !important;
+        height: 360px !important;
         margin: 0 auto !important;
       }
       .page-ad.inline-ad .page-ad-holder > ins ~ ins {
@@ -331,7 +331,7 @@
       }
       .ad-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
         gap: 16px;
         width: min(1100px, 94%);
         margin: 24px auto;
@@ -341,10 +341,10 @@
       }
       @media (max-width: 600px) {
         .page-ad.inline-ad {
-          min-height: 160px !important;
+          min-height: 340px !important;
         }
         .page-ad.inline-ad .page-ad-holder {
-          height: 250px !important;
+          height: 300px !important;
         }
       }
     </style>
