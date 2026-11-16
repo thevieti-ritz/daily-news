@@ -1,6 +1,6 @@
 // ============================================
 // WATCH.JS — Leaked Archives
-// Cloudflare R2 + Video.js + ExoClick VAST
+// Cloudflare R2 + Video.js
 // ============================================
 
 import { db, auth } from "./firebase.js";
@@ -16,7 +16,6 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 // ============================================
 const ADMIN_EMAIL = "dbernardinvestments@gmail.com";
 const R2_BASE     = "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/";
-const VAST_URL    = "https://s.magsrv.com/v1/vast.php?idz=5947340";
 const PLACEHOLDER = "https://via.placeholder.com/120x68/1a1a1a/e63946?text=Video";
 
 // ============================================
@@ -187,25 +186,6 @@ function initPlayer(videoUrl, posterUrl, video, videoRef) {
   });
 
   player.ready(function() {
-    // Init VAST ads
-    if (typeof player.ima === "function" && !window.imaFailed) {
-      try {
-        player.ima({
-          adTagUrl:        VAST_URL,
-          debug:           false,
-          disableFlashAds: true,
-          showCountdown:   true,
-          adLabel:         "Advertisement",
-          timeout:         5000
-        });
-        player.on("ads-ad-error", () => {
-          try { player.ads.endLinearAdMode(); } catch(e) {}
-        });
-      } catch(e) {
-        console.warn("IMA init error:", e);
-      }
-    }
-
     // Track view after 5 seconds
     player.on("timeupdate", () => {
       if (player.currentTime() >= 5) trackView(video, videoRef);
