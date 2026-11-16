@@ -509,7 +509,7 @@ function createAdSlot() {
 }
 
 // ---- Load ads one by one. Each slot asks ONCE and is never refreshed or retried ----
-const AD_ZONES   = ["5980730", "6073390", "6073392", "6073394", "6073396"]; // slots take these in turn
+const AD_ZONES   = ["5980730", "6073390", "6073392", "6073394"]; // 4 zones, slots take these in turn
 let adZoneCounter = 0;
 const AD_GAP_MS   = 1000; // wait between each round of ads
 const AD_BATCH    = 3;    // how many ads start in each round
@@ -538,7 +538,9 @@ function loadAd(wrap) {
   wrap.__adAsked = true;
   wrap.__adShown = true;
 
-  holder.innerHTML = `<ins class="eas6a97888e31" data-zoneid="5980730"></ins>`;
+  const zone = AD_ZONES[adZoneCounter % AD_ZONES.length];
+  adZoneCounter++;
+  holder.innerHTML = `<ins class="eas6a97888e31" data-zoneid="${zone}"></ins>`;
   (window.AdProvider = window.AdProvider || []).push({ serve: {} });
 }
 

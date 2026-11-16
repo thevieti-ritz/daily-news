@@ -370,6 +370,52 @@
         }
       }
     </style>
+    <style id="grid-ad-css">
+      /* Index-style ad slots: 300x250 video slider ad, size locked, one ask per slot */
+      .page-ad.inline-ad {
+        width: 100% !important;
+        max-width: none !important;
+        min-height: 250px !important;
+        height: auto !important;
+        margin: 12px 0 !important;
+        overflow: hidden !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: flex-start !important;
+        position: relative !important;
+        top: auto !important;
+        background: var(--bg2, var(--dark2, #1a1a1a));
+        border: 1px solid var(--border, rgba(127, 127, 127, 0.35)) !important;
+        border-radius: var(--radius, 12px);
+      }
+      .page-ad.inline-ad .page-ad-holder {
+        width: 100% !important;
+        max-width: 300px !important;
+        height: 250px !important;
+        margin: 0 auto !important;
+      }
+      .page-ad.inline-ad .page-ad-holder > ins ~ ins {
+        display: none !important;
+      }
+      .ad-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
+        width: min(1100px, 94%);
+        margin: 24px auto;
+      }
+      .ad-grid > .page-ad.inline-ad {
+        margin: 0 !important;
+      }
+      @media (max-width: 600px) {
+        .page-ad.inline-ad {
+          min-height: 160px !important;
+        }
+        .page-ad.inline-ad .page-ad-holder {
+          height: 250px !important;
+        }
+      }
+    </style>
   </head>
   <body>
     <script src="js/hls.min.js"></script>
@@ -596,6 +642,11 @@
               </li>
             </ul>
           </div>
+        </div>
+        <!-- AD GRID: video slider ads (same slots as index.html) -->
+        <div class="ad-grid">
+          <div class="page-ad inline-ad" data-ad-slot></div>
+          <div class="page-ad inline-ad" data-ad-slot></div>
         </div>
       </div>
     </main>
