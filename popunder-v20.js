@@ -1,41 +1,38 @@
 /*
   ============================================================
-  Popunder ad chain #2 — zones 6091656 and 6091658
+  Popunder ad chain #2 — popunder-v20.js (zones 6091656 and 6091658)
   Built on the v20.0.0 popMagic library (a.pemsrv.com / s.pemsrv.com).
   Runs ONLY on the index, watch, games and affiliate pages.
   ============================================================
 
-  SYNCED WITH popunder.js (zones 5980736 and 5980738, v11 library).
-  Load BOTH files on index and watch.html. Order of firing:
+  FIRING ORDER (loops forever, 3 pops per zone):
 
-    1) zone 5980736  (popunder.js)      — starts on page load
-    2) zone 5980738  (popunder.js)      — after zone 5980736 fires 3 pops
-    3) zone 6091656  (this file)        — after zone 5980738 fires 3 pops
-    4) zone 6091658  (this file)        — after zone 6091656 fires 3 pops
+    6091656 (this file) -> 6091658 (this file)
+      -> 5980736 (popunder.js) -> 5980738 (popunder.js)
+      -> back to 6091656 ...
 
-  How the two files stay in sync (no shared variables needed):
-    Every zone writes a "zone-cap-<idzone>" cookie each time it fires
-    and dispatches a "creativeDisplayed-<idzone>" event on `document`.
-    Cookies and document events are shared by every script on the page,
-    so this file simply watches zone 5980738's cookie/event, exactly the
-    way popunder.js watches its own previous zone. The load order of the
-    two files does not matter.
+  This file now LEADS the chain. Load BOTH files on index and watch.
 
-  Same two fixes as popunder.js:
-    1) Each zone gets its own independent popMagic instance
-       (createPopMagicInstance factory).
-    2) only_inline: true on every zone, so the network's hosted
-       delivery script is not loaded on top of the inline logic.
+  HOW THE LOCK WORKS:
+    Both files share one coordinator on window.__popSeq. Only the zone
+    whose turn it is may fire; every other zone's shouldShow() returns
+    false. After any pop there is a 1.5 s lock so the next zone cannot
+    also fire on the same click. When a zone completes its 3 pops the
+    turn moves on; after the last zone it wraps to the first.
+    Load order of the two files does not matter.
 
-  The minified popMagic v20 library below is vendor code, included ONCE
-  as a factory. Avoid editing its internals.
+  Vendor-code workarounds:
+    1) Each zone gets its own popMagic instance (createPopMagicInstance).
+    2) only_inline: true on every zone (no hosted popunder1000.js).
+
+  The minified popMagic v20 library is vendor code, included ONCE as a
+  factory. Avoid editing its internals.
 */
 (function () {
 
     // ---- PAGE FILTER — this file only runs on these pages ----
-    // Edit this list if your URLs look different (for example "/watch"
-    // with no .html, or a watch page with a query string like
-    // watch.html?v=123 — the query string is ignored automatically).
+    // Edit this list if your URLs look different. Keep it in sync with
+    // V20_PAGES in popunder.js.
     var ALLOWED_PAGES = [
         "/", "/index.html", "/index",
         "/watch.html", "/watch",
@@ -68,14 +65,107 @@
     }
 
     // ============================================================
-    // ORCHESTRATION — sequencing logic for this file's two zones.
+    // SHARED COORDINATOR — keep this block identical in both files.
+    // Guarantees one zone at a time, strict order, endless cycle.
     // ============================================================
+    function createCoordinator(order) {
+        var LOCK_MS = 1500;      // block any 2nd zone right after a pop (same click)
+        var SKIP_MS = 8000;      // skip a zone whose script never registered
+        var DEFAULT_FREQ = 3;
 
-    // The zone in popunder.js that this file waits for before starting.
-    // (Its settings only matter here for its zone id and frequency_count.)
-    var WAIT_FOR_ZONE = { idzone: 5980738, frequency_count: 3 };
+        var PC = {
+            order: order, zones: {}, inited: {},
+            turn: 0, count: 0, lockedUntil: 0,
+            started: false, skipTimer: null
+        };
 
-    // Ordered list of zone configs — this order is the firing order.
+        function cookieCount(id) {
+            var m = document.cookie.match(new RegExp("(?:^|; )zone-cap-" + id + "=([^;]*)"));
+            if (!m) return 0;
+            var n = parseInt(decodeURIComponent(m[1]).split(";")[0], 10);
+            return isNaN(n) ? 0 : n;
+        }
+        function freqOf(id) {
+            var z = PC.zones[id];
+            return z ? z.cfg.frequency_count : DEFAULT_FREQ;
+        }
+
+        PC.register = function (cfg, create) {
+            PC.zones[cfg.idzone] = { cfg: cfg, create: create };
+            document.addEventListener("creativeDisplayed-" + cfg.idzone, function () {
+                PC.onFired(cfg.idzone);
+            });
+            if (PC.started) PC.arm();
+        };
+
+        PC.start = function () {
+            if (PC.started) return;
+            PC.started = true;
+            PC.turn = 0; PC.count = 0;
+            // resume at the first zone that hasn't reached its cap yet
+            for (var i = 0; i < order.length; i++) {
+                var c = cookieCount(order[i]);
+                if (c < freqOf(order[i])) { PC.turn = i; PC.count = c; break; }
+            }
+            PC.arm();
+        };
+
+        PC.arm = function () {
+            var id = order[PC.turn], z = PC.zones[id];
+            if (z) {
+                if (PC.skipTimer) { clearTimeout(PC.skipTimer); PC.skipTimer = null; }
+                if (!PC.inited[id]) { PC.inited[id] = true; z.create(); }
+                return;
+            }
+            if (!PC.skipTimer) {
+                PC.skipTimer = setTimeout(function () {
+                    PC.skipTimer = null;
+                    if (!PC.zones[order[PC.turn]]) PC.advance();
+                }, SKIP_MS);
+            }
+        };
+
+        PC.advance = function () {
+            PC.turn = (PC.turn + 1) % order.length;   // wraps = cycle continues
+            PC.count = 0;
+            PC.arm();
+        };
+
+        PC.onFired = function (id) {
+            if (id !== order[PC.turn]) return;
+            PC.lockedUntil = Date.now() + LOCK_MS;
+            PC.count++;
+            if (PC.count >= freqOf(id)) PC.advance();
+        };
+
+        PC.canFire = function (id) {
+            return PC.started && id === order[PC.turn] && Date.now() >= PC.lockedUntil;
+        };
+
+        return PC;
+    }
+
+    // Builds one isolated popMagic instance whose firing is gated by the coordinator.
+    function makeCreator(PC, config) {
+        return function () {
+            var inst = createPopMagicInstance();
+            var orig = inst.shouldShow;
+            inst.shouldShow = function (preflight) {
+                if (preflight === true) return true;            // init-time check: let venor load
+                if (!PC.canFire(config.idzone)) return false;   // not this zone's turn / locked
+                if (config.capping_enabled) inst.open_count = 0; // cookie is the source of truth
+                return orig.apply(inst, arguments);
+            };
+            inst.init(config);
+        };
+    }
+
+    // ============================================================
+    // THIS FILE'S ZONES: 6091656 -> 6091658 (they lead the chain)
+    // ============================================================
+    var ORDER = [6091656, 6091658, 5980736, 5980738];
+    var PC = window.__popSeq || (window.__popSeq = createCoordinator(ORDER));
+
     var zoneChain = [
         {
             ads_host: "a.pemsrv.com", syndication_host: "s.pemsrv.com", idzone: 6091656,
@@ -90,51 +180,21 @@
             frequency_period: 1, frequency_count: 3, trigger_method: 1, trigger_class: "",
             trigger_delay: 0, capping_enabled: true, tcf_enabled: true,
             agego_cross_site_enabled: true, only_inline: true
-        },
+        }
     ];
 
-    function getCookieValue(name) {
-        var pattern = "(?:^|; )" + name.replace(/([.$?*|{}()\[\]\\\/\+^])/g, "\\$1") + "=([^;]*)";
-        var match = document.cookie.match(new RegExp(pattern));
-        return match ? decodeURIComponent(match[1]) : null;
-    }
+    zoneChain.forEach(function (cfg) { PC.register(cfg, makeCreator(PC, cfg)); });
 
-    function getFireCount(idzone) {
-        var raw = getCookieValue("zone-cap-" + idzone);
-        var count = raw ? parseInt(raw.split(";")[0], 10) : 0;
-        return isNaN(count) ? 0 : count;
-    }
+    // ---- START DELAY (only on pages where the intro layer appears) ----
+    // v20 now leads the chain, so it carries the intro delay.
+    var DELAY_WHEN_INTRO_SECONDS = 15;
+    function startChain() { PC.start(); }
 
-    // Starts zoneChain[index] only after its predecessor has fired its full
-    // frequency_count. For index 0 the predecessor is zone 5980738 from
-    // popunder.js; for later zones it is the previous zone in this file.
-    function startZone(index) {
-        if (index >= zoneChain.length) return;
-
-        var config = zoneChain[index];
-        var prevZone = index === 0 ? WAIT_FOR_ZONE : zoneChain[index - 1];
-        var prevZoneId = String(prevZone.idzone);
-        var count = getFireCount(prevZoneId);
-
-        if (count >= prevZone.frequency_count) {
-            createPopMagicInstance().init(config);
-            return;
-        }
-
-        var handler = function () {
-            count++;
-            if (count >= prevZone.frequency_count) {
-                document.removeEventListener("creativeDisplayed-" + prevZoneId, handler);
-                createPopMagicInstance().init(config);
-            }
-        };
-        document.addEventListener("creativeDisplayed-" + prevZoneId, handler);
-    }
-
-    // No start delay needed here: this file never starts anything until
-    // zone 5980738 has finished, and that zone already respects the
-    // intro delay in popunder.js.
-    for (var i = 0; i < zoneChain.length; i++) {
-        startZone(i);
+    if (window.__introActive) {
+        var scheduleChain = function () { setTimeout(startChain, DELAY_WHEN_INTRO_SECONDS * 1000); };
+        if (document.readyState === "complete") scheduleChain();
+        else window.addEventListener("load", scheduleChain);
+    } else {
+        startChain();
     }
 })();
