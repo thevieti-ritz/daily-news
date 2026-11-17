@@ -1,6 +1,6 @@
 /* ============================================
    site-a.js — shared ExoClick ad slots
-   Video slider ad zones (5980730, 6073390, 6073392, 6073394) (in every slot and at the bottom of the page).
+   Video slider ad zones (6092270, 6092276, 6092278) (in every slot and at the bottom of the page).
    Loaded by every page that shows ads.
 
    HOW TO USE ON A PAGE
@@ -11,16 +11,16 @@
    4) The bottom ad is added automatically at the end of every page.
 
    An empty slot is asked again (waits 2s, then 4s, 6s ... up to 30s).
-   Slots run the video slider ads, rotating through 4 zones (including the bottom ad). Each slot asks once and
+   Slots run the video slider ads, rotating through 3 zones (including the bottom ad). Each slot asks once and
    is never retried or refreshed.
    ============================================ */
 (function () {
   "use strict";
   // video slider ad zones: slots take them in turn (1st slot = 1st zone, 2nd = 2nd ...)
-  var ZONES = ["5980730", "6073390", "6073392", "6073394"]; 
+  var ZONES = ["6092270", "6092276", "6092278"]; 
   var zoneCounter = 0;
   var INS_CLASS = "eas6a97888e31";
-  var BOTTOM_ZONE = "5980730";
+  var BOTTOM_ZONE = "6092270"; // not used: the bottom ad rotates with the others
   var BOTTOM_CLASS = "eas6a97888e31";
 
   var GAP_MS = 500;         // wait between each ad (first ad starts immediately)
