@@ -14,8 +14,9 @@
         data-ad-inject="#articleBody p"  data-ad-every="2"
    4) The bottom ad is added automatically at the end of every page.
 
-   Each slot asks for its ad ONCE (when it is about to scroll into view)
-   and is never retried or refreshed.
+   Each slot asks for its ad ONCE, as soon as it is anywhere near the
+   screen, with no waiting line and no delay between ads. It is never
+   retried or refreshed.
    ============================================ */
 (function () {
   "use strict";
@@ -25,10 +26,7 @@
   var INS_CLASS = "eas6a97888e31";
   var zoneCounter = 0;
 
-  var GAP_MS = 500;      // wait between ads
-  var BATCH = 1;         // ads started per round
-  var STAGGER_MS = 500;  // gap between ads inside a round
-  var LAZY_MARGIN = "400px 0px"; // start loading a little before it is visible
+  var LAZY_MARGIN = "1500px 0px"; // start loading well before the slot is visible
 
   // ---------- styles (self-contained) ----------
   var css = [
@@ -89,23 +87,9 @@
     (window.AdProvider = window.AdProvider || []).push({ serve: {} });
   }
 
-  // ---------- queue: one ad at a time ----------
-  var queue = [];
-  var running = false;
-
+  // ---------- no waiting line: every slot loads as soon as it is due ----------
   function enqueue(slot) {
-    queue.push(slot);
-    if (running) return;
-    running = true;
-    (function next() {
-      if (!queue.length) { running = false; return; }
-      for (var i = 0; i < BATCH && queue.length; i++) {
-        (function (s, delay) {
-          setTimeout(function () { if (document.body.contains(s)) loadAd(s); }, delay);
-        })(queue.shift(), i * STAGGER_MS);
-      }
-      setTimeout(next, GAP_MS);
-    })();
+    if (document.body.contains(slot)) loadAd(slot);
   }
 
   // ---------- only ask for an ad when its slot is about to be seen ----------
