@@ -1,25 +1,22 @@
 /*
   ============================================================
-  Popunder ad chain #2 — popunder-v20.js (zones 6091656 and 6091658)
+  Popunder ad chain — popunder-v20.js
+  Zones: 6091656, 6091658, 6092300
   Built on the v20.0.0 popMagic library (a.pemsrv.com / s.pemsrv.com).
-  Runs ONLY on the index, watch, games and affiliate pages.
+  Runs on EVERY page that loads this file.
   ============================================================
 
   FIRING ORDER (loops forever, 3 pops per zone):
 
-    6091656 (this file) -> 6091658 (this file)
-      -> 5980736 (popunder.js) -> 5980738 (popunder.js)
-      -> back to 6091656 ...
-
-  This file now LEADS the chain. Load BOTH files on index and watch.
+    6091656 -> 6091658 -> 6092300 -> back to 6091656 ...
 
   HOW THE LOCK WORKS:
-    Both files share one coordinator on window.__popSeq. Only the zone
-    whose turn it is may fire; every other zone's shouldShow() returns
-    false. After any pop there is a 1.5 s lock so the next zone cannot
-    also fire on the same click. When a zone completes its 3 pops the
-    turn moves on; after the last zone it wraps to the first.
-    Load order of the two files does not matter.
+    One coordinator (window.__popSeq20) decides whose turn it is. Only the
+    zone whose turn it is may fire; every other zone's shouldShow() returns
+    false. After any pop there is a lock (2.5 s, and until the click/tap has
+    finished), so a second zone can never fire on the same click.
+    When a zone completes its 3 pops the turn moves on; after the last
+    zone it wraps to the first.
 
   Vendor-code workarounds:
     1) Each zone gets its own popMagic instance (createPopMagicInstance).
@@ -27,21 +24,10 @@
 
   The minified popMagic v20 library is vendor code, included ONCE as a
   factory. Avoid editing its internals.
+
+  Do NOT load the old popunder.js (zones 5980736 / 5980738) next to this file.
 */
 (function () {
-
-    // ---- PAGE FILTER — this file only runs on these pages ----
-    // Edit this list if your URLs look different. Keep it in sync with
-    // V20_PAGES in popunder.js.
-    var ALLOWED_PAGES = [
-        "/", "/index.html", "/index",
-        "/watch.html", "/watch",
-        "/games.html", "/games",
-        "/affiliate.html", "/affiliate"
-    ];
-
-    var currentPath = window.location.pathname.toLowerCase();
-    if (ALLOWED_PAGES.indexOf(currentPath) === -1) return;
 
     // ---- anti-tamper shim (vendor code, unchanged) ----
     function randStr(e, t) {
@@ -65,18 +51,21 @@
     }
 
     // ============================================================
-    // SHARED COORDINATOR — keep this block identical in both files.
-    // Guarantees one zone at a time, strict order, endless cycle.
+    // COORDINATOR — one zone at a time, strict rotation, endless cycle.
+    //   6091656 -> 6091658 -> 6092300 -> back to 6091656 ...
+    // Only the zone whose turn it is may fire; every other zone's
+    // shouldShow() returns false. After any pop a lock blocks every zone,
+    // so a single click/tap can never open two ads.
     // ============================================================
     function createCoordinator(order) {
-        var LOCK_MS = 1500;      // block any 2nd zone right after a pop (same click)
-        var SKIP_MS = 8000;      // skip a zone whose script never registered
+        var LOCK_MS = 2500;      // block all zones right after a pop (same click/tap)
+        var RELEASE_MS = 800;    // keep the lock until the gesture's mouseup/click ends
         var DEFAULT_FREQ = 3;
 
         var PC = {
             order: order, zones: {}, inited: {},
             turn: 0, count: 0, lockedUntil: 0,
-            started: false, skipTimer: null
+            started: false
         };
 
         function cookieCount(id) {
@@ -90,12 +79,21 @@
             return z ? z.cfg.frequency_count : DEFAULT_FREQ;
         }
 
+        // Registered first, in the capture phase, so it runs before any zone's
+        // own listeners: the tail of a press (mouseup / click / touchend) can
+        // never slip past the lock, even on a long press.
+        ["mouseup", "click", "touchend"].forEach(function (t) {
+            window.addEventListener(t, function () {
+                var now = Date.now();
+                if (now < PC.lockedUntil) PC.lockedUntil = Math.max(PC.lockedUntil, now + RELEASE_MS);
+            }, true);
+        });
+
         PC.register = function (cfg, create) {
             PC.zones[cfg.idzone] = { cfg: cfg, create: create };
             document.addEventListener("creativeDisplayed-" + cfg.idzone, function () {
                 PC.onFired(cfg.idzone);
             });
-            if (PC.started) PC.arm();
         };
 
         PC.start = function () {
@@ -112,17 +110,7 @@
 
         PC.arm = function () {
             var id = order[PC.turn], z = PC.zones[id];
-            if (z) {
-                if (PC.skipTimer) { clearTimeout(PC.skipTimer); PC.skipTimer = null; }
-                if (!PC.inited[id]) { PC.inited[id] = true; z.create(); }
-                return;
-            }
-            if (!PC.skipTimer) {
-                PC.skipTimer = setTimeout(function () {
-                    PC.skipTimer = null;
-                    if (!PC.zones[order[PC.turn]]) PC.advance();
-                }, SKIP_MS);
-            }
+            if (z && !PC.inited[id]) { PC.inited[id] = true; z.create(); }
         };
 
         PC.advance = function () {
@@ -133,7 +121,7 @@
 
         PC.onFired = function (id) {
             if (id !== order[PC.turn]) return;
-            PC.lockedUntil = Date.now() + LOCK_MS;
+            PC.lockedUntil = Date.now() + LOCK_MS;    // lock FIRST, then move the turn
             PC.count++;
             if (PC.count >= freqOf(id)) PC.advance();
         };
@@ -161,32 +149,32 @@
     }
 
     // ============================================================
-    // THIS FILE'S ZONES: 6091656 -> 6091658 (they lead the chain)
+    // THE THREE ZONES (rotation order = order of this list)
     // ============================================================
-    var ORDER = [6091656, 6091658, 5980736, 5980738];
-    var PC = window.__popSeq || (window.__popSeq = createCoordinator(ORDER));
+    var ZONE_IDS = [6091656, 6091658, 6092300];
+    var ZONE_FREQ = 3;   // pops per zone before the next zone takes over
 
-    var zoneChain = [
-        {
-            ads_host: "a.pemsrv.com", syndication_host: "s.pemsrv.com", idzone: 6091656,
-            popup_fallback: false, popup_force: false, chrome_enabled: true, new_tab: false,
-            frequency_period: 1, frequency_count: 3, trigger_method: 1, trigger_class: "",
-            trigger_delay: 0, capping_enabled: true, tcf_enabled: true,
-            agego_cross_site_enabled: true, only_inline: true
-        },
-        {
-            ads_host: "a.pemsrv.com", syndication_host: "s.pemsrv.com", idzone: 6091658,
-            popup_fallback: false, popup_force: false, chrome_enabled: true, new_tab: false,
-            frequency_period: 1, frequency_count: 3, trigger_method: 1, trigger_class: "",
-            trigger_delay: 0, capping_enabled: true, tcf_enabled: true,
-            agego_cross_site_enabled: true, only_inline: true
-        }
-    ];
+    // New global name on purpose, so a leftover popunder.js can never
+    // hand this file its old 4-zone coordinator.
+    var PC = window.__popSeq20 || (window.__popSeq20 = createCoordinator(ZONE_IDS));
 
-    zoneChain.forEach(function (cfg) { PC.register(cfg, makeCreator(PC, cfg)); });
+    function zoneCfg(id) {
+        return {
+            ads_host: "a.pemsrv.com", syndication_host: "s.pemsrv.com", idzone: id,
+            popup_fallback: false, popup_force: false, chrome_enabled: true, new_tab: false,
+            frequency_period: 1, frequency_count: ZONE_FREQ, trigger_method: 1, trigger_class: "",
+            trigger_delay: 0, capping_enabled: true, tcf_enabled: true,
+            agego_cross_site_enabled: true,
+            only_inline: true   // required: several instances, no hosted popunder1000.js
+        };
+    }
+
+    ZONE_IDS.forEach(function (id) {
+        var cfg = zoneCfg(id);
+        PC.register(cfg, makeCreator(PC, cfg));
+    });
 
     // ---- START DELAY (only on pages where the intro layer appears) ----
-    // v20 now leads the chain, so it carries the intro delay.
     var DELAY_WHEN_INTRO_SECONDS = 15;
     function startChain() { PC.start(); }
 

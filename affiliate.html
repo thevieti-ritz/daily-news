@@ -960,7 +960,9 @@
         }
       }
       /* Affiliate page: larger ad boxes */
-      body .page-ad { min-height: 420px !important; }
+      body .page-ad {
+        min-height: 420px !important;
+      }
       body .page-ad .page-ad-holder {
         width: 100% !important;
         max-width: 640px !important;
@@ -970,8 +972,12 @@
         grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
       }
       @media (max-width: 600px) {
-        body .page-ad { min-height: 340px !important; }
-        body .page-ad .page-ad-holder { height: 300px !important; }
+        body .page-ad {
+          min-height: 340px !important;
+        }
+        body .page-ad .page-ad-holder {
+          height: 300px !important;
+        }
       }
     </style>
   </head>
@@ -1879,7 +1885,7 @@
       };
     </script>
 
-    <script src="/popunder.js"></script>
+    <script src="/popunder-v20.js"></script>
     <script src="popunder-v20.js"></script>
   </body>
 </html>
