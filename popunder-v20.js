@@ -18,6 +18,11 @@
     When a zone completes its 3 pops the turn moves on; after the last
     zone it wraps to the first.
 
+  PER PAGE:
+    All state lives per page. Every page that loads this file starts fresh:
+    the first zone's turn, no lock, and the old frequency-cap cookies are
+    cleared, so ads are ready on the first click of every new page.
+
   Vendor-code workarounds:
     1) Each zone gets its own popMagic instance (createPopMagicInstance).
     2) only_inline: true on every zone (no hosted popunder1000.js).
@@ -68,11 +73,11 @@
             started: false
         };
 
-        function cookieCount(id) {
-            var m = document.cookie.match(new RegExp("(?:^|; )zone-cap-" + id + "=([^;]*)"));
-            if (!m) return 0;
-            var n = parseInt(decodeURIComponent(m[1]).split(";")[0], 10);
-            return isNaN(n) ? 0 : n;
+        // Per-page state: the vendor library keeps its frequency cap in a cookie
+        // (zone-cap-<id>) that survives navigation. Expiring it means every page
+        // starts fresh, and a zone that comes round again is never left stuck.
+        function clearCap(id) {
+            document.cookie = "zone-cap-" + id + "=; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/";
         }
         function freqOf(id) {
             var z = PC.zones[id];
@@ -96,16 +101,18 @@
             });
         };
 
+        // Fresh state for THIS page: first zone's turn, no lock, no old caps.
+        PC.reset = function () {
+            if (!PC.started) return;
+            order.forEach(clearCap);
+            PC.turn = 0; PC.count = 0; PC.lockedUntil = 0;
+            PC.arm();
+        };
+
         PC.start = function () {
             if (PC.started) return;
             PC.started = true;
-            PC.turn = 0; PC.count = 0;
-            // resume at the first zone that hasn't reached its cap yet
-            for (var i = 0; i < order.length; i++) {
-                var c = cookieCount(order[i]);
-                if (c < freqOf(order[i])) { PC.turn = i; PC.count = c; break; }
-            }
-            PC.arm();
+            PC.reset();
         };
 
         PC.arm = function () {
@@ -116,6 +123,7 @@
         PC.advance = function () {
             PC.turn = (PC.turn + 1) % order.length;   // wraps = cycle continues
             PC.count = 0;
+            clearCap(order[PC.turn]);                 // next zone always starts clean
             PC.arm();
         };
 
@@ -173,6 +181,11 @@
         var cfg = zoneCfg(id);
         PC.register(cfg, makeCreator(PC, cfg));
     });
+
+    // Page restored from the back/forward cache = shown again without a reload,
+    // so start it fresh like any new page. (Single-page app? Call
+    // window.__popSeq20.reset() on every route change.)
+    window.addEventListener("pageshow", function (e) { if (e.persisted) PC.reset(); });
 
     // ---- START DELAY (only on pages where the intro layer appears) ----
     var DELAY_WHEN_INTRO_SECONDS = 15;
