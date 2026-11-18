@@ -33,7 +33,10 @@
   }
 
   function init() {
-    if (document.querySelector('ins[data-zoneid="' + ZONE + '"]')) return;
+    // Only skip if our own banner already exists (other scripts may also
+    // place this zone on the page, which must not block the sticky banner)
+    if (document.getElementById("sticky-banner-ad")) return;
+    console.log("[sticky-banner] multiformat.js v2 running");
 
     window.AdProvider = window.AdProvider || [];
 
