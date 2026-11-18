@@ -1,6 +1,6 @@
 /* ============================================
    site-a.js — shared ExoClick ad slots
-   Video slider zones (6092270, 6092276, 6092278), rotated across slots
+   Ad zones (6073390, 6092270, 5980730), rotated across slots
    (including the bottom ad). Loaded by every page that shows ads.
 
    Works together with worker.js:
@@ -22,7 +22,7 @@
   "use strict";
 
   var SDK_PATH = "/js/sdk.js";                      // served by worker.js
-  var ZONES = ["6092270", "6092276", "6092278"];    // slots take them in turn
+  var ZONES = ["6073390", "6092270", "5980730"];    // slots take them in turn
   var INS_CLASS = "eas6a97888e31";
   var zoneCounter = 0;
 
