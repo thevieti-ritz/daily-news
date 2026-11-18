@@ -1,7 +1,7 @@
 /* ============================================
    site-a.js — shared ExoClick ad slots
-   Ad zones (6073390, 6092270, 5980730), rotated across slots
-   (including the bottom ad). Loaded by every page that shows ads.
+   One ad zone only (5980730), used by every slot including the bottom ad.
+   Maximum of 10 ads on any page. Loaded by every page that shows ads.
 
    Works together with worker.js:
      - SDK_PATH below MUST equal SDK_PATH in worker.js ("/js/sdk.js")
@@ -13,6 +13,8 @@
    3) Optional: ads inside an article, after every N elements. Add to <body>:
         data-ad-inject="#articleBody p"  data-ad-every="2"
    4) The bottom ad is added automatically at the end of every page.
+   5) No page ever shows more than MAX_ADS_PER_PAGE ads (the bottom ad is
+      always kept; extra slots beyond the limit are removed).
 
    Each slot asks for its ad ONCE, as soon as it is anywhere near the
    screen, with no waiting line and no delay between ads. It is never
@@ -22,9 +24,10 @@
   "use strict";
 
   var SDK_PATH = "/js/sdk.js";                      // served by worker.js
-  var ZONES = ["6073390", "6092270", "5980730"];    // slots take them in turn
+  var ZONE = "5980730";                             // the only zone used, by every slot
+  var MAX_ADS_PER_PAGE = 10;                        // hard limit per page (bottom ad included)
   var INS_CLASS = "eas6a97888e31";
-  var zoneCounter = 0;
+  var slotCount = 0;                                // slots accepted on this page so far
 
   var LAZY_MARGIN = "1500px 0px"; // start loading well before the slot is visible
 
@@ -77,11 +80,7 @@
     if (!holder) return;
     slot.__adAsked = true;
 
-    var zone = slot.getAttribute("data-zone");
-    if (!zone) {
-      zone = ZONES[zoneCounter % ZONES.length];
-      zoneCounter++; // next slot takes the next zone
-    }
+    var zone = ZONE;
     var cls = slot.getAttribute("data-ins-class") || INS_CLASS;
     holder.innerHTML = '<ins class="' + cls + '" data-zoneid="' + zone + '"></ins>';
     (window.AdProvider = window.AdProvider || []).push({ serve: {} });
@@ -106,8 +105,15 @@
     return observer;
   }
 
-  function add(slot) {
+  function add(slot, isBottom) {
     if (!slot || slot.__adQueued) return;
+    // Page limit: normal slots may use MAX-1 places, the last place is kept for the bottom ad
+    var limit = isBottom ? MAX_ADS_PER_PAGE : MAX_ADS_PER_PAGE - 1;
+    if (slotCount >= limit) {
+      if (slot.parentNode) slot.parentNode.removeChild(slot); // no empty box left behind
+      return;
+    }
+    slotCount++;
     slot.__adQueued = true;
     if (!slot.querySelector(".page-ad-holder")) {
       var h = document.createElement("div");
@@ -143,7 +149,7 @@
     var slot = create();
     slot.className += " page-ad-bottom";
     document.body.appendChild(slot);
-    add(slot);
+    add(slot, true);
   }
 
   window.AdSlots = { add: add, create: create, inject: inject };
