@@ -1,6 +1,6 @@
 /* ============================================
    site-a.js — shared ExoClick ad slots
-   One ad zone only (5980730), used by every slot including the bottom ad.
+   One ad zone only (......), used by every slot including the bottom ad.
    Maximum of 10 ads on any page. Loaded by every page that shows ads.
 
    Works together with worker.js:
@@ -24,7 +24,7 @@
   "use strict";
 
   var SDK_PATH = "/js/sdk.js";                      // served by worker.js
-  var ZONE = "5980730";                             // the only zone used, by every slot
+  var ZONE = "";                             // the only zone used, by every slot
   var MAX_ADS_PER_PAGE = 10;                        // hard limit per page (bottom ad included)
   var INS_CLASS = "eas6a97888e31";
   var slotCount = 0;                                // slots accepted on this page so far
