@@ -1,40 +1,41 @@
 (function () {
-  var ZONE_ID = "6093726";
+  "use strict";
+
+  var SDK_PATH = "/js/sdk.js";
+  var ZONE = "6093726";
   var INS_CLASS = "eas6a97888e38";
-  var PROVIDER_SRC = "/js/sdk.js"; // proxied by your worker
 
-  function init() {
-    var slots = document.querySelectorAll("[data-ad-slot]");
-    if (!slots.length) return;
+  // Load the ad library once, through your worker
+  window.AdProvider = window.AdProvider || [];
+  if (!document.querySelector('script[src="' + SDK_PATH + '"]')) {
+    var s = document.createElement("script");
+    s.async = true;
+    s.type = "application/javascript";
+    s.src = SDK_PATH;
+    document.head.appendChild(s);
+  }
 
-    // Load the provider library once
-    if (!document.querySelector("script[data-ad-provider]")) {
-      var s = document.createElement("script");
-      s.async = true;
-      s.type = "application/javascript";
-      s.src = PROVIDER_SRC;
-      s.setAttribute("data-ad-provider", "1");
-      document.head.appendChild(s);
-    }
+  function place() {
+    // Use the script's own position, or a [data-ad-slot] if the page has one
+    var slot = document.querySelector("[data-ad-slot]");
+    var box = document.createElement("div");
+    box.className = "page-ad";
+    box.style.cssText = "display:flex;justify-content:center;margin:24px auto;min-height:100px;";
 
-    window.AdProvider = window.AdProvider || [];
+    var ins = document.createElement("ins");
+    ins.className = INS_CLASS;
+    ins.setAttribute("data-zoneid", ZONE);
+    box.appendChild(ins);
 
-    slots.forEach(function (slot) {
-      if (slot.getAttribute("data-ad-loaded")) return;
-      slot.setAttribute("data-ad-loaded", "1");
+    if (slot) slot.appendChild(box);
+    else document.body.appendChild(box); // default: end of the page
 
-      var ins = document.createElement("ins");
-      ins.className = INS_CLASS;
-      ins.setAttribute("data-zoneid", slot.getAttribute("data-zoneid") || ZONE_ID);
-      slot.appendChild(ins);
-
-      window.AdProvider.push({ serve: {} });
-    });
+    (window.AdProvider = window.AdProvider || []).push({ serve: {} });
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+    document.addEventListener("DOMContentLoaded", place);
   } else {
-    init();
+    place();
   }
 })();
