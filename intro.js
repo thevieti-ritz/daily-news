@@ -7,9 +7,9 @@
 (function () {
 
     /* ---------------- SETTINGS ---------------- */
-    var INTRO_VIDEO_URL   = "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/No_Copyright_Video%2C_Background%2C_Green_Screen%2C_Motion_Graphics%2C_Animated_Background%2C_Copyright_Free(480p).mp4"; // 1) your video link
+    var INTRO_VIDEO_URL   = "https://pub-00a.r2.dev/No_Copyright_Video%2C_Background%2C_Green_Screen%2C_Motion_Graphics%2C_Animated_Background%2C_Copyright_Free(480p).mp4"; // 1) your video link
     var CLOSE_AFTER_SECS  = 25;    // 2) layer closes this many seconds after Play is clicked
-    var REPEAT_AFTER_MINUTES = 3;  // 3) each page shows the intro at most once per this many minutes (0 = every page load)
+    var REPEAT_AFTER_MINUTES = 0;  // 3) each page shows the intro at most once per this many minutes (0 = every page load)
     var INTRO_POSTER      = "";    // 4) optional picture shown before play (image link), or leave empty
     var AD_TAG_URL        = "/media/feed.xml"; // 5) your Cloudflare Worker route (same domain). Empty "" = no ad
     var AD_SKIP_AFTER_SECS = 5;    // 6) skip button delay if the VAST doesn't specify one (0 = no skip button)
