@@ -9,7 +9,8 @@
     /* ---------------- SETTINGS ---------------- */
     var INTRO_VIDEO_URL   = "https://pub-00a.r2.dev/No_Copyright_Video%2C_Background%2C_Green_Screen%2C_Motion_Graphics%2C_Animated_Background%2C_Copyright_Free(480p).mp4"; // 1) your video link
     var CLOSE_AFTER_SECS  = 10;    // 2) layer closes this many seconds after Play is clicked
-    var REPEAT_AFTER_MINUTES = 0;  // 3) each page shows the intro at most once per this many minutes (0 = every page load)
+    var MAX_SHOWS         = 2;    // 3) intro shows at most this many times per window (0 = every page load)
+    var WINDOW_MINUTES    = 1;    //    ...within this many minutes
     var INTRO_POSTER      = "";    // 4) optional picture shown before play (image link), or leave empty
     var AD_TAG_URL        = "/media/feed.xml"; // 5) your Cloudflare Worker route (same domain). Empty "" = no ad
     var AD_SKIP_AFTER_SECS = 5;    // 6) skip button delay if the VAST doesn't specify one (0 = no skip button)
@@ -52,14 +53,21 @@
 `;
 
   function log() { try { console.log.apply(console, ["[intro]"].concat([].slice.call(arguments))); } catch (e) {} }
-  var seenAlready = false, seenKey = "introShown:" + location.pathname;
-  if (REPEAT_AFTER_MINUTES > 0) {
-    try {
-      var lastShown = +localStorage.getItem(seenKey) || 0;
-      seenAlready = !!lastShown && (Date.now() - lastShown) < REPEAT_AFTER_MINUTES * 60000;
-      if (!seenAlready) localStorage.setItem(seenKey, String(Date.now()));   // remember when this page last showed the intro
-    } catch (e) {}
-  }
+var seenAlready = false, seenKey = "introShown:" + location.pathname;
+if (MAX_SHOWS > 0) {
+  try {
+    var now = Date.now(), win = WINDOW_MINUTES * 60000;
+    var times = JSON.parse(localStorage.getItem(seenKey) || "[]");
+    if (!Array.isArray(times)) times = [];
+    times = times.filter(function (t) { return now - t < win; });   // keep only shows inside the window
+    if (times.length >= MAX_SHOWS) {
+      seenAlready = true;                                           // limit reached: skip the intro
+    } else {
+      times.push(now);                                              // record this show
+      localStorage.setItem(seenKey, JSON.stringify(times));
+    }
+  } catch (e) {}
+}
   // other scripts on the page can read this flag (true while the intro is showing) and listen for the "introclosed" event
   if (!seenAlready) { window.__introActive = true; }
 
