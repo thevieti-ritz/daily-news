@@ -11,6 +11,7 @@
   var CLOSE_AFTER_SECS = 15; // 2) layer closes this many seconds after Play is clicked
   var MAX_SHOWS = 2; // 3) intro shows at most this many times per window (0 = every page load)
   var WINDOW_MINUTES = 1; //    ...within this many minutes
+  var MIN_GAP_SECS = 30; //    ...and at least this many seconds between two shows on the same page. The gap starts when the intro layer CLOSES, not when it opens (0 = no gap). 30 = 2 evenly spaced shows per minute
   var INTRO_POSTER = ""; // 4) optional picture shown before play (image link), or leave empty
   var AD_TAG_URL = "/media/feed.xml"; // 5) your Cloudflare Worker route (same domain). Empty "" = no ad
   var AD_SKIP_AFTER_SECS = 5; // 6) skip button delay if the VAST doesn't specify one (0 = no skip button)
@@ -64,7 +65,8 @@
   }
   var seenAlready = false,
     shownAt = 0,
-    seenKey = "introShown:" + location.pathname; // counted per page: every different page always gets its own intro
+    seenKey = "introShown:" + location.pathname, // counted per page: every different page always gets its own intro
+    closedKey = "introClosed:" + location.pathname; // when the intro layer last closed on this page
   if (MAX_SHOWS > 0) {
     try {
       var now = Date.now(),
@@ -74,8 +76,13 @@
       times = times.filter(function (t) {
         return now - t < win;
       }); // keep only shows inside the window
-      if (times.length >= MAX_SHOWS) {
-        seenAlready = true; // limit reached: skip the intro
+      var lastClosed = +localStorage.getItem(closedKey) || 0; // the gap timer starts when the last intro layer closed
+      if (lastClosed > now) lastClosed = 0; // ignore a clock that moved backwards
+      if (
+        times.length >= MAX_SHOWS ||
+        (MIN_GAP_SECS > 0 && lastClosed && now - lastClosed < MIN_GAP_SECS * 1000)
+      ) {
+        seenAlready = true; // limit reached, or too soon after the last intro closed on this page: skip the intro
       } else {
         times.push(now); // record this show
         shownAt = now;
@@ -95,6 +102,13 @@
       }
     } catch (e) {}
     shownAt = 0;
+  }
+  // the gap between two shows starts here: called when the intro layer closes after a real show
+  function recordClose() {
+    if (!shownAt) return; // not a real show (dropped because no ad loaded, or limits are off)
+    try {
+      localStorage.setItem(closedKey, String(Date.now()));
+    } catch (e) {}
   }
   // other scripts on the page can read this flag (true while the intro is showing) and listen for the "introclosed" event
   if (!seenAlready) {
@@ -166,6 +180,7 @@
     function close() {
       if (closed) return;
       closed = true;
+      recordClose(); // start the gap timer now
       clearInterval(tick);
       try {
         v.pause();
