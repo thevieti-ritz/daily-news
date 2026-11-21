@@ -10,13 +10,15 @@
     2) zone 6091658  (this file)
     3) zone 5980736  (popunder.js)
     4) zone 5980738  (popunder.js)
-  After all four have fired, everything rests ~1 minute and a new
+    5) zone 6101810  (popunder.js)
+  After all five have fired, everything rests ~1 minute and a new
   round starts again from zone 6091656.
 
-  Load this file together with popunder.js on every page. The two files stay in sync
-  through the shared gate (see ONE-POP-PER-CLICK, IN-ORDER GATE below).
+  Load this file together with popunder.js on every page. The two files
+  stay in sync through the shared gate (see ONE-POP-PER-CLICK, IN-ORDER
+  GATE below). The POP_ORDER list must be identical in both files.
 
-  Same two fixes as before:
+  Two fixes in place:
     1) Each zone gets its own independent popMagic instance
        (createPopMagicInstance factory).
     2) only_inline: true on every zone, so the network's hosted
@@ -51,12 +53,12 @@
     // ============================================================
     // ONE-POP-PER-CLICK, IN-ORDER GATE
     // Identical copy lives in popunder.js and popunder-v20.js. The two
-    // files share state through window.__popGate and a "pop-seq" cookie
+    // files share state through window.__popGate and a "pop-seq2" cookie
     // (so progress also carries over between pages). It does not touch
     // the vendor code — it only wraps two methods on each zone's instance.
     //
-    // Firing order:  6091656 -> 6091658 -> 5980736 -> 5980738
-    // (the two zones in popunder-v20.js first, then the two in popunder.js)
+    // Firing order:  6091656 -> 6091658 -> 5980736 -> 5980738 -> 6101810
+    // (the two zones in popunder-v20.js first, then the three in popunder.js)
     //
     // Rules:
     //   1) Only ONE zone is "up next" at any time: the first zone in the
@@ -68,19 +70,26 @@
     //   3) No two pops within POP_MIN_GAP_MS (stops double-fire per click).
     //   4) Once every zone has fired its 3 pops, everything rests for
     //      POP_REST_MS, then a new round starts from the first zone.
+    //
+    // To add a zone later: add its id to POP_ORDER (same list in BOTH
+    // files) and add its config to one file's zoneChain.
     // ============================================================
-    var POP_ORDER = [6091656, 6091658, 5980736, 5980738];
+    var POP_ORDER = [6091656, 6091658, 5980736, 5980738, 6101810];
     var POP_CAP = 3;               // pops per zone per round
     var POP_MIN_GAP_MS = 1500;     // never two pops closer together than this
     var POP_REST_MS = 61000;       // rest after a finished round before restarting
-    var STATE_COOKIE = "pop-seq";
+    var STATE_COOKIE = "pop-seq2"; // renamed so old 4-zone cookies can't misalign counts
 
     window.__popGate = window.__popGate || {};
     window.__popGate.last = window.__popGate.last || 0;
     window.__popGate.present = window.__popGate.present || [];
 
+    function emptyCounts() {
+        return POP_ORDER.map(function () { return 0; });
+    }
+
     function readState() {
-        var st = { c: [0, 0, 0, 0], last: 0 };
+        var st = { c: emptyCounts(), last: 0 };
         var raw = getCookieValue(STATE_COOKIE);
         if (raw) {
             var p = raw.split(".");
@@ -128,7 +137,7 @@
             var st = readState();
             var next = nextZone(st);
             if (next === null && now - st.last >= POP_REST_MS) {
-                st = { c: [0, 0, 0, 0], last: 0 };   // rest is over: start a new round
+                st = { c: emptyCounts(), last: 0 };   // rest is over: start a new round
                 writeState(st);
                 next = nextZone(st);
             }
@@ -149,6 +158,19 @@
 
         return pm;
     }
+
+    function getCookieValue(name) {
+        var pattern = "(?:^|; )" + name.replace(/([.$?*|{}()\[\]\\\/\+^])/g, "\\$1") + "=([^;]*)";
+        var match = document.cookie.match(new RegExp(pattern));
+        return match ? decodeURIComponent(match[1]) : null;
+    }
+
+    function getFireCount(idzone) {
+        var raw = getCookieValue("zone-cap-" + idzone);
+        var count = raw ? parseInt(raw.split(";")[0], 10) : 0;
+        return isNaN(count) ? 0 : count;
+    }
+
 
     // ============================================================
     // ORCHESTRATION — zones 6091656 and 6091658 (v20)
@@ -171,18 +193,6 @@
             agego_cross_site_enabled: true, only_inline: true
         },
     ];
-
-    function getCookieValue(name) {
-        var pattern = "(?:^|; )" + name.replace(/([.$?*|{}()\[\]\\\/\+^])/g, "\\$1") + "=([^;]*)";
-        var match = document.cookie.match(new RegExp(pattern));
-        return match ? decodeURIComponent(match[1]) : null;
-    }
-
-    function getFireCount(idzone) {
-        var raw = getCookieValue("zone-cap-" + idzone);
-        var count = raw ? parseInt(raw.split(";")[0], 10) : 0;
-        return isNaN(count) ? 0 : count;
-    }
 
     // Tell the gate which zones exist on this page.
     for (var z = 0; z < zoneChain.length; z++) {
