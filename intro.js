@@ -1,24 +1,24 @@
 /* ============================================================
-   intro.js  -  INTRO VIDEO LAYER + VAST AD (one file for ALL pages)
+   intro.js  -  INTRO LAYER WITH PRE-ROLL AD ONLY (one file for ALL pages)
    Add this ONE line right after <body> on every page:
        <script src="/intro.js"></script>
-   Edit the SETTINGS below, upload to GitHub, and every page updates.
+   The layer plays the ad video only. When the ad ends (or the
+   timer runs out, or the ad is skipped, or no ad is available)
+   the layer closes and the site opens. No other video is played.
    ============================================================ */
 (function () {
   /* ---------------- SETTINGS ---------------- */
-  var INTRO_VIDEO_URL =
-    "https://pub-00a.r2.dev/No_Copyright_Video%2C_Background%2C_Green_Screen%2C_Motion_Graphics%2C_Animated_Background%2C_Copyright_Free(480p).mp4"; // 1) your video link
-  var CLOSE_AFTER_SECS = 10; // 2) layer closes this many seconds after Play is clicked
-  var MAX_SHOWS = 2; // 3) intro shows at most this many times per window (0 = every page load)
+  var CLOSE_AFTER_SECS = 10; // 1) layer closes this many seconds after Play is clicked
+  var MAX_SHOWS = 2; // 2) intro shows at most this many times per window (0 = every page load)
   var WINDOW_MINUTES = 1; //    ...within this many minutes
-  var INTRO_POSTER = ""; // 4) optional picture shown before play (image link), or leave empty
-  var AD_TAG_URL = "/media/feed.xml"; // 5) your Cloudflare Worker route (same domain). Empty "" = no ad
-  var AD_SKIP_AFTER_SECS = 5; // 6) skip button delay if the VAST doesn't specify one (0 = no skip button)
-  var AD_START_TIMEOUT = 20000; // 7) ms after the tap to wait for the ad to start before falling back to your video
-  var AD_WAIT_MAX = 20000; // 8) MAX ms Play stays locked in total (ad request + buffering). After this your video plays instead
-  var AD_PRELOAD = true; // 9) true = download the ad video while the visitor looks at the page, so it starts instantly
-  var AD_BUFFER_WAIT = 6000; // 10) extra ms to let the ad video buffer before unlocking Play anyway (iPhones ignore preloading)
-  var AD_RETRIES = 2; // 11) extra tries when the ad server answers with no ad (0 = no retries)
+  var AD_TAG_URL = "/media/feed.xml"; // 3) your Cloudflare Worker route (same domain)
+  var AD_SKIP_AFTER_SECS = 5; // 4) skip button delay if the VAST doesn't specify one (0 = no skip button)
+  var AD_START_TIMEOUT = 20000; // 5) ms after the tap to wait for the ad to start before closing the layer
+  var AD_WAIT_MAX = 20000; // 6) MAX ms Play stays locked (ad request + buffering). After this the layer closes
+  var AD_PRELOAD = true; // 7) true = download the ad video while the visitor looks at the page, so it starts instantly
+  var AD_BUFFER_WAIT = 6000; // 8) extra ms to let the ad video buffer before unlocking Play anyway (iPhones ignore preloading)
+  var AD_RETRIES = 4; // 9) extra tries when the ad server answers with no ad (0 = no retries)
+  var AD_REQUEST_TIMEOUT = 7000; // 10) ms to wait for ONE ad request before giving up on it and trying again
   /* ------------------------------------------ */
 
   var CSS = `
@@ -40,7 +40,7 @@
   var HTML = `
   <div id="introLayer" role="dialog" aria-label="Welcome video" style="position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;background:#000;z-index:2147483647">
     <div id="introWrap">
-      <video id="introVideo" controls playsinline preload="metadata" controlsList="nodownload noremoteplayback"></video>
+      <video id="introVideo" playsinline preload="metadata" controlsList="nodownload noremoteplayback"></video>
       <button id="introPlay" aria-label="Play video">&#9654;</button>
       <div id="introAdTag" class="intro-hidden">Ad</div>
       <button id="introSkip" class="intro-hidden"></button>
@@ -85,6 +85,10 @@
     if (seenAlready) {
       return;
     }
+    if (!AD_TAG_URL) {
+      window.__introActive = false; // no ad route set: nothing to show
+      return;
+    }
 
     var st = document.createElement("style");
     st.textContent = CSS;
@@ -105,15 +109,16 @@
       main = document.getElementById("mainContent"),
       started = false,
       closed = false,
-      retries = 0,
       endAt = 0,
       tick = null;
 
     /* ---------- ad state ---------- */
-    var mode = "content"; // "ad" while the ad is playing
+    var mode = "idle"; // "ad" while the ad is playing
     var ad = {
       ready: false,
       media: "",
+      files: [],
+      idx: 0,
       imp: [],
       trk: {},
       prog: [],
@@ -124,14 +129,16 @@
       watchdog: null,
     };
 
+    v.controls = false;
     document.body.classList.add("intro-lock");
     if (main) main.setAttribute("inert", "");
-    if (INTRO_POSTER) v.poster = INTRO_POSTER;
 
     function close() {
       if (closed) return;
       closed = true;
       clearInterval(tick);
+      clearTimeout(gateTimer);
+      clearTimeout(ad.watchdog);
       try {
         v.pause();
       } catch (e) {}
@@ -166,16 +173,6 @@
       tick = setInterval(update, 250);
     }
 
-    function load(bust) {
-      v.src = bust
-        ? INTRO_VIDEO_URL +
-          (INTRO_VIDEO_URL.indexOf("?") > -1 ? "&" : "?") +
-          "r=" +
-          Date.now()
-        : INTRO_VIDEO_URL;
-      v.load();
-    }
-
     function tryPlay() {
       msg.textContent = "";
       var p = v.play();
@@ -207,89 +204,127 @@
       return p.length === 3 ? +p[0] * 3600 + +p[1] * 60 + parseFloat(p[2]) : -1;
     }
 
-    function loadVast(url, depth) {
-      return fetch(url, { credentials: "omit" })
-        .then(function (r) {
+    // one ad request: never cached, and never allowed to hang forever
+    function fetchText(url, depth) {
+      var u = url;
+      if (depth === 0) {
+        // only our own route gets the cache-buster (third-party wrapper links may be signed)
+        u +=
+          (url.indexOf("?") > -1 ? "&" : "?") +
+          "_=" +
+          Date.now() +
+          Math.random().toString(36).slice(2, 7);
+      }
+      var ctrl = window.AbortController ? new AbortController() : null;
+      var timer = ctrl
+        ? setTimeout(function () {
+            ctrl.abort();
+          }, AD_REQUEST_TIMEOUT)
+        : null;
+      return fetch(u, {
+        credentials: "omit",
+        cache: "no-store",
+        signal: ctrl ? ctrl.signal : undefined,
+      }).then(
+        function (r) {
+          clearTimeout(timer);
+          if (!r.ok) throw new Error("ad server answered HTTP " + r.status);
           return r.text();
-        })
-        .then(function (t) {
-          var doc = new DOMParser().parseFromString(t, "text/xml");
-          var node =
-            doc.querySelector("Ad > InLine") ||
-            doc.querySelector("Ad > Wrapper");
-          if (!node) throw new Error("no ad");
-          [].forEach.call(node.querySelectorAll("Impression"), function (n) {
-            ad.imp.push(txt(n));
-          });
-          [].forEach.call(node.querySelectorAll("Tracking"), function (n) {
-            var e = n.getAttribute("event");
-            if (e === "progress") {
-              ad.prog.push({
-                off: n.getAttribute("offset") || "",
-                url: txt(n),
-                done: false,
-              });
-              return;
-            }
-            (ad.trk[e] = ad.trk[e] || []).push(txt(n));
-          });
-          [].forEach.call(node.querySelectorAll("ClickTracking"), function (n) {
-            ad.clickTrk.push(txt(n));
-          });
-          var ct = node.querySelector("ClickThrough");
-          if (ct && !ad.click) ad.click = txt(ct);
-          var lin = node.querySelector("Linear");
-          if (lin && lin.getAttribute("skipoffset")) {
-            var so = lin.getAttribute("skipoffset");
-            ad.skip =
-              so.indexOf("%") > -1 ? -2 - parseFloat(so) / 100 : toSecs(so); // -2-x = percentage, resolved later
+        },
+        function (e) {
+          clearTimeout(timer);
+          throw e;
+        },
+      );
+    }
+
+    function loadVast(url, depth) {
+      return fetchText(url, depth).then(function (t) {
+        var doc = new DOMParser().parseFromString(t, "text/xml");
+        if (doc.querySelector("parsererror"))
+          throw new Error("ad answer was not valid VAST");
+        var node =
+          doc.querySelector("Ad > InLine") || doc.querySelector("Ad > Wrapper");
+        if (!node) throw new Error("no ad (empty VAST)");
+        [].forEach.call(node.querySelectorAll("Impression"), function (n) {
+          ad.imp.push(txt(n));
+        });
+        [].forEach.call(node.querySelectorAll("Tracking"), function (n) {
+          var e = n.getAttribute("event");
+          if (e === "progress") {
+            ad.prog.push({
+              off: n.getAttribute("offset") || "",
+              url: txt(n),
+              done: false,
+            });
+            return;
           }
-          if (node.tagName === "Wrapper") {
-            var next = txt(node.querySelector("VASTAdTagURI"));
-            if (!next || depth >= 3) throw new Error("wrapper end");
-            return loadVast(next, depth + 1);
-          }
-          // pick the best progressive MP4 (largest up to 1280px wide)
-          var files = [].filter.call(
-            node.querySelectorAll("MediaFile"),
-            function (m) {
-              var type = (m.getAttribute("type") || "").toLowerCase(),
-                d = (m.getAttribute("delivery") || "progressive").toLowerCase();
-              return (
-                d === "progressive" &&
-                (type.indexOf("mp4") > -1 || /\.mp4(\?|$)/i.test(txt(m)))
-              );
-            },
+          (ad.trk[e] = ad.trk[e] || []).push(txt(n));
+        });
+        [].forEach.call(node.querySelectorAll("ClickTracking"), function (n) {
+          ad.clickTrk.push(txt(n));
+        });
+        var ct = node.querySelector("ClickThrough");
+        if (ct && !ad.click) ad.click = txt(ct);
+        var lin = node.querySelector("Linear");
+        if (lin && lin.getAttribute("skipoffset")) {
+          var so = lin.getAttribute("skipoffset");
+          ad.skip = so.indexOf("%") > -1 ? -2 - parseFloat(so) / 100 : toSecs(so); // -2-x = percentage, resolved later
+        }
+        if (node.tagName === "Wrapper") {
+          var next = txt(node.querySelector("VASTAdTagURI"));
+          if (!next || depth >= 4) throw new Error("wrapper chain ended with no ad");
+          return loadVast(next, depth + 1);
+        }
+
+        // collect every playable video file, best first
+        var all = [].slice.call(node.querySelectorAll("MediaFile"));
+        function typeOf(m) {
+          return (m.getAttribute("type") || "").toLowerCase();
+        }
+        function isStream(m) {
+          return (
+            (m.getAttribute("delivery") || "").toLowerCase() === "streaming" ||
+            /\.m3u8(\?|$)/i.test(txt(m)) ||
+            typeOf(m).indexOf("mpegurl") > -1
           );
-          if (!files.length) throw new Error("no mp4");
-          files.sort(function (a, b) {
+        }
+        var mp4s = all.filter(function (m) {
+          return (
+            !isStream(m) &&
+            (typeOf(m).indexOf("mp4") > -1 || /\.mp4(\?|$)/i.test(txt(m)))
+          );
+        });
+        var others = all.filter(function (m) {
+          if (isStream(m) || mp4s.indexOf(m) > -1) return false;
+          var ty = typeOf(m);
+          try {
+            return ty && v.canPlayType(ty) !== "";
+          } catch (e) {
+            return false;
+          }
+        });
+        function rank(list) {
+          return list.sort(function (a, b) {
             var wa = +a.getAttribute("width") || 0,
               wb = +b.getAttribute("width") || 0;
             var ra = wa > 1280 ? -wa : wa,
               rb = wb > 1280 ? -wb : wb;
             return rb - ra;
           });
-          ad.media = txt(files[0]);
-          ad.ready = !!ad.media;
-          log("ad ready:", ad.media);
-        });
-    }
-
-    function endAd() {
-      if (mode !== "ad") return;
-      mode = "content";
-      clearTimeout(ad.watchdog);
-      adTag.classList.add("intro-hidden");
-      skipBtn.classList.add("intro-hidden");
-      v.controls = true;
-      msg.textContent = "";
-      load(false);
-      tryPlay();
+        }
+        var picked = rank(mp4s).concat(rank(others));
+        if (!picked.length) throw new Error("no playable video file in the ad");
+        ad.files = picked.map(txt).filter(Boolean);
+        ad.idx = 0;
+        ad.media = ad.files[0] || "";
+        ad.ready = !!ad.media;
+        log("ad ready:", ad.media, "(" + ad.files.length + " file option(s))");
+      });
     }
 
     function playAd() {
       mode = "ad";
-      v.controls = false;
       if (!ad.preloaded) {
         v.src = ad.media;
         v.load();
@@ -297,8 +332,8 @@
       adTag.classList.remove("intro-hidden");
       ad.watchdog = setTimeout(function () {
         if (mode === "ad" && !ad.fired.start) {
-          log("ad did not start in time, playing your video");
-          endAd();
+          log("ad did not start in time, closing the layer");
+          close();
         }
       }, AD_START_TIMEOUT);
       tryPlay();
@@ -348,13 +383,12 @@
     var onSkip = function () {
       if (skipBtn.disabled) return;
       fire("skip");
-      endAd();
+      close();
     };
     skipBtn.addEventListener("click", onSkip);
     v.addEventListener("timeupdate", adTimeUpdate);
 
-    // prefetch the VAST now so playback can begin synchronously inside the user's tap
-    // ask again if the ad server answers with no ad (a fresh request each time)
+    // ask again if the ad server answers with no ad (a fresh, uncached request each time)
     function resetAd() {
       ad.imp = [];
       ad.trk = {};
@@ -363,6 +397,8 @@
       ad.clickTrk = [];
       ad.skip = -1;
       ad.media = "";
+      ad.files = [];
+      ad.idx = 0;
       ad.ready = false;
     }
     function fetchAd(n) {
@@ -378,7 +414,7 @@
               AD_RETRIES,
           );
           return new Promise(function (r) {
-            setTimeout(r, 800);
+            setTimeout(r, 500 + n * 400);
           }).then(function () {
             return fetchAd(n + 1);
           });
@@ -390,11 +426,9 @@
     // start downloading the ad video right away; Play unlocks once enough is buffered
     function preloadAd() {
       ad.preloaded = true;
-      v.controls = false;
       v.preload = "auto";
       v.src = ad.media;
       v.load();
-      adTag.classList.remove("intro-hidden");
       var bufTimer = setTimeout(function () {
         openGate("ad video still buffering, unlocked anyway");
       }, AD_BUFFER_WAIT);
@@ -405,83 +439,75 @@
         openGate("ad video buffered");
       });
       v.addEventListener("error", function onErr() {
-        if (mode === "ad" || ad.fired.start) return; // errors during/after the ad are handled elsewhere
+        if (mode === "ad" || ad.fired.start) return; // errors during the ad are handled below
+        // this video file is broken: try the next video file the ad offered
+        if (ad.idx + 1 < ad.files.length) {
+          ad.idx++;
+          ad.media = ad.files[ad.idx];
+          log("ad video file failed, trying next file:", ad.media);
+          v.src = ad.media;
+          v.load();
+          return;
+        }
         v.removeEventListener("error", onErr);
         clearTimeout(bufTimer);
-        ad.ready = false;
-        ad.preloaded = false;
-        adTag.classList.add("intro-hidden");
-        log("ad video preload failed, using your video");
-        load(false);
-        openGate("ad video failed");
+        log("ad video could not load, closing the layer");
+        close();
       });
     }
 
-    // Play stays locked until the ad is ready (or AD_WAIT_MAX passes), so the ad is never skipped by tapping too early
+    // Play stays locked until the ad is ready, so the ad is never skipped by tapping too early
     var gateTimer = null,
-      gateOpen = true;
+      gateOpen = false;
     function openGate(why) {
-      if (gateOpen) return;
+      if (gateOpen || closed) return;
       gateOpen = true;
       clearTimeout(gateTimer);
       playBtn.disabled = false;
       playBtn.style.opacity = "";
       if (msg.textContent === "Loading\u2026") msg.textContent = "";
-      if (!ad.ready) v.controls = true;
       log("Play unlocked:", why);
     }
-    if (AD_TAG_URL) {
-      gateOpen = false;
-      v.controls = false;
-      playBtn.disabled = true;
-      playBtn.style.opacity = ".55";
-      msg.textContent = "Loading\u2026";
-      gateTimer = setTimeout(function () {
-        openGate("waited " + AD_WAIT_MAX / 1000 + "s, ad not ready");
-      }, AD_WAIT_MAX);
-      fetchAd(0)
-        .then(function () {
-          if (started) {
-            // ad came late: the ad wins, it takes over from your video
-            if (closed) return;
-            ad.adDone = true;
-            log("ad arrived after Play was tapped - playing it now");
-            playAd();
-            return;
-          }
-          if (AD_PRELOAD && ad.ready) {
-            preloadAd();
-          } else {
-            openGate("ad ready");
-          }
-        })
-        .catch(function (err) {
-          ad.ready = false;
-          log("NO AD:", err && err.message ? err.message : err);
-          openGate("no ad available");
-        });
-    }
+    playBtn.disabled = true;
+    playBtn.style.opacity = ".55";
+    msg.textContent = "Loading\u2026";
+    gateTimer = setTimeout(function () {
+      if (!ad.ready) {
+        log("waited " + AD_WAIT_MAX / 1000 + "s, no ad, closing the layer");
+        close();
+      } else {
+        openGate("waited " + AD_WAIT_MAX / 1000 + "s");
+      }
+    }, AD_WAIT_MAX);
+    fetchAd(0)
+      .then(function () {
+        if (closed) return;
+        if (AD_PRELOAD && ad.ready) {
+          preloadAd();
+        } else {
+          openGate("ad ready");
+        }
+      })
+      .catch(function (err) {
+        ad.ready = false;
+        log("NO AD after all tries, closing the layer:", err && err.message ? err.message : err);
+        close(); // no ad = no intro
+      });
     /* ========================================================== */
 
-    var onPlay = function () {
+    playBtn.addEventListener("click", function () {
       startClock();
       playBtn.classList.add("intro-hidden");
-      if (AD_TAG_URL && !ad.ready && !ad.adDone)
-        log(
-          "Play tapped but the ad was not ready, so your video plays instead",
-        );
-      if (mode === "content" && ad.ready && !ad.fired.start && !ad.adDone) {
-        ad.adDone = true;
-        playAd();
+      if (!ad.ready) {
+        close();
         return;
       }
-      v.controls = true;
-      if (v.error) {
-        load(true);
+      if (mode === "ad") {
+        tryPlay(); // resume after a pause
+        return;
       }
-      tryPlay();
-    };
-    playBtn.addEventListener("click", onPlay);
+      playAd();
+    });
 
     v.addEventListener("play", function () {
       playBtn.classList.add("intro-hidden");
@@ -497,36 +523,15 @@
       if (!closed && !v.ended) playBtn.classList.remove("intro-hidden");
     });
     v.addEventListener("ended", function () {
+      if (mode === "ad") fire("complete");
+      close(); // ad finished: open the site
+    });
+    v.addEventListener("error", function () {
       if (mode === "ad") {
-        fire("complete");
-        endAd();
-      } else {
+        log("ad video failed while playing, error code:", v.error && v.error.code);
         close();
       }
     });
-
-    v.addEventListener("error", function () {
-      if (mode === "ad") {
-        log("ad video failed to load, error code:", v.error && v.error.code);
-        endAd();
-        return;
-      } // ad file blocked/broken -> go straight to your video
-      if (!started || closed) return;
-      if (retries < 3) {
-        retries++;
-        msg.textContent = "Reconnecting\u2026 (" + retries + "/3)";
-        setTimeout(function () {
-          if (!closed) {
-            load(true);
-            tryPlay();
-          }
-        }, 1200 * retries);
-      } else {
-        msg.textContent = "Video could not load.";
-      }
-    });
-
-    load(false);
   }
 
   if (document.body) {
