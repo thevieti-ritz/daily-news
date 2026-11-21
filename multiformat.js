@@ -15,9 +15,12 @@
     document.head.appendChild(s);
   }
 
-  function place() {
-    // Use the script's own position, or a [data-ad-slot] if the page has one
-    var slot = document.querySelector("[data-ad-slot]");
+  function isHomePage() {
+    var p = window.location.pathname;
+    return p === "/" || p === "" || /\/index\.html?$/i.test(p);
+  }
+
+  function buildAd() {
     var box = document.createElement("div");
     box.className = "page-ad";
     box.style.cssText = "display:flex;justify-content:center;margin:24px auto;min-height:100px;";
@@ -26,11 +29,27 @@
     ins.className = INS_CLASS;
     ins.setAttribute("data-zoneid", ZONE);
     box.appendChild(ins);
+    return box;
+  }
 
-    if (slot) slot.appendChild(box);
-    else document.body.appendChild(box); // default: end of the page
-
+  function serve() {
     (window.AdProvider = window.AdProvider || []).push({ serve: {} });
+  }
+
+  function place() {
+    if (isHomePage()) {
+      // Home page: ad at the very top of the page
+      document.body.insertBefore(buildAd(), document.body.firstChild);
+      serve();
+      return;
+    }
+
+    // Other pages: only render inside designated ad slots
+    var slots = document.querySelectorAll("[data-ad-slot]");
+    for (var i = 0; i < slots.length; i++) {
+      slots[i].appendChild(buildAd());
+      serve(); // one serve call per ad unit
+    }
   }
 
   if (document.readyState === "loading") {
