@@ -3,34 +3,28 @@
    Add this ONE line right after <body> on every page:
        <script src="/intro.js"></script>
    Edit the SETTINGS below, upload to GitHub, and every page updates.
-
-   TROUBLESHOOTING: open any page with  ?introdebug=1  on the end of the
-   address (example: https://dailynewsug.online/?introdebug=1) and a green
-   log box appears at the bottom showing exactly why an ad did not load.
    ============================================================ */
 (function () {
   /* ---------------- SETTINGS ---------------- */
   var INTRO_VIDEO_URL =
     "https://pub-00a.r2.dev/No_Copyright_Video%2C_Background%2C_Green_Screen%2C_Motion_Graphics%2C_Animated_Background%2C_Copyright_Free(480p).mp4"; // 1) your video link
-  var CLOSE_AFTER_SECS = 10; // 2) layer closes this many seconds after Play is clicked
+  var CLOSE_AFTER_SECS = 15; // 2) layer closes this many seconds after Play is clicked
   var MAX_SHOWS = 2; // 3) intro shows at most this many times per window (0 = every page load)
   var WINDOW_MINUTES = 1; //    ...within this many minutes
   var INTRO_POSTER = ""; // 4) optional picture shown before play (image link), or leave empty
   var AD_TAG_URL = "/media/feed.xml"; // 5) your Cloudflare Worker route (same domain). Empty "" = no ad
   var AD_SKIP_AFTER_SECS = 5; // 6) skip button delay if the VAST doesn't specify one (0 = no skip button)
   var AD_START_TIMEOUT = 20000; // 7) ms after the tap to wait for the ad to start before falling back to your video
-  var AD_FETCH_MAX = 12000; // 8) MAX ms to keep trying to get an ad (all retries must fit inside this). Raised from 5000: slow mobile networks need more time. No ad by then = layer closes (or your video plays if AD_REQUIRED is false)
+  var AD_FETCH_MAX = 8000; // 8) MAX ms to keep trying to get an ad (all retries must fit inside this). No ad by then = layer closes (or your video plays if AD_REQUIRED is false)
   var AD_PRELOAD = true; // 9) true = download the ad video while the visitor looks at the page, so it starts instantly
   var AD_BUFFER_WAIT = 6000; // 10) extra ms to let the ad video buffer before unlocking Play anyway (iPhones ignore preloading)
-  var AD_RETRIES = 3; // 11) retries (ad request AND ad video download share this count) before the ad counts as failed (0 = no retries)
-  var AD_FETCH_TIMEOUT = 5000; // 11b) ms to wait for one ad request before abandoning it and retrying. Raised from 2000: the Worker -> ad server -> back trip is often slower than 2s
-  var AD_RETRY_DELAY = 300; // 11c) ms before the first retry. Doubles each retry (300, 600, 1200...) so a struggling ad server is not hammered
-  var AD_RETRY_DELAY_MAX = 1500; // 11d) the doubling delay never goes above this many ms
-  var AD_COOLDOWN_SECS = 0; // 11e) OFF by default now. When on, one failed load made EVERY page in the next N seconds try only once, which caused ads to fail on "random" pages. 0 = off
+  var AD_RETRIES = 2; // 11) retries (ad request AND ad video download share this count) before the ad counts as failed (0 = no retries)
+  var AD_FETCH_TIMEOUT = 5000; // 11b) ms to wait for one ad request before abandoning it and retrying
+  var AD_RETRY_DELAY = 200; // 11c) ms before the first retry. Doubles each retry (200, 400, 800...) so a struggling ad server is not hammered
+  var AD_RETRY_DELAY_MAX = 1000; // 11d) the doubling delay never goes above this many ms
+  var AD_COOLDOWN_SECS = 0; // 11e) after a load ends with NO ad, loads in the next N seconds (any page) make ONE request with no retries. 0 = off
   var AD_REQUIRED = true; // 12) true = intro only runs with a pre-roll ad. No ad = layer closes, your video never plays alone
   /* ------------------------------------------ */
-
-  var DEBUG = /[?&]introdebug=1/.test(location.search);
 
   var CSS = `
     #introLayer{position:fixed;inset:0;z-index:2147483647;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity .4s ease}
@@ -63,23 +57,9 @@
   
 `;
 
-  var dbgBox = null,
-    t0 = Date.now();
   function log() {
     try {
-      var a = [].slice.call(arguments);
-      console.log.apply(console, ["[intro]"].concat(a));
-      if (DEBUG && document.body) {
-        if (!dbgBox) {
-          dbgBox = document.createElement("div");
-          dbgBox.style.cssText =
-            "position:fixed;left:0;right:0;bottom:0;max-height:45%;overflow:auto;background:rgba(0,0,0,.88);color:#0f0;font:11px/1.4 monospace;padding:6px;z-index:2147483647;white-space:pre-wrap";
-          document.body.appendChild(dbgBox);
-        }
-        dbgBox.textContent +=
-          "+" + (Date.now() - t0) + "ms  " + a.join(" ") + "\n";
-        dbgBox.scrollTop = dbgBox.scrollHeight;
-      }
+      console.log.apply(console, ["[intro]"].concat([].slice.call(arguments)));
     } catch (e) {}
   }
   var seenAlready = false,
@@ -149,8 +129,6 @@
       endAt = 0,
       tick = null;
 
-    log("intro started on", location.pathname, "- ad tag:", AD_TAG_URL);
-
     /* ---------- ad state ---------- */
     var mode = "content"; // "ad" while the ad is playing
     var COOL_KEY = "introNoAdAt";
@@ -208,14 +186,9 @@
 
     // close the layer because no ad could be shown (and don't count it as a show)
     function dropIntro(why) {
-      log("INTRO CLOSED, no ad shown. Reason:", why);
+      log("intro skipped:", why);
       unrecordShow();
-      if (DEBUG) {
-        msg.textContent = "No ad: " + why;
-        setTimeout(close, 8000); // stay open a bit so you can read the reason
-      } else {
-        close();
-      }
+      close();
     }
 
     function startClock() {
@@ -283,7 +256,6 @@
             ctl.abort();
           }, AD_FETCH_TIMEOUT)
         : null;
-      log("requesting ad" + (depth ? " (wrapper level " + depth + ")" : "") + ":", url);
       return fetch(
         url,
         ctl
@@ -295,30 +267,22 @@
             clearTimeout(to);
             if (!r.ok) {
               var he = new Error("ad server HTTP " + r.status);
-              he.noRetry = r.status === 404 || r.status === 410; // only "not found / gone" will never fix itself. Everything else (429, 403, 5xx...) can recover, so we retry
+              he.noRetry = r.status >= 400 && r.status < 500 && r.status !== 408; // 4xx (incl. 429 rate-limit) will not fix itself: stop asking
               throw he;
             }
             return r.text();
           },
           function (e) {
             clearTimeout(to);
-            if (e && e.name === "AbortError")
-              throw new Error("ad request timed out after " + AD_FETCH_TIMEOUT + "ms");
             throw e;
           },
         )
         .then(function (t) {
           var doc = new DOMParser().parseFromString(t, "text/xml");
-          if (doc.querySelector("parsererror"))
-            throw new Error(
-              "ad response is not valid VAST XML (starts with: " +
-                String(t).slice(0, 80).replace(/\s+/g, " ") +
-                ")",
-            );
           var node =
             doc.querySelector("Ad > InLine") ||
             doc.querySelector("Ad > Wrapper");
-          if (!node) throw new Error("ad server returned no ad (empty VAST / no fill)");
+          if (!node) throw new Error("no ad");
           [].forEach.call(node.querySelectorAll("Impression"), function (n) {
             ad.imp.push(txt(n));
           });
@@ -347,7 +311,7 @@
           }
           if (node.tagName === "Wrapper") {
             var next = txt(node.querySelector("VASTAdTagURI"));
-            if (!next || depth >= 3) throw new Error("wrapper chain ended without an ad");
+            if (!next || depth >= 3) throw new Error("wrapper end");
             return loadVast(next, depth + 1);
           }
           // pick the best progressive MP4 (largest up to 1280px wide)
@@ -362,7 +326,7 @@
               );
             },
           );
-          if (!files.length) throw new Error("ad has no MP4 video file");
+          if (!files.length) throw new Error("no mp4");
           files.sort(function (a, b) {
             var wa = +a.getAttribute("width") || 0,
               wb = +b.getAttribute("width") || 0;
@@ -483,7 +447,7 @@
         ) {
           adRetries++;
           log(
-            "ad attempt failed (" +
+            "no ad (" +
               ((err && err.message) || err) +
               "), retry " +
               adRetries +
@@ -502,14 +466,6 @@
         }
         throw err;
       });
-    }
-
-    // the "give up" timer: if no ad is ready when it fires, the intro is dropped
-    function armDeadline() {
-      clearTimeout(adDeadline);
-      adDeadline = setTimeout(function () {
-        if (!ad.ready) noAd("no ad within " + AD_FETCH_MAX / 1000 + "s");
-      }, AD_FETCH_MAX);
     }
 
     // start downloading the ad video right away; Play unlocks once enough is buffered
@@ -538,13 +494,11 @@
         ad.ready = false;
         ad.preloaded = false;
         adTag.classList.add("intro-hidden");
-        log("ad video download failed, error code:", v.error && v.error.code);
+        log("ad video preload failed");
         if (closed || gaveUp) return;
-        if (adRetries < maxRetries) {
+        if (adRetries < maxRetries && Date.now() - adStartedAt < AD_FETCH_MAX) {
           adRetries++;
-          adStartedAt = Date.now(); // fresh time budget for the new ad
-          armDeadline();
-          log("retrying with a fresh ad " + adRetries + "/" + maxRetries);
+          log("retrying ad " + adRetries + "/" + maxRetries);
           // keep Play locked while we fetch a fresh ad
           gateOpen = false;
           v.controls = false;
@@ -580,10 +534,10 @@
       clearTimeout(adDeadline);
       log("NO AD after " + adRetries + " retries / " + (Date.now() - adStartedAt) + "ms:", why);
       try {
-        if (AD_COOLDOWN_SECS) localStorage.setItem(COOL_KEY, String(Date.now())); // only used if you turn the cool-down on
+        localStorage.setItem(COOL_KEY, String(Date.now())); // start the cool-down so the next loads don't hammer the ad server
       } catch (e) {}
       if (AD_REQUIRED) {
-        dropIntro(why); // required: no ad = no intro (and it doesn't count as a show)
+        dropIntro("no ad available"); // required: no ad = no intro (and it doesn't count as a show)
       } else {
         openGate(why);
       }
@@ -622,7 +576,9 @@
       playBtn.style.opacity = ".55";
       msg.textContent = "Loading\u2026";
       // hard stop: no ad within AD_FETCH_MAX ms = give up
-      armDeadline();
+      adDeadline = setTimeout(function () {
+        if (!ad.ready) noAd("no ad within " + AD_FETCH_MAX / 1000 + "s");
+      }, AD_FETCH_MAX);
       loadAdFlow();
     } else if (AD_REQUIRED) {
       dropIntro("no ad tag configured"); // nothing to show
