@@ -15,10 +15,11 @@
   var AD_TAG_URL = "/media/feed.xml"; // 5) your Cloudflare Worker route (same domain). Empty "" = no ad
   var AD_SKIP_AFTER_SECS = 5; // 6) skip button delay if the VAST doesn't specify one (0 = no skip button)
   var AD_START_TIMEOUT = 20000; // 7) ms after the tap to wait for the ad to start before falling back to your video
-  var AD_WAIT_MAX = 20000; // 8) MAX ms Play stays locked in total (ad request + buffering). After this your video plays instead
+  var AD_WAIT_MAX = 20000; // 8) MAX ms Play stays locked in total (ad request + buffering). After this your video plays instead (or the layer closes if AD_REQUIRED)
   var AD_PRELOAD = true; // 9) true = download the ad video while the visitor looks at the page, so it starts instantly
   var AD_BUFFER_WAIT = 6000; // 10) extra ms to let the ad video buffer before unlocking Play anyway (iPhones ignore preloading)
-  var AD_RETRIES = 2; // 11) extra tries when the ad server answers with no ad (0 = no retries)
+  var AD_RETRIES = 4; // 11) extra tries when the ad server answers with no ad (0 = no retries)
+  var AD_REQUIRED = true; // 12) true = intro only runs with a pre-roll ad. No ad = layer closes, your video never plays alone
   /* ------------------------------------------ */
 
   var CSS = `
@@ -297,6 +298,11 @@
       adTag.classList.remove("intro-hidden");
       ad.watchdog = setTimeout(function () {
         if (mode === "ad" && !ad.fired.start) {
+          if (AD_REQUIRED) {
+            log("ad did not start in time, closing (ad required)");
+            close();
+            return;
+          }
           log("ad did not start in time, playing your video");
           endAd();
         }
@@ -411,7 +417,11 @@
         ad.ready = false;
         ad.preloaded = false;
         adTag.classList.add("intro-hidden");
-        log("ad video preload failed, using your video");
+        log("ad video preload failed");
+        if (AD_REQUIRED) {
+          close();
+          return;
+        }
         load(false);
         openGate("ad video failed");
       });
@@ -430,6 +440,14 @@
       if (!ad.ready) v.controls = true;
       log("Play unlocked:", why);
     }
+    function noAd(why) {
+      log("NO AD:", why);
+      if (AD_REQUIRED) {
+        close();
+      } else {
+        openGate(why);
+      } // required: no ad = no intro
+    }
     if (AD_TAG_URL) {
       gateOpen = false;
       v.controls = false;
@@ -437,13 +455,17 @@
       playBtn.style.opacity = ".55";
       msg.textContent = "Loading\u2026";
       gateTimer = setTimeout(function () {
-        openGate("waited " + AD_WAIT_MAX / 1000 + "s, ad not ready");
+        if (ad.ready) {
+          openGate("waited " + AD_WAIT_MAX / 1000 + "s, ad loaded");
+        } else {
+          noAd("waited " + AD_WAIT_MAX / 1000 + "s, ad not ready");
+        }
       }, AD_WAIT_MAX);
       fetchAd(0)
         .then(function () {
+          if (closed) return;
           if (started) {
             // ad came late: the ad wins, it takes over from your video
-            if (closed) return;
             ad.adDone = true;
             log("ad arrived after Play was tapped - playing it now");
             playAd();
@@ -457,13 +479,15 @@
         })
         .catch(function (err) {
           ad.ready = false;
-          log("NO AD:", err && err.message ? err.message : err);
-          openGate("no ad available");
+          noAd(err && err.message ? err.message : err);
         });
+    } else if (AD_REQUIRED) {
+      close(); // no ad tag configured, so there is nothing to show
     }
     /* ========================================================== */
 
     var onPlay = function () {
+      if (AD_REQUIRED && !ad.ready && !ad.adDone) return; // safety net: never play without an ad
       startClock();
       playBtn.classList.add("intro-hidden");
       if (AD_TAG_URL && !ad.ready && !ad.adDone)
@@ -508,6 +532,10 @@
     v.addEventListener("error", function () {
       if (mode === "ad") {
         log("ad video failed to load, error code:", v.error && v.error.code);
+        if (AD_REQUIRED && !ad.fired.start) {
+          close();
+          return;
+        } // ad never started and an ad is required: no intro
         endAd();
         return;
       } // ad file blocked/broken -> go straight to your video
