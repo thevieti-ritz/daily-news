@@ -486,7 +486,6 @@ function createVideoCard(video) {
 // Each slot asks ONCE and is never refreshed or retried.
 // ============================================
 const AD_TYPES = {
-  slider:    { cls: "eas6a97888e31", zone: "5980730" },
   outstream: { cls: "eas6a97888e37", zone: "5993834" },
 };
 
@@ -547,7 +546,7 @@ function loadAd(wrap) {
   wrap.__adAsked = true;
   wrap.__adShown = true;
 
-  // odd slots = slider (5980730), even slots = outstream (5993834)
+  // odd slots = even slots = outstream (5993834)
   const type = Number(wrap.dataset.adSlot) % 2 === 1 ? AD_TYPES.slider : AD_TYPES.outstream;
   holder.innerHTML = `<ins class="${type.cls}" data-zoneid="${type.zone}"></ins>`;
   (window.AdProvider = window.AdProvider || []).push({ serve: {} });

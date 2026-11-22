@@ -1,9 +1,8 @@
 /* ============================================
    site-a.js — shared ExoClick ad slots
-   Only TWO ad types are used, alternating exactly like main.js:
-     odd slots  (1, 3, 5, ...) -> video slider,    zone 5980730
+   Only one ad type is used, alternating exactly like main.js:
      even slots (2, 4, 6, ...) -> outstream video, zone 5993834
-   The bottom ad of the page takes its turn in the same rotation.
+   The bottom ad of the page takes its turn in the same ad zone.
 
    Works together with worker.js:
      - SDK_PATH below MUST equal SDK_PATH in worker.js ("/js/sdk.js")
@@ -18,8 +17,7 @@
    5) Optional: force one type on a slot with
         data-ad-type="slider"   or   data-ad-type="outstream"
 
-   Each slot asks for its ad ONCE, as soon as it is anywhere near the
-   screen, with no waiting line and no delay between ads. It is never
+   Each slot asks for its ad ONCE, as soon as the page loads, with no waiting line and no delay between ads. It is never
    retried or refreshed.
    ============================================ */
 (function () {
@@ -29,10 +27,9 @@
 
   // The only two ad types (same as main.js)
   var AD_TYPES = {
-    slider:    { cls: "eas6a97888e31", zone: "5980730" },
     outstream: { cls: "eas6a97888e37", zone: "5993834" }
   };
-  var slotCounter = 0;                              // odd = slider, even = outstream
+  var slotCounter = 0;                              // odd = empty, even = outstream
 
   var LAZY_MARGIN = "1500px 0px"; // start loading well before the slot is visible
 
@@ -88,14 +85,14 @@
     if (!holder) return;
     slot.__adAsked = true;
 
-    // pick the type: forced by data-ad-type, otherwise odd = slider, even = outstream
+    // pick the type: forced by data-ad-type, otherwise odd = empty, even = outstream
     var forced = slot.getAttribute("data-ad-type");
     var type;
     if (forced && AD_TYPES[forced]) {
       type = AD_TYPES[forced];
     } else {
       slotCounter++;
-      type = slotCounter % 2 === 1 ? AD_TYPES.slider : AD_TYPES.outstream;
+      type = slotCounter % 2 === 1 ? AD_TYPES.empty : AD_TYPES.outstream;
     }
 
     holder.innerHTML = '<ins class="' + type.cls + '" data-zoneid="' + type.zone + '"></ins>';
@@ -105,39 +102,6 @@
   // ---------- no waiting line: every slot loads as soon as it is due ----------
   function enqueue(slot) {
     if (document.body.contains(slot)) loadAd(slot);
-  }
-
-  // ---------- only ask for an ad when its slot is about to be seen ----------
-  var observer = null;
-  function getObserver() {
-    if (observer) return observer;
-    observer = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) {
-        if (!e.isIntersecting) return;
-        observer.unobserve(e.target);
-        enqueue(e.target);
-      });
-    }, { rootMargin: LAZY_MARGIN });
-    return observer;
-  }
-
-  function add(slot) {
-    if (!slot || slot.__adQueued) return;
-    slot.__adQueued = true;
-    if (!slot.querySelector(".page-ad-holder")) {
-      var h = document.createElement("div");
-      h.className = "page-ad-holder";
-      slot.appendChild(h);
-    }
-    if ("IntersectionObserver" in window) getObserver().observe(slot);
-    else enqueue(slot);
-  }
-
-  function create() {
-    var d = document.createElement("div");
-    d.className = "page-ad";
-    d.innerHTML = '<div class="page-ad-holder"></div>';
-    return d;
   }
 
   // ads inside an article: after every Nth element matching the selector
