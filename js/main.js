@@ -445,10 +445,15 @@ function createVideoCard(video) {
          class="lazy-img card-thumb-img"
          loading="lazy"
          decoding="async"/>`
-    : `<div class="card-thumb-placeholder"
-         style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a1a1a,#2b2b2b);color:#555;font-size:34px;">
-         <i class="fas fa-film"></i>
-       </div>`;
+    : `<video
+         class="card-thumb-video"
+         data-src="${videoUrl}#t=3"
+         preload="none"
+         muted
+         playsinline
+         crossorigin="anonymous"
+         style="width:100%;height:100%;object-fit:cover;display:block;">
+       </video>`;
 
   card.innerHTML = `
     <div class="card-thumb">
@@ -475,10 +480,16 @@ function createVideoCard(video) {
 // ============================================
 // AD SLOT
 // Inserted into the video grid right after every
-// AD_EVERY-th video card. One ad per slot (video slider ad, zone ......):
-//   ExoClick outstream video (zone 5993834)
-// Loads immediately on page render (no lazy-load).
+// AD_EVERY-th video card. Two ad types alternate:
+//   odd slots  (1, 3, 5, ...) -> video slider,    zone 5980730 only
+//   even slots (2, 4, 6, ...) -> outstream video, zone 5993834 only
+// Each slot asks ONCE and is never refreshed or retried.
 // ============================================
+const AD_TYPES = {
+  slider:    { cls: "eas6a97888e31", zone: "5980730" },
+  outstream: { cls: "eas6a97888e37", zone: "5993834" },
+};
+
 let adSlotCounter = 0;
 let exoclickScriptLoaded = false;
 
@@ -486,11 +497,11 @@ function ensureExoclickScript() {
   if (exoclickScriptLoaded) return;
   exoclickScriptLoaded = true;
   // already added by index.html? then nothing to do
-  if (document.querySelector('script[src*="ad-provider.js"], script[src*="/js/sdk.js"]')) return;
+  if (document.querySelector('script[src*="ad-provider.js"]')) return;
   const s = document.createElement("script");
   s.async = true;
   s.type = "application/javascript";
-  s.src = "/js/sdk.js";
+  s.src = "https://a.magsrv.com/ad-provider.js";
   document.head.appendChild(s);
 }
 
@@ -509,8 +520,6 @@ function createAdSlot() {
 }
 
 // ---- Load ads one by one. Each slot asks ONCE and is never refreshed or retried ----
-const AD_ZONES   = ["", "", "", ""]; // 4 zones, slots take these in turn
-let adZoneCounter = 0;
 const AD_GAP_MS   = 1000; // wait between each round of ads
 const AD_BATCH    = 3;    // how many ads start in each round
 const AD_STAGGER  = 500;  // ms between ads inside one round (avoids ExoClick mix-ups)
@@ -538,9 +547,9 @@ function loadAd(wrap) {
   wrap.__adAsked = true;
   wrap.__adShown = true;
 
-  const zone = AD_ZONES[adZoneCounter % AD_ZONES.length];
-  adZoneCounter++;
-  holder.innerHTML = `<ins class="eas6a97888e31" data-zoneid="${zone}"></ins>`;
+  // odd slots = slider (5980730), even slots = outstream (5993834)
+  const type = Number(wrap.dataset.adSlot) % 2 === 1 ? AD_TYPES.slider : AD_TYPES.outstream;
+  holder.innerHTML = `<ins class="${type.cls}" data-zoneid="${type.zone}"></ins>`;
   (window.AdProvider = window.AdProvider || []).push({ serve: {} });
 }
 
