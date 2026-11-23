@@ -1,7 +1,7 @@
 /* ============================================
    site-a.js — shared ExoClick ad slots
    Only one ad type is used, alternating exactly like main.js:
-     even slots (2, 4, 6, ...) -> outstream video, zone 5993834
+     every slot -> outstream video, zone 5993834 (max 10 slots per page, plus the bottom ad)
    The bottom ad of the page takes its turn in the same ad zone.
 
    Works together with worker.js:
@@ -14,8 +14,6 @@
    3) Optional: ads inside an article, after every N elements. Add to <body>:
         data-ad-inject="#articleBody p"  data-ad-every="2"
    4) The bottom ad is added automatically at the end of every page.
-   5) Optional: force one type on a slot with
-        data-ad-type="slider"   or   data-ad-type="outstream"
 
    Each slot asks for its ad ONCE, as soon as the page loads, with no waiting line and no delay between ads. It is never
    retried or refreshed.
@@ -29,7 +27,8 @@
   var AD_TYPES = {
     outstream: { cls: "eas6a97888e37", zone: "5993834" }
   };
-  var slotCounter = 0;                              // odd = empty, even = outstream
+  var MAX_SLOTS = 10;                               // maximum ad slots per page
+  var slotCount = 0;
 
   var LAZY_MARGIN = "1500px 0px"; // start loading well before the slot is visible
 
@@ -42,7 +41,6 @@
     ".page-ad::before{content:'Advertisement';position:absolute;top:6px;left:12px;font-size:10px;",
     "  font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:.6}",
     ".page-ad-holder{width:100%;max-width:640px;height:360px;overflow:hidden;margin:0 auto}",
-    ".page-ad-holder ins." + AD_TYPES.slider.cls + ",",
     ".page-ad-holder ins." + AD_TYPES.outstream.cls + "{width:100%!important;height:100%!important}",
     "/* only ONE ad per slot: anything extra is hidden */",
     ".page-ad-holder>ins~ins{display:none!important}",
@@ -85,15 +83,7 @@
     if (!holder) return;
     slot.__adAsked = true;
 
-    // pick the type: forced by data-ad-type, otherwise odd = empty, even = outstream
-    var forced = slot.getAttribute("data-ad-type");
-    var type;
-    if (forced && AD_TYPES[forced]) {
-      type = AD_TYPES[forced];
-    } else {
-      slotCounter++;
-      type = slotCounter % 2 === 1 ? AD_TYPES.empty : AD_TYPES.outstream;
-    }
+    var type = AD_TYPES.outstream;
 
     holder.innerHTML = '<ins class="' + type.cls + '" data-zoneid="' + type.zone + '"></ins>';
     (window.AdProvider = window.AdProvider || []).push({ serve: {} });
@@ -105,6 +95,35 @@
   }
 
   // ads inside an article: after every Nth element matching the selector
+  function create() {
+    var slot = document.createElement("div");
+    slot.className = "page-ad";
+    slot.setAttribute("data-ad-slot", "");
+    return slot;
+  }
+
+  // register a slot (max MAX_SLOTS per page) and load it when it nears the viewport
+  // force = true skips the limit (used by the bottom ad, which always appears)
+  function add(slot, force) {
+    if (slot.__adRegistered) return;
+    if (!force && slotCount >= MAX_SLOTS) {
+      if (slot.parentNode) slot.parentNode.removeChild(slot);
+      return;
+    }
+    slot.__adRegistered = true;
+    slotCount++;
+    if (!slot.querySelector(".page-ad-holder")) {
+      var h = document.createElement("div");
+      h.className = "page-ad-holder";
+      slot.appendChild(h);
+    }
+    if (!("IntersectionObserver" in window)) { enqueue(slot); return; }
+    var io = new IntersectionObserver(function (entries) {
+      if (entries[0].isIntersecting) { io.disconnect(); enqueue(slot); }
+    }, { rootMargin: LAZY_MARGIN });
+    io.observe(slot);
+  }
+
   function inject(selector, every) {
     var nodes = document.querySelectorAll(selector);
     for (var i = 0; i < nodes.length; i++) {
@@ -122,7 +141,7 @@
     var slot = create();
     slot.className += " page-ad-bottom";
     document.body.appendChild(slot);
-    add(slot);
+    add(slot, true); // always shown, even after the 10-slot limit
   }
 
   window.AdSlots = { add: add, create: create, inject: inject };

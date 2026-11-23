@@ -14,6 +14,7 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 // ============================================
 const PAGE_SIZE    = 12;
 const R2_BASE      = "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/";
+const AD_MAX_SLOTS  = 10; // maximum ad slots per page
 const AD_EVERY      = 1; // insert an ad slot after every N video cards (1 = after every video)
 let lastDoc        = null;
 let currentSearch  = "";
@@ -361,7 +362,7 @@ async function loadVideos() {
       const card = createVideoCard({ id: d.id, ...d.data() });
       videoCardCount++;
       fragment.appendChild(card);
-      if (videoCardCount % AD_EVERY === 0) {
+      if (videoCardCount % AD_EVERY === 0 && adSlotCounter < AD_MAX_SLOTS) {
         const slot = createAdSlot();
         fragment.appendChild(slot);
         newAdSlots.push(slot);
@@ -480,9 +481,8 @@ function createVideoCard(video) {
 // ============================================
 // AD SLOT
 // Inserted into the video grid right after every
-// AD_EVERY-th video card. Two ad types alternate:
-//   odd slots  (1, 3, 5, ...) -> video slider,    zone 5980730 only
-//   even slots (2, 4, 6, ...) -> outstream video, zone 5993834 only
+// AD_EVERY-th video card (max AD_MAX_SLOTS per page).
+// Every slot shows an outstream video, zone 5993834.
 // Each slot asks ONCE and is never refreshed or retried.
 // ============================================
 const AD_TYPES = {
@@ -546,8 +546,7 @@ function loadAd(wrap) {
   wrap.__adAsked = true;
   wrap.__adShown = true;
 
-  // odd slots = even slots = outstream (5993834)
-  const type = Number(wrap.dataset.adSlot) % 2 === 1 ? AD_TYPES.slider : AD_TYPES.outstream;
+  const type = AD_TYPES.outstream;
   holder.innerHTML = `<ins class="${type.cls}" data-zoneid="${type.zone}"></ins>`;
   (window.AdProvider = window.AdProvider || []).push({ serve: {} });
 }
