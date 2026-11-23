@@ -30,8 +30,6 @@
   var MAX_SLOTS = 10;                               // maximum ad slots per page
   var slotCount = 0;
 
-  var LAZY_MARGIN = "1500px 0px"; // start loading well before the slot is visible
-
   // ---------- styles (self-contained) ----------
   var css = [
     ".page-ad{position:relative;display:flex;align-items:center;justify-content:center;",
@@ -102,7 +100,7 @@
     return slot;
   }
 
-  // register a slot (max MAX_SLOTS per page) and load it when it nears the viewport
+  // register a slot (max MAX_SLOTS per page) and load its ad immediately
   // force = true skips the limit (used by the bottom ad, which always appears)
   function add(slot, force) {
     if (slot.__adRegistered) return;
@@ -117,11 +115,7 @@
       h.className = "page-ad-holder";
       slot.appendChild(h);
     }
-    if (!("IntersectionObserver" in window)) { enqueue(slot); return; }
-    var io = new IntersectionObserver(function (entries) {
-      if (entries[0].isIntersecting) { io.disconnect(); enqueue(slot); }
-    }, { rootMargin: LAZY_MARGIN });
-    io.observe(slot);
+    enqueue(slot); // load right away, no waiting for the slot to near the screen
   }
 
   function inject(selector, every) {
