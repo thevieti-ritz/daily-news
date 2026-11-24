@@ -14,8 +14,12 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 // ============================================
 const PAGE_SIZE    = 12;
 const R2_BASE      = "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/";
-const AD_MAX_SLOTS  = 10; // maximum ad slots per page
+const AD_MAX_SLOTS  = 10; // HARD LIMIT: maximum ad slots per page (counted until the page is refreshed)
 const AD_EVERY      = 1; // insert an ad slot after every N video cards (1 = after every video)
+const AD_ZONE_ID    = "5993834";
+const AD_CLASS      = "eas6a97888e37";
+const AD_LIB_URL    = "https://a.magsrv.com/ad-provider.js";
+let adSlotCounter   = 0; // slots created so far on this page. NEVER reset, so the 10-slot limit holds
 let lastDoc        = null;
 let currentSearch  = "";
 let isLoading      = false;
@@ -362,10 +366,12 @@ async function loadVideos() {
       const card = createVideoCard({ id: d.id, ...d.data() });
       videoCardCount++;
       fragment.appendChild(card);
-      if (videoCardCount % AD_EVERY === 0 && adSlotCounter < AD_MAX_SLOTS) {
-        const slot = createAdSlot();
-        fragment.appendChild(slot);
-        newAdSlots.push(slot);
+      if (videoCardCount % AD_EVERY === 0) {
+        const slot = createAdSlot(); // returns null once the 10-slot limit is reached
+        if (slot) {
+          fragment.appendChild(slot);
+          newAdSlots.push(slot);
+        }
       }
     });
     videoGrid.appendChild(fragment);
@@ -485,11 +491,6 @@ function createVideoCard(video) {
 // Every slot shows an outstream video, zone 5993834.
 // Each slot asks ONCE and is never refreshed or retried.
 // ============================================
-const AD_TYPES = {
-  outstream: { cls: "eas6a97888e37", zone: "5993834" },
-};
-
-let adSlotCounter = 0;
 let exoclickScriptLoaded = false;
 
 function ensureExoclickScript() {
@@ -500,11 +501,12 @@ function ensureExoclickScript() {
   const s = document.createElement("script");
   s.async = true;
   s.type = "application/javascript";
-  s.src = "https://a.magsrv.com/ad-provider.js";
+  s.src = AD_LIB_URL;
   document.head.appendChild(s);
 }
 
 function createAdSlot() {
+  if (adSlotCounter >= AD_MAX_SLOTS) return null; // limit reached: no slot, no ad tag, no request
   adSlotCounter++;
   ensureExoclickScript();
 
@@ -544,10 +546,8 @@ function loadAd(wrap) {
   const holder = wrap.querySelector(".ad-outstream-wrapper");
   if (!holder) return;
   wrap.__adAsked = true;
-  wrap.__adShown = true;
 
-  const type = AD_TYPES.outstream;
-  holder.innerHTML = `<ins class="${type.cls}" data-zoneid="${type.zone}"></ins>`;
+  holder.innerHTML = `<ins class="${AD_CLASS}" data-zoneid="${AD_ZONE_ID}"></ins>`;
   (window.AdProvider = window.AdProvider || []).push({ serve: {} });
 }
 
