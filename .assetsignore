@@ -1,0 +1,11 @@
+node_modules
+package.json
+package-lock.json
+wrangler.jsonc
+.assetsignore
+.git
+.github
+.wrangler
+*.mp4
+*.mov
+*.zip
