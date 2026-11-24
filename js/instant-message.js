@@ -10,7 +10,7 @@
      - this file must be served from your site at /js/instant-message.js
 
    HOW TO USE ON A PAGE
-     Add  <script src="/js/instant-message.js" defer></script>  once, in <body>
+     Add  <script src="/instant-message.js" defer></script>  once, in <body>
      (as ExoClick instructs; it also works in <head>)
      To skip a page:  <body data-no-instant-message>
 
@@ -22,10 +22,10 @@
 (function () {
   "use strict";
 
-  var SDK_PATH = "/js/sdk.js";       // served by worker.js
+  var SDK_PATH = "/js/sdk.js"; // served by worker.js
   var ZONE = "6104538";
   var INS_CLASS = "eas6a97888e6";
-  var MIN_GAP_MS = 1000;             // gap between ad requests on the same page
+  var MIN_GAP_MS = 1000; // gap between ad requests on the same page
 
   if (window.__instantMessageStarted) return;
   window.__instantMessageStarted = true;
@@ -38,7 +38,12 @@
     window.AdProvider = window.AdProvider || [];
     if (window.__adLibLoaded) return;
     window.__adLibLoaded = true;
-    if (document.querySelector('script[src*="ad-provider.js"], script[src="' + SDK_PATH + '"]')) return;
+    if (
+      document.querySelector(
+        'script[src*="ad-provider.js"], script[src="' + SDK_PATH + '"]',
+      )
+    )
+      return;
     var s = document.createElement("script");
     s.async = true;
     s.type = "application/javascript";
@@ -60,7 +65,7 @@
     if (me && me.parentNode && document.body.contains(me)) {
       me.parentNode.insertBefore(ins, me.nextSibling); // script is in <body>: ad goes right after it
     } else {
-      document.body.appendChild(ins);                  // script is in <head>: ad goes at the end of <body>
+      document.body.appendChild(ins); // script is in <head>: ad goes at the end of <body>
     }
 
     (window.AdProvider = window.AdProvider || []).push({ serve: {} });

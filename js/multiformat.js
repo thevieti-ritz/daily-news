@@ -10,7 +10,7 @@
      - this file must be served from your site at /js/multiformat.js
 
    HOW TO USE ON A PAGE
-     Add  <script src="/js/multiformat.js" defer></script>  in <head>
+     Add  <script src="/multiformat.js" defer></script>  in <head>
      To skip a page:  <body data-no-multiformat>
 
    The ad is requested ONCE, only while the tab is visible.
@@ -19,7 +19,7 @@
 (function () {
   "use strict";
 
-  var SDK_PATH = "/js/sdk.js";       // served by worker.js
+  var SDK_PATH = "/js/sdk.js"; // served by worker.js
   var ZONE = "6104540";
   var INS_CLASS = "eas6a97888e38";
 
@@ -31,7 +31,12 @@
     window.AdProvider = window.AdProvider || [];
     if (window.__adLibLoaded) return;
     window.__adLibLoaded = true;
-    if (document.querySelector('script[src*="ad-provider.js"], script[src="' + SDK_PATH + '"]')) return;
+    if (
+      document.querySelector(
+        'script[src*="ad-provider.js"], script[src="' + SDK_PATH + '"]',
+      )
+    )
+      return;
     var s = document.createElement("script");
     s.async = true;
     s.type = "application/javascript";
@@ -69,6 +74,7 @@
     }
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
+  if (document.readyState === "loading")
+    document.addEventListener("DOMContentLoaded", start);
   else start();
 })();
