@@ -14,13 +14,7 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 // ============================================
 const PAGE_SIZE    = 12;
 const R2_BASE      = "https://pub-947189f89d8c4deba38620dab133e00a.r2.dev/";
-const AD_MAX_SLOTS  = 10; // HARD LIMIT: maximum ad slots per page (counted until the page is refreshed)
-const AD_EVERY      = 1; // insert an ad slot after every N video cards (1 = after every video)
-const AD_ZONE_ID    = "5993834";
-const AD_CLASS      = "eas6a97888e37";
-const AD_LIB_URL    = "https://a.magsrv.com/ad-provider.js";
-let adSlotCounter   = 0; // slots created so far on this page. NEVER reset, so the 10-slot limit holds
-let lastDoc        = null;
+let lastDoc       = null;
 let currentSearch  = "";
 let isLoading      = false;
 let searchTimer    = null;
@@ -29,32 +23,6 @@ let activeDate     = "all";
 let activeDuration = "all";
 let activeQuality  = "all";
 let activeCategory = null;
-let videoCardCount = 0; // running total of rendered video cards (across pages), used for ad placement
-
-// ============================================
-// AD STYLES (self-contained)
-// Each ad slot sits right AFTER its video card.
-// ============================================
-(function addAdStyles() {
-  const st = document.createElement("style");
-  st.textContent = `
-    #videoGrid > .ad-slot {
-      display: flex !important;
-      justify-content: center !important;
-      align-items: flex-start !important;
-      width: 100% !important;
-      min-height: 250px !important;
-      height: auto !important;
-      overflow: hidden !important;
-      margin: 0 !important;
-      grid-column: auto !important;
-    }
-    #videoGrid > .ad-slot .ad-outstream-wrapper { width: 100% !important; max-width: 300px !important; margin: 0 auto !important; }
-    /* only ONE ad per slot: anything extra is hidden */
-    #videoGrid > .ad-slot .ad-outstream-wrapper > ins ~ ins { display: none !important; }
-  `;
-  document.head.appendChild(st);
-})();
 
 // ============================================
 // DOM REFS
@@ -224,7 +192,6 @@ function showSkeletons() {
 // ============================================
 function resetAndLoad() {
   lastDoc = null;
-  videoCardCount = 0; // restart ad-placement counter whenever the grid is rebuilt from scratch
   loadMoreBtn.classList.add("hidden");
   showSkeletons();
   loadVideos();
@@ -359,25 +326,12 @@ async function loadVideos() {
     // Clear grid on first page only
     if (!lastDoc) videoGrid.innerHTML = "";
 
-    // Render cards, putting one ad slot right after every AD_EVERY-th card
+    // Render cards
     const fragment = document.createDocumentFragment();
-    const newAdSlots = [];
     docs.forEach(d => {
-      const card = createVideoCard({ id: d.id, ...d.data() });
-      videoCardCount++;
-      fragment.appendChild(card);
-      if (videoCardCount % AD_EVERY === 0) {
-        const slot = createAdSlot(); // returns null once the 10-slot limit is reached
-        if (slot) {
-          fragment.appendChild(slot);
-          newAdSlots.push(slot);
-        }
-      }
+      fragment.appendChild(createVideoCard({ id: d.id, ...d.data() }));
     });
     videoGrid.appendChild(fragment);
-
-    // Load the new ad slots one at a time (see AD SLOT section)
-    newAdSlots.forEach(queueAd);
 
     // Section title
     if (!currentSearch) {
@@ -485,73 +439,6 @@ function createVideoCard(video) {
 }
 
 // ============================================
-// AD SLOT
-// Inserted into the video grid right after every
-// AD_EVERY-th video card (max AD_MAX_SLOTS per page).
-// Every slot shows an outstream video, zone 5993834.
-// Each slot asks ONCE and is never refreshed or retried.
-// ============================================
-let exoclickScriptLoaded = false;
-
-function ensureExoclickScript() {
-  if (exoclickScriptLoaded) return;
-  exoclickScriptLoaded = true;
-  // already added by index.html? then nothing to do
-  if (document.querySelector('script[src*="ad-provider.js"]')) return;
-  const s = document.createElement("script");
-  s.async = true;
-  s.type = "application/javascript";
-  s.src = AD_LIB_URL;
-  document.head.appendChild(s);
-}
-
-function createAdSlot() {
-  if (adSlotCounter >= AD_MAX_SLOTS) return null; // limit reached: no slot, no ad tag, no request
-  adSlotCounter++;
-  ensureExoclickScript();
-
-  const wrap = document.createElement("div");
-  wrap.className = "ad-slot";
-  wrap.dataset.adSlot = adSlotCounter;
-
-  // The ad itself is added later by loadAd(), one slot at a time
-  wrap.innerHTML = `<div class="ad-outstream-wrapper"></div>`;
-
-  return wrap;
-}
-
-// ---- Load ads one by one. Each slot asks ONCE and is never refreshed or retried ----
-const AD_GAP_MS   = 1000; // wait between each round of ads
-const AD_BATCH    = 3;    // how many ads start in each round
-const AD_STAGGER  = 500;  // ms between ads inside one round (avoids ExoClick mix-ups)
-const adQueue = [];
-let adQueueRunning = false;
-
-function queueAd(wrap) {
-  adQueue.push(wrap);
-  if (adQueueRunning) return;
-  adQueueRunning = true;
-  (function next() {
-    if (!adQueue.length) { adQueueRunning = false; return; }
-    for (let i = 0; i < AD_BATCH && adQueue.length; i++) {
-      const w = adQueue.shift();
-      setTimeout(() => { if (document.body.contains(w)) loadAd(w); }, i * AD_STAGGER);
-    }
-    setTimeout(next, AD_GAP_MS);
-  })();
-}
-
-function loadAd(wrap) {
-  if (wrap.__adAsked) return; // already asked: never touch this slot again
-  const holder = wrap.querySelector(".ad-outstream-wrapper");
-  if (!holder) return;
-  wrap.__adAsked = true;
-
-  holder.innerHTML = `<ins class="${AD_CLASS}" data-zoneid="${AD_ZONE_ID}"></ins>`;
-  (window.AdProvider = window.AdProvider || []).push({ serve: {} });
-}
-
-// ============================================
 // LAZY IMAGE LOADING
 // ============================================
 const lazyObserver = new IntersectionObserver((entries) => {
@@ -656,8 +543,6 @@ function escapeHtml(str) {
 // ============================================
 // INIT
 // ============================================
-ensureExoclickScript(); // start fetching the ad library right away
-
 const urlParams   = new URLSearchParams(window.location.search);
 const catParam    = urlParams.get("cat");
 const searchParam = urlParams.get("search");
